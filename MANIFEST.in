@@ -1,0 +1,7 @@
+include pyproject.toml
+include README.md
+include LICENSE.txt
+include setup.py
+
+# Include data files
+include src/itaxotools/taxi3_gui/logos/*
