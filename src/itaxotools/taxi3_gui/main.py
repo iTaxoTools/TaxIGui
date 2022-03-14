@@ -27,6 +27,9 @@ import itaxotools.common.widgets
 import itaxotools.common.resources # noqa
 import itaxotools.common.io # noqa
 
+from .header import Header
+
+
 class Main(common.widgets.ToolDialog):
     """Main window, handles everything"""
 
@@ -45,7 +48,7 @@ class Main(common.widgets.ToolDialog):
 
     def draw(self):
         """Draw all contents"""
-        self.header = self.draw_header()
+        self.header = Header()
         self.sidebar = self.draw_sidebar()
         self.body = self.draw_body()
         self.footer = self.draw_footer()
@@ -62,7 +65,6 @@ class Main(common.widgets.ToolDialog):
     def draw_header(self):
         widget = QtWidgets.QWidget()
         widget.setStyleSheet("background: red;")
-        widget.setFixedHeight(48)
         return widget
 
     def draw_sidebar(self):
