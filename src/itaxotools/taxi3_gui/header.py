@@ -55,27 +55,30 @@ class ToolBar(QtWidgets.QToolBar):
             QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.setStyleSheet("""
             QToolBar {
-                spacing: 2px;
+                spacing: 4px;
                 }
             QToolButton {
-                color: palette(ButtonText);
+                color: palette(Shadow);
                 background: transparent;
-                border: 2px solid transparent;
-                border-radius: 3px;
+                border: 1px solid transparent;
+                border-radius: 2px;
+                letter-spacing: 1px;
+                font-weight: bold;
                 font-size: 14px;
-                min-width: 50px;
-                min-height: 60px;
-                padding: 6px 0px 0px 0px;
-                margin: 4px 0px 4px 0px;
+                min-width: 74px;
+                min-height: 38px;
+                padding: 0px 8px 0px 8px;
+                margin: 0px 0px 0px 0px;
+                text-align: right;
                 }
             QToolButton:hover {
                 background: palette(Window);
-                border: 2px solid transparent;
+                border: 1px solid transparent;
                 }
             QToolButton:pressed {
                 background: palette(Midlight);
-                border: 2px solid palette(Mid);
-                border-radius: 3px;
+                border: 1px solid palette(Mid);
+                border-radius: 2px;
                 }
             QToolButton[popupMode="2"]:pressed {
                 padding-bottom: 5px;
@@ -87,12 +90,12 @@ class ToolBar(QtWidgets.QToolBar):
             QToolButton::menu-indicator {
                 image: none;
                 width: 30px;
-                border-bottom: 2px solid palette(Mid);
+                border-bottom: 1px solid palette(Mid);
                 subcontrol-origin: padding;
                 subcontrol-position: bottom;
                 }
             QToolButton::menu-indicator:disabled {
-                border-bottom: 2px solid palette(Midlight);
+                border-bottom: 1px solid palette(Midlight);
                 }
             QToolButton::menu-indicator:pressed {
                 border-bottom: 0px;
@@ -123,7 +126,8 @@ class Header(QtWidgets.QFrame):
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.toolLogo)
-        layout.addSpacing(8)
+        layout.addWidget(VLineSeparator(1))
+        layout.addSpacing(4)
         layout.addWidget(self.toolBar)
         layout.addSpacing(8)
         layout.addStretch(8)

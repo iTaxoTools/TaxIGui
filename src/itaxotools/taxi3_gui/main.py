@@ -36,6 +36,10 @@ def get_icon(path):
     return common.resources.get_common(Path('icons/svg') / path)
 
 
+def get_local_icon(path):
+    return common.resources.get_local(__package__, Path('icons') / path)
+
+
 class Main(common.widgets.ToolDialog):
     """Main window, handles everything"""
 
@@ -129,7 +133,7 @@ class Main(common.widgets.ToolDialog):
 
         self.colormap = {
             common.widgets.VectorIcon.Normal: {
-                '#000': color['black'],
+                '#000': color['brown'],
                 '#f00': color['red'],
                 },
             common.widgets.VectorIcon.Disabled: {
@@ -185,3 +189,37 @@ class Main(common.widgets.ToolDialog):
         widget.setStyleSheet("background: magenta;")
         widget.setFixedHeight(24)
         return widget
+
+    def act(self):
+        """Populate dialog actions"""
+        self.actions = {}
+
+        self.actions['home'] = QtGui.QAction('&Home', self)
+        self.actions['home'].setIcon(common.widgets.VectorIcon(get_local_icon('home.svg'), self.colormap))
+        self.actions['home'].setStatusTip('Open the dashboard')
+        self.actions['home'].triggered.connect(self.handleHome)
+
+        self.actions['open'] = QtGui.QAction('&Open', self)
+        self.actions['open'].setIcon(common.widgets.VectorIcon(get_icon('open.svg'), self.colormap))
+        self.actions['open'].setShortcut(QtGui.QKeySequence.Open)
+        self.actions['open'].setStatusTip('Open an existing file')
+        self.actions['open'].triggered.connect(self.handleOpen)
+
+        self.actions['save'] = QtGui.QAction('&Save', self)
+        self.actions['save'].setIcon(common.widgets.VectorIcon(get_icon('save.svg'), self.colormap))
+        self.actions['save'].setShortcut(QtGui.QKeySequence.Save)
+        self.actions['save'].setStatusTip('Save results')
+        self.actions['save'].triggered.connect(self.handleSave)
+
+        self.header.toolBar.addAction(self.actions['home'])
+        self.header.toolBar.addAction(self.actions['open'])
+        self.header.toolBar.addAction(self.actions['save'])
+
+    def handleHome(self):
+        pass
+
+    def handleOpen(self):
+        pass
+
+    def handleSave(self):
+        pass

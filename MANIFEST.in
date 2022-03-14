@@ -5,3 +5,4 @@ include setup.py
 
 # Include data files
 include src/itaxotools/taxi3_gui/logos/*
+include src/itaxotools/taxi3_gui/icons/*
