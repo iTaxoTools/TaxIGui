@@ -30,7 +30,7 @@ import itaxotools.common.resources # noqa
 import itaxotools.common.io # noqa
 
 from .header import Header
-
+from .footer import Footer
 
 def get_icon(path):
     return common.resources.get_common(Path('icons/svg') / path)
@@ -157,7 +157,7 @@ class Main(common.widgets.ToolDialog):
         self.header = Header(self)
         self.sidebar = self.draw_sidebar()
         self.body = self.draw_body()
-        self.footer = self.draw_footer()
+        self.footer = Footer(self)
 
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.header, 0, 0, 1, 2)

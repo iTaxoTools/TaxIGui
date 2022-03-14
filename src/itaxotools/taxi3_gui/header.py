@@ -55,7 +55,7 @@ class ToolBar(QtWidgets.QToolBar):
             QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.setStyleSheet("""
             QToolBar {
-                spacing: 4px;
+                spacing: 2px;
                 }
             QToolButton {
                 color: palette(Shadow);
