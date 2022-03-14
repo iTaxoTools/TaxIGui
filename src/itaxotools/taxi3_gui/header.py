@@ -25,18 +25,19 @@ from itaxotools.common.widgets import ScalingImage, VectorPixmap, VLineSeparator
 
 
 class ToolLogo(QtWidgets.QLabel):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.setFixedWidth(256)
         self.setAlignment(QtCore.Qt.AlignCenter)
         self.setPixmap(VectorPixmap(
             resources.get(
                 __package__, 'logos/taxi3.svg'),
-            size=QtCore.QSize(44, 44)))
+            size=QtCore.QSize(44, 44),
+            colormap=self.window().colormap_icon))
 
 
 class ProjectLogo(ScalingImage):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         self.setFixedHeight(64)
         self.logo = QtGui.QPixmap(
@@ -52,12 +53,57 @@ class ToolBar(QtWidgets.QToolBar):
             QtWidgets.QSizePolicy.Policy.Minimum)
         self.setToolButtonStyle(
             QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.setStyleSheet("""
+            QToolBar {
+                spacing: 2px;
+                }
+            QToolButton {
+                color: palette(ButtonText);
+                background: transparent;
+                border: 2px solid transparent;
+                border-radius: 3px;
+                font-size: 14px;
+                min-width: 50px;
+                min-height: 60px;
+                padding: 6px 0px 0px 0px;
+                margin: 4px 0px 4px 0px;
+                }
+            QToolButton:hover {
+                background: palette(Window);
+                border: 2px solid transparent;
+                }
+            QToolButton:pressed {
+                background: palette(Midlight);
+                border: 2px solid palette(Mid);
+                border-radius: 3px;
+                }
+            QToolButton[popupMode="2"]:pressed {
+                padding-bottom: 5px;
+                border: 1px solid palette(Dark);
+                margin: 5px 1px 0px 1px;
+                border-bottom-right-radius: 0px;
+                border-bottom-left-radius: 0px;
+                }
+            QToolButton::menu-indicator {
+                image: none;
+                width: 30px;
+                border-bottom: 2px solid palette(Mid);
+                subcontrol-origin: padding;
+                subcontrol-position: bottom;
+                }
+            QToolButton::menu-indicator:disabled {
+                border-bottom: 2px solid palette(Midlight);
+                }
+            QToolButton::menu-indicator:pressed {
+                border-bottom: 0px;
+                }
+            """)
 
 
 class Header(QtWidgets.QFrame):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.draw()
 
     def draw(self):
@@ -71,9 +117,9 @@ class Header(QtWidgets.QFrame):
                 border-bottom: 1px solid palette(Dark);
                 }
             """)
-        self.toolLogo = ToolLogo()
-        self.projectLogo = ProjectLogo()
-        self.toolBar = ToolBar()
+        self.toolLogo = ToolLogo(self)
+        self.projectLogo = ProjectLogo(self)
+        self.toolBar = ToolBar(self)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.toolLogo)

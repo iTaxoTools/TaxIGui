@@ -22,12 +22,18 @@ from PySide6 import QtCore
 from PySide6 import QtWidgets
 from PySide6 import QtGui
 
+from pathlib import Path
+
 from itaxotools import common
 import itaxotools.common.widgets
 import itaxotools.common.resources # noqa
 import itaxotools.common.io # noqa
 
 from .header import Header
+
+
+def get_icon(path):
+    return common.resources.get_common(Path('icons/svg') / path)
 
 
 class Main(common.widgets.ToolDialog):
@@ -44,11 +50,107 @@ class Main(common.widgets.ToolDialog):
         self.setWindowTitle(self.title)
         self.resize(860, 600)
 
+        self.skin()
         self.draw()
+        self.act()
+
+    def skin(self):
+        """Configure widget appearance"""
+        color = {
+            'white':  '#ffffff',
+            'light':  '#eff1ee',
+            'beige':  '#e1e0de',
+            'gray':   '#abaaa8',
+            'iron':   '#8b8d8a',
+            'black':  '#454241',
+            'red':    '#ee4e5f',
+            'pink':   '#eb9597',
+            'orange': '#eb6a4a',
+            'brown':  '#655c5d',
+            'green':  '#00ff00',
+            }
+        # using green for debugging
+        palette = QtGui.QGuiApplication.palette()
+        scheme = {
+            QtGui.QPalette.Active: {
+                QtGui.QPalette.Window: 'light',
+                QtGui.QPalette.WindowText: 'black',
+                QtGui.QPalette.Base: 'white',
+                QtGui.QPalette.AlternateBase: 'light',
+                QtGui.QPalette.PlaceholderText: 'brown',
+                QtGui.QPalette.Text: 'black',
+                QtGui.QPalette.Button: 'light',
+                QtGui.QPalette.ButtonText: 'black',
+                QtGui.QPalette.Light: 'white',
+                QtGui.QPalette.Midlight: 'beige',
+                QtGui.QPalette.Mid: 'gray',
+                QtGui.QPalette.Dark: 'iron',
+                QtGui.QPalette.Shadow: 'brown',
+                QtGui.QPalette.Highlight: 'red',
+                QtGui.QPalette.HighlightedText: 'white',
+                # These work on linux only?
+                QtGui.QPalette.ToolTipBase: 'beige',
+                QtGui.QPalette.ToolTipText: 'brown',
+                # These seem bugged anyway
+                QtGui.QPalette.BrightText: 'green',
+                QtGui.QPalette.Link: 'red',
+                QtGui.QPalette.LinkVisited: 'pink',
+                },
+            QtGui.QPalette.Disabled: {
+                QtGui.QPalette.Window: 'light',
+                QtGui.QPalette.WindowText: 'iron',
+                QtGui.QPalette.Base: 'white',
+                QtGui.QPalette.AlternateBase: 'light',
+                QtGui.QPalette.PlaceholderText: 'green',
+                QtGui.QPalette.Text: 'iron',
+                QtGui.QPalette.Button: 'light',
+                QtGui.QPalette.ButtonText: 'gray',
+                QtGui.QPalette.Light: 'white',
+                QtGui.QPalette.Midlight: 'beige',
+                QtGui.QPalette.Mid: 'gray',
+                QtGui.QPalette.Dark: 'iron',
+                QtGui.QPalette.Shadow: 'brown',
+                QtGui.QPalette.Highlight: 'pink',
+                QtGui.QPalette.HighlightedText: 'white',
+                # These seem bugged anyway
+                QtGui.QPalette.BrightText: 'green',
+                QtGui.QPalette.ToolTipBase: 'green',
+                QtGui.QPalette.ToolTipText: 'green',
+                QtGui.QPalette.Link: 'green',
+                QtGui.QPalette.LinkVisited: 'green',
+                },
+            }
+        scheme[QtGui.QPalette.Inactive] = scheme[QtGui.QPalette.Active]
+        for group in scheme:
+            for role in scheme[group]:
+                palette.setColor(group, role,
+                    QtGui.QColor(color[scheme[group][role]]))
+        QtGui.QGuiApplication.setPalette(palette)
+
+        self.colormap = {
+            common.widgets.VectorIcon.Normal: {
+                '#000': color['black'],
+                '#f00': color['red'],
+                },
+            common.widgets.VectorIcon.Disabled: {
+                '#000': color['gray'],
+                '#f00': color['orange'],
+                },
+            }
+        self.colormap_icon = {
+            '#000': color['black'],
+            '#f00': color['red'],
+            '#f88': color['pink'],
+            }
+        self.colormap_icon_light = {
+            '#000': color['iron'],
+            '#ff0000': color['red'],
+            '#ffa500': color['pink'],
+            }
 
     def draw(self):
         """Draw all contents"""
-        self.header = Header()
+        self.header = Header(self)
         self.sidebar = self.draw_sidebar()
         self.body = self.draw_body()
         self.footer = self.draw_footer()
