@@ -40,3 +40,44 @@ class Main(common.widgets.ToolDialog):
         self.setWindowIcon(icon)
         self.setWindowTitle(self.title)
         self.resize(860, 600)
+
+        self.draw()
+
+    def draw(self):
+        """Draw all contents"""
+        self.header = self.draw_header()
+        self.sidebar = self.draw_sidebar()
+        self.body = self.draw_body()
+        self.footer = self.draw_footer()
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(self.header, 0, 0, 1, 2)
+        layout.addWidget(self.sidebar, 1, 0, 1, 1)
+        layout.addWidget(self.body, 1, 1, 1, 1)
+        layout.addWidget(self.footer, 2, 0, 1, 2)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+    def draw_header(self):
+        widget = QtWidgets.QWidget()
+        widget.setStyleSheet("background: red;")
+        widget.setFixedHeight(48)
+        return widget
+
+    def draw_sidebar(self):
+        widget = QtWidgets.QWidget()
+        widget.setStyleSheet("background: blue;")
+        widget.setFixedWidth(256)
+        return widget
+
+    def draw_body(self):
+        widget = QtWidgets.QWidget()
+        widget.setStyleSheet("background: cyan;")
+        return widget
+
+    def draw_footer(self):
+        widget = QtWidgets.QWidget()
+        widget.setStyleSheet("background: magenta;")
+        widget.setFixedHeight(24)
+        return widget
