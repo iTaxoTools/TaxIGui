@@ -43,6 +43,9 @@ class Item(ABC):
     def paint(self, painter, option, index) -> None:
         ...
 
+    def mouseEvent(self, event, model, option, index) -> None:
+        pass
+
 
 class Group(Item):
 
@@ -55,13 +58,6 @@ class Group(Item):
         return QtCore.QSize(self.width, self.height)
 
     def paint(self, painter, option, index):
-        # if option.state & QtWidgets.QStyle.State_Selected:
-        #     painter.fillRect(option.rect, option.palette.dark())
-        # elif option.state & QtWidgets.QStyle.State_MouseOver:
-        #     painter.fillRect(option.rect, option.palette.dark())
-        # else:
-        #     painter.fillRect(option.rect, option.palette.dark())
-
         textRect = QtCore.QRect(option.rect)
         textRect.adjust(self.marginLeft, 0, 0, -self.marginBottom)
         font = painter.font()
@@ -84,6 +80,7 @@ class Task(Item):
     height = 52
     marginLeft = 4
     marginText = 40
+    iconSize = 32
 
     def __init__(self, name, icon):
         self.name = name
@@ -107,20 +104,28 @@ class Task(Item):
         mode = QtGui.QIcon.Disabled
         if option.state & QtWidgets.QStyle.State_Selected:
             mode = QtGui.QIcon.Normal
-        self.icon.paint(painter, rect, QtCore.Qt.AlignVCenter, mode)
+        pix = self.icon.pixmap(QtCore.QSize(*[self.iconSize]*2), mode)
+        painter.drawPixmap(rect, pix)
 
     def iconRect(self, option):
-        rect = QtCore.QRect(option.rect)
-        rect.adjust(self.marginLeft, 0, 0, 0)
-        return rect
+        left = option.rect.left() + self.marginLeft
+        vCenter = option.rect.center().y()
+        return QtCore.QRect(
+            left, vCenter - self.iconSize/2 + 1,
+            self.iconSize, self.iconSize)
 
     def textRect(self, option):
         rect = QtCore.QRect(option.rect)
-        rect.adjust(self.marginText, 0, 0, 0)
-        return rect
+        return rect.adjusted(self.marginText, 0, 0, 0)
+
+    def mouseEvent(self, event, model, option, index):
+        rect = self.iconRect(option)
+        if rect.contains(event.pos()):
+            model.onIconClicked(index)
 
 
 class ItemModel(QtCore.QAbstractListModel):
+
     def __init__(self, items):
         super().__init__()
         self.items = items
@@ -141,6 +146,9 @@ class ItemModel(QtCore.QAbstractListModel):
             return self.items[index.row()]
         return None
 
+    def onIconClicked(self, index):
+        print('clicked on', self.data(index, QtCore.Qt.UserRole).name)
+
 
 class ItemDelegate(QtWidgets.QStyledItemDelegate):
     def sizeHint(self, option, index):
@@ -154,11 +162,16 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
         item.paint(painter, option, index)
         painter.restore()
 
-    ### CLICKABLE REGIONS:
-    ### https://forum.qt.io/topic/28142/detect-clicked-icon-of-item-solved/5
-    # def editorEvent(self, event, model, option, index):
-    #     print(event)
-    #     return super().event(event)
+    def editorEvent(self, event, model, option, index):
+        if not (
+            event.type() == QtCore.QEvent.MouseButtonRelease and
+            event.button() == QtCore.Qt.LeftButton
+        ):
+            return super().event(event)
+        item = index.data(QtCore.Qt.UserRole)
+        item.mouseEvent(event, model, option, index)
+        return super().event(event)
+
 
 class ItemView(QtWidgets.QListView):
     def __init__(self, *args, **kwargs):
@@ -197,7 +210,7 @@ class SideBar(QtWidgets.QFrame):
         """)
 
         icon = VectorIcon(
-            get_common(Path('icons/svg/run.svg')),
+            get_common(Path('icons/svg/arrow-right.svg')),
             self.window().colormap)
         items = [
             Group('Tasks'),
