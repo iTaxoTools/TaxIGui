@@ -201,7 +201,7 @@ class Main(common.widgets.ToolDialog):
         self.header.toolBar.addAction(self.actions['save'])
 
     def handleHome(self):
-        view = self.sidebar.taskView
+        view = self.sidebar.itemView
         print(view.sizeHintForRow(0))
         print(view.sizeHintForColumn(0))
         print(view.sizeHint())

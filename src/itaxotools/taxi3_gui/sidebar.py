@@ -20,49 +20,69 @@ from PySide6 import QtCore
 from PySide6 import QtWidgets
 from PySide6 import QtGui
 
+from abc import ABC, abstractmethod
 
-class Task:
+class Item(ABC):
+
+    width: int
+    height: int
+
     def __init__(self, name):
         self.name = name
 
+    @abstractmethod
+    def sizeHint(self, option, index) -> QtCore.QSize:
+        ...
 
-class TaskModel(QtCore.QAbstractListModel):
-    def __init__(self):
-        super().__init__()
-
-        self.tasks = [
-            Task('DEREP #1'),
-            Task('DEREP #2'),
-            Task('DEREP #3'),
-            Task('DECONT #1'),
-            Task('DECONT #2'),
-        ]
-
-    def rowCount(self, parent):
-        return len(self.tasks)
-
-    def data(self, index, role):
-        if (
-            role == QtCore.Qt.DisplayRole and
-            index.row() >= 0 and
-            index.row() < len(self.tasks) and
-            index.column() == 0
-        ):
-            return self.tasks[index.row()].name
-        else:
-            return None
+    @abstractmethod
+    def paint(self, painter, option, index) -> None:
+        ...
 
 
-class TaskDelegate(QtWidgets.QStyledItemDelegate):
+class Group(Item):
+
+    width = 256
+    height = 32
+    marginLeft = 4
+    marginBottom = 2
+
     def sizeHint(self, option, index):
-        return QtCore.QSize(256, 50)
+        return QtCore.QSize(self.width, self.height)
 
     def paint(self, painter, option, index):
-        # super().paint(painter, option, index)
-        # print('flags', f'{int(option.state):b}', 'over', f'{int(QtWidgets.QStyle.State_MouseOver):b}')
-        # return
-        self.initStyleOption(option, index)
+        # if option.state & QtWidgets.QStyle.State_Selected:
+        #     painter.fillRect(option.rect, option.palette.dark())
+        # elif option.state & QtWidgets.QStyle.State_MouseOver:
+        #     painter.fillRect(option.rect, option.palette.dark())
+        # else:
+        #     painter.fillRect(option.rect, option.palette.dark())
 
+        textRect = QtCore.QRect(option.rect)
+        textRect.adjust(self.marginLeft, 0, 0, -self.marginBottom)
+        font = painter.font()
+        font.setPixelSize(16)
+        painter.setFont(font)
+        painter.drawText(textRect, QtCore.Qt.AlignBottom, self.name)
+
+        line = QtCore.QLine(
+            option.rect.left(),
+            option.rect.bottom(),
+            option.rect.right(),
+            option.rect.bottom(),
+            )
+        painter.drawLine(line)
+
+
+class Task(Item):
+
+    width = 256
+    height = 52
+    marginLeft = 8
+
+    def sizeHint(self, option, index):
+        return QtCore.QSize(self.width, self.height)
+
+    def paint(self, painter, option, index):
         if option.state & QtWidgets.QStyle.State_Selected:
             painter.fillRect(option.rect, option.palette.highlight())
         elif option.state & QtWidgets.QStyle.State_MouseOver:
@@ -71,8 +91,52 @@ class TaskDelegate(QtWidgets.QStyledItemDelegate):
             painter.fillRect(option.rect, option.palette.mid())
 
         textRect = QtCore.QRect(option.rect)
-        text = index.data(QtCore.Qt.DisplayRole)
-        painter.drawText(textRect, text)
+        textRect.adjust(self.marginLeft, 0, 0, 0)
+        painter.drawText(textRect, QtCore.Qt.AlignVCenter, self.name)
+
+
+class ItemModel(QtCore.QAbstractListModel):
+    def __init__(self):
+        super().__init__()
+
+        self.items = [
+            Group('Tasks'),
+            Task('DEREP #1'),
+            Task('DEREP #2'),
+            Task('DECONT'),
+            Group('Sequences'),
+            Task('Frog Samples'),
+            Task('Finch Samples'),
+        ]
+
+    def rowCount(self, parent):
+        return len(self.items)
+
+    def data(self, index, role):
+        if (
+            index.row() < 0 or
+            index.row() >= len(self.items) or
+            index.column() != 0
+        ):
+            return None
+        if role == QtCore.Qt.DisplayRole:
+            return self.items[index.row()].name
+        if role == QtCore.Qt.UserRole:
+            return self.items[index.row()]
+        return None
+
+
+class ItemDelegate(QtWidgets.QStyledItemDelegate):
+    def sizeHint(self, option, index):
+        item = index.data(QtCore.Qt.UserRole)
+        return item.sizeHint(option, index)
+
+    def paint(self, painter, option, index):
+        self.initStyleOption(option, index)
+        item = index.data(QtCore.Qt.UserRole)
+        painter.save()
+        item.paint(painter, option, index)
+        painter.restore()
 
     ### CLICKABLE REGIONS:
     ### https://forum.qt.io/topic/28142/detect-clicked-icon-of-item-solved/5
@@ -80,7 +144,7 @@ class TaskDelegate(QtWidgets.QStyledItemDelegate):
     #     print(event)
     #     return super().event(event)
 
-class TaskView(QtWidgets.QListView):
+class ItemView(QtWidgets.QListView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setMouseTracking(True)
@@ -90,31 +154,37 @@ class TaskView(QtWidgets.QListView):
             QtWidgets.QSizePolicy.Policy.Maximum,
             QtWidgets.QSizePolicy.Policy.Minimum)
         self.setStyleSheet("""
-            TaskView {
+            ItemView {
                 background: palette(Midlight);
                 border: 0px solid transparent;
-                border-right: 1px solid palette(Mid);
             }
         """)
         self.setSpacing(2)
-        self.delegate = TaskDelegate()
+        self.delegate = ItemDelegate()
         self.setItemDelegate(self.delegate)
 
     def sizeHint(self):
-        w = self.sizeHintForColumn(0) + 1
+        w = self.sizeHintForColumn(0)
         h = self.sizeHintForRow(0)
         return QtCore.QSize(w, h)
 
 
-class SideBar(QtWidgets.QWidget):
+class SideBar(QtWidgets.QFrame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.taskModel = TaskModel()
-        self.taskView = TaskView()
-        self.taskView.setModel(self.taskModel)
+        self.setStyleSheet("""
+            SideBar {
+                border: 0px solid transparent;
+                border-right: 1px solid palette(Mid);
+            }
+        """)
+
+        self.itemModel = ItemModel()
+        self.itemView = ItemView()
+        self.itemView.setModel(self.itemModel)
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.taskView)
+        layout.addWidget(self.itemView)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
