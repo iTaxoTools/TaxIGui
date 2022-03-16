@@ -31,6 +31,7 @@ import itaxotools.common.io # noqa
 
 from .header import Header
 from .footer import Footer
+from .sidebar import SideBar
 
 def get_icon(path):
     return common.resources.get_common(Path('icons/svg') / path)
@@ -52,7 +53,7 @@ class Main(common.widgets.ToolDialog):
             'itaxotools.taxi3_gui', 'logos/taxi3.ico'))
         self.setWindowIcon(icon)
         self.setWindowTitle(self.title)
-        self.resize(860, 600)
+        self.resize(800, 500)
 
         self.skin()
         self.draw()
@@ -155,7 +156,7 @@ class Main(common.widgets.ToolDialog):
     def draw(self):
         """Draw all contents"""
         self.header = Header(self)
-        self.sidebar = self.draw_sidebar()
+        self.sidebar = SideBar()
         self.body = self.draw_body()
         self.footer = Footer(self)
 
@@ -165,29 +166,13 @@ class Main(common.widgets.ToolDialog):
         layout.addWidget(self.body, 1, 1, 1, 1)
         layout.addWidget(self.footer, 2, 0, 1, 2)
         layout.setSpacing(0)
+        layout.setColumnStretch(1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-
-    def draw_header(self):
-        widget = QtWidgets.QWidget()
-        widget.setStyleSheet("background: red;")
-        return widget
-
-    def draw_sidebar(self):
-        widget = QtWidgets.QWidget()
-        widget.setStyleSheet("background: blue;")
-        widget.setFixedWidth(256)
-        return widget
 
     def draw_body(self):
         widget = QtWidgets.QWidget()
         widget.setStyleSheet("background: cyan;")
-        return widget
-
-    def draw_footer(self):
-        widget = QtWidgets.QWidget()
-        widget.setStyleSheet("background: magenta;")
-        widget.setFixedHeight(24)
         return widget
 
     def act(self):
@@ -216,6 +201,11 @@ class Main(common.widgets.ToolDialog):
         self.header.toolBar.addAction(self.actions['save'])
 
     def handleHome(self):
+        view = self.sidebar.taskView
+        print(view.sizeHintForRow(0))
+        print(view.sizeHintForColumn(0))
+        print(view.sizeHint())
+        print(self.sidebar.sizeHint())
         pass
 
     def handleOpen(self):
