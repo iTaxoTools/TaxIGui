@@ -32,6 +32,7 @@ import itaxotools.common.io # noqa
 from .header import Header
 from .footer import Footer
 from .sidebar import SideBar
+from .dashboard import Dashboard
 
 def get_icon(path):
     return common.resources.get_common(Path('icons/svg') / path)
@@ -157,23 +158,21 @@ class Main(common.widgets.ToolDialog):
         """Draw all contents"""
         self.header = Header(self)
         self.sidebar = SideBar(self)
-        self.body = self.draw_body()
         self.footer = Footer(self)
+        self.dashboard = Dashboard(self)
+
+        self.body = QtWidgets.QStackedLayout()
+        self.body.addWidget(self.dashboard)
 
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.header, 0, 0, 1, 2)
         layout.addWidget(self.sidebar, 1, 0, 1, 1)
-        layout.addWidget(self.body, 1, 1, 1, 1)
+        layout.addLayout(self.body, 1, 1, 1, 1)
         layout.addWidget(self.footer, 2, 0, 1, 2)
         layout.setSpacing(0)
         layout.setColumnStretch(1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-
-    def draw_body(self):
-        widget = QtWidgets.QWidget()
-        widget.setStyleSheet("background: cyan;")
-        return widget
 
     def act(self):
         """Populate dialog actions"""
