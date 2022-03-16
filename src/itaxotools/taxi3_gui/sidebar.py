@@ -21,6 +21,11 @@ from PySide6 import QtWidgets
 from PySide6 import QtGui
 
 from abc import ABC, abstractmethod
+from pathlib import Path
+
+from itaxotools.common.widgets import VectorIcon
+from itaxotools.common.resources import get_common
+
 
 class Item(ABC):
 
@@ -77,7 +82,12 @@ class Task(Item):
 
     width = 256
     height = 52
-    marginLeft = 8
+    marginLeft = 4
+    marginText = 40
+
+    def __init__(self, name, icon):
+        self.name = name
+        self.icon = icon
 
     def sizeHint(self, option, index):
         return QtCore.QSize(self.width, self.height)
@@ -90,24 +100,30 @@ class Task(Item):
         else:
             painter.fillRect(option.rect, option.palette.mid())
 
-        textRect = QtCore.QRect(option.rect)
-        textRect.adjust(self.marginLeft, 0, 0, 0)
-        painter.drawText(textRect, QtCore.Qt.AlignVCenter, self.name)
+        rect = self.textRect(option)
+        painter.drawText(rect, QtCore.Qt.AlignVCenter, self.name)
+
+        rect = self.iconRect(option)
+        mode = QtGui.QIcon.Disabled
+        if option.state & QtWidgets.QStyle.State_Selected:
+            mode = QtGui.QIcon.Normal
+        self.icon.paint(painter, rect, QtCore.Qt.AlignVCenter, mode)
+
+    def iconRect(self, option):
+        rect = QtCore.QRect(option.rect)
+        rect.adjust(self.marginLeft, 0, 0, 0)
+        return rect
+
+    def textRect(self, option):
+        rect = QtCore.QRect(option.rect)
+        rect.adjust(self.marginText, 0, 0, 0)
+        return rect
 
 
 class ItemModel(QtCore.QAbstractListModel):
-    def __init__(self):
+    def __init__(self, items):
         super().__init__()
-
-        self.items = [
-            Group('Tasks'),
-            Task('DEREP #1'),
-            Task('DEREP #2'),
-            Task('DECONT'),
-            Group('Sequences'),
-            Task('Frog Samples'),
-            Task('Finch Samples'),
-        ]
+        self.items = items
 
     def rowCount(self, parent):
         return len(self.items)
@@ -180,8 +196,21 @@ class SideBar(QtWidgets.QFrame):
             }
         """)
 
-        self.itemModel = ItemModel()
-        self.itemView = ItemView()
+        icon = VectorIcon(
+            get_common(Path('icons/svg/run.svg')),
+            self.window().colormap)
+        items = [
+            Group('Tasks'),
+            Task('DEREP #1', icon),
+            Task('DEREP #2', icon),
+            Task('DECONT', icon),
+            Group('Sequences'),
+            Task('Frog Samples', icon),
+            Task('Finch Samples', icon),
+        ]
+
+        self.itemModel = ItemModel(items)
+        self.itemView = ItemView(self)
         self.itemView.setModel(self.itemModel)
 
         layout = QtWidgets.QVBoxLayout()
