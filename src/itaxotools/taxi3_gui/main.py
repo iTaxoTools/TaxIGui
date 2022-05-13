@@ -27,6 +27,7 @@ from pathlib import Path
 from itaxotools import common
 import itaxotools.common.widgets
 import itaxotools.common.resources # noqa
+import itaxotools.common.utility # noqa
 import itaxotools.common.io # noqa
 
 from .header import Header
@@ -156,19 +157,35 @@ class Main(common.widgets.ToolDialog):
 
     def draw(self):
         """Draw all contents"""
-        self.header = Header(self)
-        self.sidebar = SideBar(self)
-        self.footer = Footer(self)
-        self.dashboard = Dashboard(self)
+        self.data = common.utility.AttrDict()
+        self.data.tasks = list()
+        self.data.sequences = list()
 
-        self.body = QtWidgets.QStackedLayout()
-        self.body.addWidget(self.dashboard)
+        # dummy entries
+        self.data.tasks = [
+            'DEREP #1',
+            'DEREP #2',
+            'DECONT',
+        ]
+        self.data.sequences = [
+            'Frog Samples',
+            'Finch Samples',
+        ]
+
+        self.widgets = common.utility.AttrDict()
+        self.widgets.header = Header(self)
+        self.widgets.sidebar = SideBar(self.data, self)
+        self.widgets.footer = Footer(self)
+        self.widgets.dashboard = Dashboard(self)
+
+        self.widgets.body = QtWidgets.QStackedLayout()
+        self.widgets.body.addWidget(self.widgets.dashboard)
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget(self.header, 0, 0, 1, 2)
-        layout.addWidget(self.sidebar, 1, 0, 1, 1)
-        layout.addLayout(self.body, 1, 1, 1, 1)
-        layout.addWidget(self.footer, 2, 0, 1, 2)
+        layout.addWidget(self.widgets.header, 0, 0, 1, 2)
+        layout.addWidget(self.widgets.sidebar, 1, 0, 1, 1)
+        layout.addLayout(self.widgets.body, 1, 1, 1, 1)
+        layout.addWidget(self.widgets.footer, 2, 0, 1, 2)
         layout.setSpacing(0)
         layout.setColumnStretch(1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -195,9 +212,9 @@ class Main(common.widgets.ToolDialog):
         self.actions['save'].setStatusTip('Save results')
         self.actions['save'].triggered.connect(self.handleSave)
 
-        self.header.toolBar.addAction(self.actions['home'])
-        self.header.toolBar.addAction(self.actions['open'])
-        self.header.toolBar.addAction(self.actions['save'])
+        self.widgets.header.toolBar.addAction(self.actions['home'])
+        self.widgets.header.toolBar.addAction(self.actions['open'])
+        self.widgets.header.toolBar.addAction(self.actions['save'])
 
     def handleHome(self):
         pass

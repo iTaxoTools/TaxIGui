@@ -28,7 +28,8 @@ class Footer(QtWidgets.QLabel):
             QLabel {
                 color: palette(Shadow);
                 background: palette(Window);
-                border: 1px solid palette(Mid);
+                border: 0px solid transparent;
+                border-top: 1px solid palette(Dark);
                 padding: 5px 10px 5px 10px;
                 }
             QLabel:disabled {

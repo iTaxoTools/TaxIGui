@@ -54,6 +54,16 @@ class Group(Item):
     marginLeft = 4
     marginBottom = 2
 
+    def __init__(self, name, data):
+        self.name = name
+        self.data = data
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __len__(self):
+        return len(self.data)
+
     def sizeHint(self, option, index):
         return QtCore.QSize(self.width, self.height)
 
@@ -124,26 +134,66 @@ class Task(Item):
             model.onIconClicked(index)
 
 
-class ItemModel(QtCore.QAbstractListModel):
+class ItemModel(QtCore.QAbstractItemModel):
+    def __init__(self, data, icon, parent=None):
+        super().__init__(parent)
+        self.icon = icon
+        self.groups = [
+            Group('Tasks', data.tasks),
+            Group('Sequences', data.sequences),
+        ]
 
-    def __init__(self, items):
-        super().__init__()
-        self.items = items
+    def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
+        if not self.hasIndex(row, column, parent):
+            return QtCore.QModelIndex()
 
-    def rowCount(self, parent):
-        return len(self.items)
+        if column != 0:
+            return QtCore.QModelIndex()
 
-    def data(self, index, role):
-        if (
-            index.row() < 0 or
-            index.row() >= len(self.items) or
-            index.column() != 0
-        ):
+        if not parent.isValid():
+            return self.createIndex(row, 0, self.groups)
+        elif parent.internalPointer() is self.groups:
+            return self.createIndex(row, 0, self.groups[parent.row()])
+        return QtCore.QModelIndex()
+
+    def parent(self, index=QtCore.QModelIndex()) -> QtCore.QModelIndex:
+        if not index.isValid():
+            return QtCore.QModelIndex()
+        ptr = index.internalPointer()
+        if ptr is self.groups:
+            return QtCore.QModelIndex()
+        try:
+            pos = self.groups.index(ptr)
+            return self.createIndex(pos, 0, self.groups)
+        except ValueError:
+            return QtCore.QModelIndex()
+        return QtCore.QModelIndex()
+
+    def rowCount(self, parent=QtCore.QModelIndex()) -> int:
+        if not parent.isValid():
+            return len(self.groups)
+        elif parent.internalPointer() is self.groups:
+            return len(self.groups[parent.row()])
+        return 0
+
+    def columnCount(self, parent=QtCore.QModelIndex()) -> int:
+        return 1
+
+    def data(self, index: QtCore.QModelIndex, role=QtCore.Qt.ItemDataRole):
+        if not index.isValid():
             return None
+
+        ptr = index.internalPointer()
+        row = index.row()
         if role == QtCore.Qt.DisplayRole:
-            return self.items[index.row()].name
+            if ptr is self.groups:
+                return self.groups[row].name
+            return str(ptr[row])
         if role == QtCore.Qt.UserRole:
-            return self.items[index.row()]
+            if ptr is self.groups:
+                return self.groups[row]
+            return Task(ptr[row], self.icon)
+
         return None
 
     def onIconClicked(self, index):
@@ -173,7 +223,7 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
         return super().event(event)
 
 
-class ItemView(QtWidgets.QListView):
+class ItemView(QtWidgets.QTreeView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setMouseTracking(True)
@@ -188,7 +238,9 @@ class ItemView(QtWidgets.QListView):
                 border: 0px solid transparent;
             }
         """)
-        self.setSpacing(2)
+        # self.setSpacing(2)
+        self.setHeaderHidden(True)
+        self.setIndentation(0)
         self.delegate = ItemDelegate()
         self.setItemDelegate(self.delegate)
 
@@ -197,32 +249,27 @@ class ItemView(QtWidgets.QListView):
         h = self.sizeHintForRow(0)
         return QtCore.QSize(w, h)
 
+    def setModel(self, model):
+        super().setModel(model)
+        self.expandAll()
+
 
 class SideBar(QtWidgets.QFrame):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.setStyleSheet("""
             SideBar {
                 border: 0px solid transparent;
-                border-right: 1px solid palette(Mid);
+                border-right: 1px solid palette(Dark);
             }
         """)
 
         icon = VectorIcon(
             get_common(Path('icons/svg/arrow-right.svg')),
             self.window().colormap)
-        items = [
-            Group('Tasks'),
-            Task('DEREP #1', icon),
-            Task('DEREP #2', icon),
-            Task('DECONT', icon),
-            Group('Sequences'),
-            Task('Frog Samples', icon),
-            Task('Finch Samples', icon),
-        ]
 
-        self.itemModel = ItemModel(items)
+        self.itemModel = ItemModel(data, icon)
         self.itemView = ItemView(self)
         self.itemView.setModel(self.itemModel)
 
