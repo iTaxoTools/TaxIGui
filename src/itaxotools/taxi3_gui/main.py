@@ -32,7 +32,7 @@ import itaxotools.common.io # noqa
 
 from .header import Header
 from .footer import Footer
-from .sidebar import SideBar
+from .sidebar import SideBar, ItemModel
 from .dashboard import Dashboard
 
 def get_icon(path):
@@ -157,24 +157,16 @@ class Main(common.widgets.ToolDialog):
 
     def draw(self):
         """Draw all contents"""
-        self.data = common.utility.AttrDict()
-        self.data.tasks = list()
-        self.data.sequences = list()
-
-        # dummy entries
-        self.data.tasks = [
-            'DEREP #1',
-            'DEREP #2',
-            'DECONT',
-        ]
-        self.data.sequences = [
-            'Frog Samples',
-            'Finch Samples',
-        ]
+        self.model = ItemModel()
+        self.model.add_task('DEREP #1')
+        self.model.add_task('DECONT #1')
+        self.model.add_task('DECONT #2')
+        self.model.add_sequence('Frog Samples')
+        self.model.add_sequence('Finch Samples')
 
         self.widgets = common.utility.AttrDict()
         self.widgets.header = Header(self)
-        self.widgets.sidebar = SideBar(self.data, self)
+        self.widgets.sidebar = SideBar(self.model, self)
         self.widgets.footer = Footer(self)
         self.widgets.dashboard = Dashboard(self)
 
