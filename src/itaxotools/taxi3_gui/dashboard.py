@@ -20,6 +20,8 @@ from PySide6 import QtCore
 from PySide6 import QtWidgets
 from PySide6 import QtGui
 
+from itaxotools.common.utility import override
+
 
 class DashItem(QtWidgets.QAbstractButton):
 
@@ -33,9 +35,11 @@ class DashItem(QtWidgets.QAbstractButton):
         self._mouseOver = False
         self.clicked.connect(lambda: print('klik', self.text()))
 
+    @override
     def sizeHint(self):
         return QtCore.QSize(200, 80)
 
+    @override
     def event(self, event):
         if isinstance(event, QtGui.QEnterEvent):
             self._mouseOver = True
@@ -48,6 +52,7 @@ class DashItem(QtWidgets.QAbstractButton):
             self.update()
         return super().event(event)
 
+    @override
     def paintEvent(self, event):
         palette = QtGui.QGuiApplication.palette()
         painter = QtGui.QPainter(self)

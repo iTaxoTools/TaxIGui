@@ -25,6 +25,7 @@ from pathlib import Path
 
 from itaxotools.common.widgets import VectorIcon
 from itaxotools.common.resources import get_common
+from itaxotools.common.utility import override
 
 
 class Item:
@@ -57,6 +58,7 @@ class ItemModel(QtCore.QAbstractItemModel):
     def add_sequence(self, sequence):
         self.sequences.add_child(sequence)
 
+    @override
     def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
@@ -75,6 +77,7 @@ class ItemModel(QtCore.QAbstractItemModel):
         childItem = parentItem.children[row]
         return self.createIndex(row, 0, childItem)
 
+    @override
     def parent(self, index=QtCore.QModelIndex()) -> QtCore.QModelIndex:
         if not index.isValid():
             return QtCore.QModelIndex()
@@ -84,6 +87,7 @@ class ItemModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
         return self.createIndex(item.parent.row, 0, item.parent)
 
+    @override
     def rowCount(self, parent=QtCore.QModelIndex()) -> int:
         if not parent.isValid():
             return len(self.root.children)
@@ -91,9 +95,11 @@ class ItemModel(QtCore.QAbstractItemModel):
         parentItem = parent.internalPointer()
         return len(parentItem.children)
 
+    @override
     def columnCount(self, parent=QtCore.QModelIndex()) -> int:
         return 1
 
+    @override
     def data(self, index: QtCore.QModelIndex, role: QtCore.Qt.ItemDataRole):
         if not index.isValid():
             return None
@@ -220,10 +226,12 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
             return GroupView(item)
         return EntryView(item, icon=self.icon)
 
+    @override
     def sizeHint(self, option, index):
         view = self.indexView(index)
         return view.sizeHint(option, index)
 
+    @override
     def paint(self, painter, option, index):
         self.initStyleOption(option, index)
         painter.save()
@@ -231,6 +239,7 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
         view.paint(painter, option, index)
         painter.restore()
 
+    @override
     def editorEvent(self, event, model, option, index):
         if not (
             event.type() == QtCore.QEvent.MouseButtonRelease and
@@ -264,11 +273,13 @@ class ItemTreeView(QtWidgets.QTreeView):
         self.delegate = ItemDelegate(self)
         self.setItemDelegate(self.delegate)
 
+    @override
     def sizeHint(self):
         w = self.sizeHintForColumn(0)
         h = self.sizeHintForRow(0)
         return QtCore.QSize(w, h)
 
+    @override
     def setModel(self, model):
         super().setModel(model)
         self.expandAll()
