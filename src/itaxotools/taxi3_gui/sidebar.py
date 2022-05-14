@@ -52,11 +52,18 @@ class ItemModel(QtCore.QAbstractItemModel):
         self.tasks = self.root.add_child('Tasks')
         self.sequences = self.root.add_child('Sequences')
 
+    def _add_entry(self, group, child):
+        parent = self.createIndex(group.row, 0, group)
+        position = len(group.children)
+        self.beginInsertRows(parent, position, position)
+        group.add_child(child)
+        self.endInsertRows()
+
     def add_task(self, task):
-        self.tasks.add_child(task)
+        self._add_entry(self.tasks, task)
 
     def add_sequence(self, sequence):
-        self.sequences.add_child(sequence)
+        self._add_entry(self.sequences, sequence)
 
     @override
     def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:

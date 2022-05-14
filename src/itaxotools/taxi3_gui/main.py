@@ -212,7 +212,10 @@ class Main(common.widgets.ToolDialog):
         pass
 
     def handleOpen(self):
-        pass
+        filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, self.title)
+        for filename in filenames:
+            path = Path(filename)
+            self.model.add_sequence(path.stem)
 
     def handleSave(self):
         pass
