@@ -27,7 +27,7 @@ from itaxotools.common.widgets import VectorIcon
 from itaxotools.common.resources import get_common
 from itaxotools.common.utility import override
 
-from .model import Group
+from .model import Object, Group
 
 
 class Item:
@@ -265,6 +265,8 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class ItemTreeView(QtWidgets.QTreeView):
+    selected = QtCore.Signal(Object)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setMouseTracking(True)
@@ -287,6 +289,16 @@ class ItemTreeView(QtWidgets.QTreeView):
         self.setItemDelegate(self.delegate)
 
     @override
+    def selectionChanged(self, selected, deselected):
+        super().selectionChanged(selected, deselected)
+        indexes = selected.indexes()
+        if not indexes:
+            return
+        index = indexes[0]
+        item = self.model().data(index, ItemModel.DataRole)
+        self.selected.emit(item.data)
+
+    @override
     def sizeHint(self):
         w = self.sizeHintForColumn(0)
         h = self.sizeHintForRow(0)
@@ -299,6 +311,8 @@ class ItemTreeView(QtWidgets.QTreeView):
 
 
 class SideBar(QtWidgets.QFrame):
+    selected = QtCore.Signal(Object)
+
     def __init__(self, model=None, parent=None):
         super().__init__(parent)
 
@@ -312,6 +326,7 @@ class SideBar(QtWidgets.QFrame):
         self.model = model or ItemModel()
         self.view = ItemTreeView(self)
         self.view.setModel(self.model)
+        self.view.selected.connect(self.selected)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.view)

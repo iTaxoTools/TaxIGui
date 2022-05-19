@@ -31,6 +31,7 @@ import itaxotools.common.utility # noqa
 import itaxotools.common.io # noqa
 
 from .header import Header
+from .body import Body
 from .footer import Footer
 from .sidebar import SideBar, ItemModel
 from .dashboard import Dashboard
@@ -169,15 +170,14 @@ class Main(common.widgets.ToolDialog):
         self.widgets.header = Header(self)
         self.widgets.sidebar = SideBar(self.model, self)
         self.widgets.footer = Footer(self)
-        self.widgets.dashboard = Dashboard(self)
+        self.widgets.body = Body()
 
-        self.widgets.body = QtWidgets.QStackedLayout()
-        self.widgets.body.addWidget(self.widgets.dashboard)
+        self.widgets.sidebar.selected.connect(self.widgets.body.show)
 
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.widgets.header, 0, 0, 1, 2)
         layout.addWidget(self.widgets.sidebar, 1, 0, 1, 1)
-        layout.addLayout(self.widgets.body, 1, 1, 1, 1)
+        layout.addWidget(self.widgets.body, 1, 1, 1, 1)
         layout.addWidget(self.widgets.footer, 2, 0, 1, 2)
         layout.setSpacing(0)
         layout.setColumnStretch(1, 1)
@@ -210,7 +210,7 @@ class Main(common.widgets.ToolDialog):
         self.widgets.header.toolBar.addAction(self.actions['save'])
 
     def handleHome(self):
-        pass
+        self.widgets.body.showDashboard()
 
     def handleOpen(self):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, self.title)
