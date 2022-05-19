@@ -27,17 +27,19 @@ from itaxotools.common.widgets import VectorIcon
 from itaxotools.common.resources import get_common
 from itaxotools.common.utility import override
 
+from .model import Group
+
 
 class Item:
-    def __init__(self, name, parent=None, row=0):
+    def __init__(self, data, parent=None, row=0):
         self.children = list()
         self.parent = parent
-        self.name = name
+        self.data = data
         self.row = row
 
-    def add_child(self, name):
+    def add_child(self, data):
         row = len(self.children)
-        child = Item(name, self, row)
+        child = Item(data, self, row)
         self.children.append(child)
         return child
 
@@ -49,14 +51,18 @@ class ItemModel(QtCore.QAbstractItemModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.root = Item('')
-        self.tasks = self.root.add_child('Tasks')
-        self.sequences = self.root.add_child('Sequences')
+        self.tasks = self.root.add_child(Group('Tasks'))
+        self.sequences = self.root.add_child(Group('Sequences'))
 
     def _add_entry(self, group, child):
         parent = self.createIndex(group.row, 0, group)
-        position = len(group.children)
-        self.beginInsertRows(parent, position, position)
-        group.add_child(child)
+        row = len(group.children)
+        self.beginInsertRows(parent, row, row)
+        item = group.add_child(child)
+        def entryChanged():
+            index = self.index(row, 0, parent)
+            self.dataChanged.emit(index, index)
+        child.changed.connect(entryChanged)
         self.endInsertRows()
 
     def add_task(self, task):
@@ -113,7 +119,7 @@ class ItemModel(QtCore.QAbstractItemModel):
 
         item = index.internalPointer()
         if role == QtCore.Qt.DisplayRole:
-            return item.name
+            return item.data.name
         if role == self.DataRole:
             return item
         return None
@@ -155,7 +161,7 @@ class GroupView(ItemView):
         font = painter.font()
         font.setPixelSize(16)
         painter.setFont(font)
-        painter.drawText(textRect, QtCore.Qt.AlignBottom, self.item.name)
+        painter.drawText(textRect, QtCore.Qt.AlignBottom, self.item.data.name)
 
         line = QtCore.QLine(
             option.rect.left(),
@@ -191,7 +197,7 @@ class EntryView(ItemView):
             painter.fillRect(option.rect, option.palette.mid())
 
         rect = self.textRect(option)
-        painter.drawText(rect, QtCore.Qt.AlignVCenter, self.item.name)
+        painter.drawText(rect, QtCore.Qt.AlignVCenter, self.item.data.name)
 
         rect = self.iconRect(option)
         mode = QtGui.QIcon.Disabled

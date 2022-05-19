@@ -34,6 +34,7 @@ from .header import Header
 from .footer import Footer
 from .sidebar import SideBar, ItemModel
 from .dashboard import Dashboard
+from .model import Task, Sequence
 
 def get_icon(path):
     return common.resources.get_common(Path('icons/svg') / path)
@@ -158,11 +159,11 @@ class Main(common.widgets.ToolDialog):
     def draw(self):
         """Draw all contents"""
         self.model = ItemModel()
-        self.model.add_task('DEREP #1')
-        self.model.add_task('DECONT #1')
-        self.model.add_task('DECONT #2')
-        self.model.add_sequence('Frog Samples')
-        self.model.add_sequence('Finch Samples')
+        self.model.add_task(Task('DEREP #1'))
+        self.model.add_task(Task('DECONT #1'))
+        self.model.add_task(Task('DECONT #2'))
+        self.model.add_sequence(Sequence('Frog Samples'))
+        self.model.add_sequence(Sequence('Finch Samples'))
 
         self.widgets = common.utility.AttrDict()
         self.widgets.header = Header(self)
@@ -215,7 +216,7 @@ class Main(common.widgets.ToolDialog):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, self.title)
         for filename in filenames:
             path = Path(filename)
-            self.model.add_sequence(path.stem)
+            self.model.add_sequence(Sequence(path.stem))
 
     def handleSave(self):
         pass
