@@ -18,7 +18,6 @@
 
 """Main dialog window"""
 
-from PySide6 import QtCore
 from PySide6 import QtWidgets
 from PySide6 import QtGui
 
@@ -33,9 +32,9 @@ import itaxotools.common.io # noqa
 from .header import Header
 from .body import Body
 from .footer import Footer
-from .sidebar import SideBar, ItemModel
-from .dashboard import Dashboard
-from .model import Task, Sequence
+from .sidebar import SideBar
+from .model import Task, Sequence, ItemModel
+
 
 def get_icon(path):
     return common.resources.get_common(Path('icons/svg') / path)
@@ -132,8 +131,8 @@ class Main(common.widgets.ToolDialog):
         scheme[QtGui.QPalette.Inactive] = scheme[QtGui.QPalette.Active]
         for group in scheme:
             for role in scheme[group]:
-                palette.setColor(group, role,
-                    QtGui.QColor(color[scheme[group][role]]))
+                palette.setColor(
+                    group, role, QtGui.QColor(color[scheme[group][role]]))
         QtGui.QGuiApplication.setPalette(palette)
 
         self.colormap = {
@@ -171,7 +170,7 @@ class Main(common.widgets.ToolDialog):
         self.widgets = common.utility.AttrDict()
         self.widgets.header = Header(self)
         self.widgets.sidebar = SideBar(self.model, self)
-        self.widgets.body = Body(self.model, self)
+        self.widgets.body = Body(self)
         self.widgets.footer = Footer(self)
 
         self.widgets.sidebar.selected.connect(self.widgets.body.showItem)

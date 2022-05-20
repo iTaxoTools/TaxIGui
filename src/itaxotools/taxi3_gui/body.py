@@ -30,7 +30,7 @@ class ObjectView(QtWidgets.QFrame):
         super().__init__(*args, **kwargs)
         self.object = None
 
-    def setObject(self, object):
+    def setObject(self, object: Object):
         self.object = object
         self.updateView()
 
@@ -113,9 +113,8 @@ class SequenceView(ObjectView):
 
 class Body(QtWidgets.QStackedWidget):
 
-    def __init__(self, model, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.itemModel = model
         self.activeItem = None
         self.activeIndex = None
         self.views = dict()
@@ -137,16 +136,18 @@ class Body(QtWidgets.QStackedWidget):
         if not item or not index.isValid():
             self.showDashboard()
             return False
-        object = item.data
+        object = item.object
         view = self.views.get(type(object))
         if not view:
+            self.showDashboard()
             return False
         view.setObject(object)
         self.setCurrentWidget(view)
         return True
 
     def removeActiveItem(self):
-        self.itemModel.remove_index(self.activeIndex)
+        model = self.activeIndex.model()
+        model.remove_index(self.activeIndex)
 
     def showDashboard(self):
         self.setCurrentWidget(self.dashboard)

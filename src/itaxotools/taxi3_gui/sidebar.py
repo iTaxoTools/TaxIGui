@@ -27,114 +27,7 @@ from itaxotools.common.widgets import VectorIcon
 from itaxotools.common.resources import get_common
 from itaxotools.common.utility import override
 
-from .model import Object, Group
-
-
-class Item:
-    def __init__(self, data, parent=None):
-        self.children = list()
-        self.parent = parent
-        self.data = data
-
-    def add_child(self, data):
-        child = Item(data, self)
-        self.children.append(child)
-        return child
-
-    @property
-    def row(self):
-        if self.parent:
-            return self.parent.children.index(self)
-        return 0
-
-
-class ItemModel(QtCore.QAbstractItemModel):
-
-    DataRole = QtCore.Qt.UserRole
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.root = Item('')
-        self.tasks = self.root.add_child(Group('Tasks'))
-        self.sequences = self.root.add_child(Group('Sequences'))
-
-    def _add_entry(self, group, child):
-        parent = self.createIndex(group.row, 0, group)
-        row = len(group.children)
-        self.beginInsertRows(parent, row, row)
-        item = group.add_child(child)
-        def entryChanged():
-            index = self.index(row, 0, parent)
-            self.dataChanged.emit(index, index)
-        child.changed.connect(entryChanged)
-        self.endInsertRows()
-
-    def add_task(self, task):
-        self._add_entry(self.tasks, task)
-
-    def add_sequence(self, sequence):
-        self._add_entry(self.sequences, sequence)
-
-    def remove_index(self, index):
-        parent = index.parent()
-        parentItem = parent.internalPointer()
-        row = index.row()
-        self.beginRemoveRows(parent, row, row)
-        parentItem.children.pop(row)
-        self.endRemoveRows()
-
-    @override
-    def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
-        if not self.hasIndex(row, column, parent):
-            return QtCore.QModelIndex()
-
-        if column != 0:
-            return QtCore.QModelIndex()
-
-        if parent.isValid():
-            parentItem = parent.internalPointer()
-        else:
-            parentItem = self.root
-
-        if row >= len(parentItem.children):
-            return QtCore.QModelIndex()
-
-        childItem = parentItem.children[row]
-        return self.createIndex(row, 0, childItem)
-
-    @override
-    def parent(self, index=QtCore.QModelIndex()) -> QtCore.QModelIndex:
-        if not index.isValid():
-            return QtCore.QModelIndex()
-
-        item = index.internalPointer()
-        if item is self.root or item.parent is None:
-            return QtCore.QModelIndex()
-        return self.createIndex(item.parent.row, 0, item.parent)
-
-    @override
-    def rowCount(self, parent=QtCore.QModelIndex()) -> int:
-        if not parent.isValid():
-            return len(self.root.children)
-
-        parentItem = parent.internalPointer()
-        return len(parentItem.children)
-
-    @override
-    def columnCount(self, parent=QtCore.QModelIndex()) -> int:
-        return 1
-
-    @override
-    def data(self, index: QtCore.QModelIndex, role: QtCore.Qt.ItemDataRole):
-        if not index.isValid():
-            return None
-
-        item = index.internalPointer()
-        if role == QtCore.Qt.DisplayRole:
-            return item.data.name
-        if role == self.DataRole:
-            return item
-        return None
+from .model import Item, Group, ItemModel
 
 
 class ItemView(ABC):
@@ -173,7 +66,7 @@ class GroupView(ItemView):
         font = painter.font()
         font.setPixelSize(16)
         painter.setFont(font)
-        painter.drawText(textRect, QtCore.Qt.AlignBottom, self.item.data.name)
+        painter.drawText(textRect, QtCore.Qt.AlignBottom, self.item.object.name)
 
         line = QtCore.QLine(
             option.rect.left(),
@@ -209,7 +102,7 @@ class EntryView(ItemView):
             painter.fillRect(option.rect, option.palette.mid())
 
         rect = self.textRect(option)
-        painter.drawText(rect, QtCore.Qt.AlignVCenter, self.item.data.name)
+        painter.drawText(rect, QtCore.Qt.AlignVCenter, self.item.object.name)
 
         rect = self.iconRect(option)
         mode = QtGui.QIcon.Disabled
@@ -232,7 +125,7 @@ class EntryView(ItemView):
     def mouseEvent(self, event, model, option, index):
         rect = self.iconRect(option)
         if rect.contains(event.pos()):
-            name = model.data(index, QtCore.Qt.DisplayRole)
+            name = index.data(QtCore.Qt.DisplayRole)
             print('clicked on', name)
 
 
@@ -246,8 +139,8 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
             self.parent().window().colormap)
 
     def indexView(self, index):
-        item = index.data(ItemModel.DataRole)
-        if item.children:
+        item = index.data(ItemModel.ItemRole)
+        if isinstance(item.object, Group):
             return GroupView(item)
         return EntryView(item, icon=self.icon)
 
@@ -281,6 +174,7 @@ class ItemTreeView(QtWidgets.QTreeView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setExpandsOnDoubleClick(False)
         self.setMouseTracking(True)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         # self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
@@ -302,7 +196,7 @@ class ItemTreeView(QtWidgets.QTreeView):
 
     @override
     def currentChanged(self, current, previous):
-        item = self.model().data(current, ItemModel.DataRole)
+        item = current.data(ItemModel.ItemRole)
         self.selected.emit(item, current)
 
     @override
