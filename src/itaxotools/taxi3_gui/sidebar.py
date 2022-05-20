@@ -31,17 +31,21 @@ from .model import Object, Group
 
 
 class Item:
-    def __init__(self, data, parent=None, row=0):
+    def __init__(self, data, parent=None):
         self.children = list()
         self.parent = parent
         self.data = data
-        self.row = row
 
     def add_child(self, data):
-        row = len(self.children)
-        child = Item(data, self, row)
+        child = Item(data, self)
         self.children.append(child)
         return child
+
+    @property
+    def row(self):
+        if self.parent:
+            return self.parent.children.index(self)
+        return 0
 
 
 class ItemModel(QtCore.QAbstractItemModel):
@@ -70,6 +74,14 @@ class ItemModel(QtCore.QAbstractItemModel):
 
     def add_sequence(self, sequence):
         self._add_entry(self.sequences, sequence)
+
+    def remove_index(self, index):
+        parent = index.parent()
+        parentItem = parent.internalPointer()
+        row = index.row()
+        self.beginRemoveRows(parent, row, row)
+        parentItem.children.pop(row)
+        self.endRemoveRows()
 
     @override
     def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
@@ -265,7 +277,7 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class ItemTreeView(QtWidgets.QTreeView):
-    selected = QtCore.Signal(Object)
+    selected = QtCore.Signal(Item, QtCore.QModelIndex)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -289,14 +301,9 @@ class ItemTreeView(QtWidgets.QTreeView):
         self.setItemDelegate(self.delegate)
 
     @override
-    def selectionChanged(self, selected, deselected):
-        super().selectionChanged(selected, deselected)
-        indexes = selected.indexes()
-        if not indexes:
-            return
-        index = indexes[0]
-        item = self.model().data(index, ItemModel.DataRole)
-        self.selected.emit(item.data)
+    def currentChanged(self, current, previous):
+        item = self.model().data(current, ItemModel.DataRole)
+        self.selected.emit(item, current)
 
     @override
     def sizeHint(self):
@@ -311,7 +318,7 @@ class ItemTreeView(QtWidgets.QTreeView):
 
 
 class SideBar(QtWidgets.QFrame):
-    selected = QtCore.Signal(Object)
+    selected = QtCore.Signal(Item, QtCore.QModelIndex)
 
     def __init__(self, model=None, parent=None):
         super().__init__(parent)

@@ -20,6 +20,7 @@ from PySide6 import QtCore
 from PySide6 import QtWidgets
 
 from .model import Object, Task, Sequence
+from .sidebar import Item
 from .dashboard import Dashboard
 
 
@@ -28,10 +29,13 @@ class ObjectView(QtWidgets.QFrame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.object = None
-        self.setStyleSheet("""background: red;""")
 
     def setObject(self, object):
         self.object = object
+        self.updateView()
+
+    def updateView(self):
+        pass
 
 
 class TaskView(ObjectView):
@@ -41,22 +45,83 @@ class TaskView(ObjectView):
         self.setStyleSheet("""background: green;""")
 
 
-
 class SequenceView(ObjectView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setStyleSheet("""background: blue;""")
+        self.setStyleSheet("""background: Palette(Dark);""")
+        self.draw()
 
+    def draw(self):
+        self.draw_main_card()
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.frame)
+        layout.addStretch(1)
+        layout.setSpacing(8)
+        layout.setContentsMargins(8, 8, 8, 8)
+        self.setLayout(layout)
+
+    def draw_main_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""background: Palette(Midlight);""")
+        label = QtWidgets.QLabel('')
+        self.draw_buttons()
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(label, 1)
+        layout.addLayout(self.buttons, 0)
+        frame.setLayout(layout)
+        self.frame = frame
+        self.label = label
+
+    def draw_buttons(self):
+        open = QtWidgets.QPushButton('Open')
+        inspect = QtWidgets.QPushButton('Inspect')
+        remove = QtWidgets.QPushButton('Remove')
+
+        open.clicked.connect(self.handleOpen)
+        inspect.clicked.connect(self.handleInspect)
+        remove.clicked.connect(self.handleRemove)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(open)
+        layout.addWidget(inspect)
+        layout.addWidget(remove)
+        self.buttons = layout
+
+    def setObject(self, object):
+        if self.object:
+            self.object.changed.disconnect(self.updateView)
+        self.object = object
+        self.object.changed.connect(self.updateView)
+        self.updateView()
+
+    def updateView(self):
+        if not self.object:
+            return
+        self.label.setText(self.object.name)
+
+    def handleOpen(self):
+        print('open', self.object.name)
+
+    def handleInspect(self):
+        print('inspect', self.object.name)
+
+    def handleRemove(self):
+        print('remove', self.object.name)
+        self.parent().removeActiveItem()
 
 
 class Body(QtWidgets.QStackedWidget):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.itemModel = model
+        self.activeItem = None
+        self.activeIndex = None
+        self.views = dict()
+
         self.dashboard = Dashboard(self)
         self.addWidget(self.dashboard)
-        self.views = dict()
 
         self.addView(Task, TaskView)
         self.addView(Sequence, SequenceView)
@@ -66,13 +131,22 @@ class Body(QtWidgets.QStackedWidget):
         self.views[object_type] = view
         self.addWidget(view)
 
-    def show(self, object: Object):
+    def showItem(self, item: Item, index: QtCore.QModelIndex):
+        self.activeItem = item
+        self.activeIndex = index
+        if not item or not index.isValid():
+            self.showDashboard()
+            return False
+        object = item.data
         view = self.views.get(type(object))
         if not view:
             return False
         view.setObject(object)
         self.setCurrentWidget(view)
         return True
+
+    def removeActiveItem(self):
+        self.itemModel.remove_index(self.activeIndex)
 
     def showDashboard(self):
         self.setCurrentWidget(self.dashboard)
