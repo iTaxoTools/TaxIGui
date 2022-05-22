@@ -117,6 +117,7 @@ class Item:
 class ItemModel(QtCore.QAbstractItemModel):
     """The main model that holds all Items"""
 
+    addedEntry = QtCore.Signal(QtCore.QModelIndex)
     ItemRole = QtCore.Qt.UserRole
 
     def __init__(self, parent=None):
@@ -137,6 +138,8 @@ class ItemModel(QtCore.QAbstractItemModel):
 
         child.changed.connect(entryChanged)
         self.endInsertRows()
+        index = self.index(row, 0, parent)
+        self.addedEntry.emit(index)
 
     def add_task(self, task):
         self._add_entry(self.tasks, task)

@@ -22,10 +22,12 @@ from PySide6 import QtGui
 
 from itaxotools.common.utility import override
 
+from .model import Task
+
 
 class DashItem(QtWidgets.QAbstractButton):
 
-    def __init__(self, text, parent=None):
+    def __init__(self, text, slot, parent=None):
         super().__init__(parent)
         self.setText(text)
         self.setMouseTracking(True)
@@ -33,7 +35,7 @@ class DashItem(QtWidgets.QAbstractButton):
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
         self._mouseOver = False
-        self.clicked.connect(lambda: print('klik', self.text()))
+        self.clicked.connect(slot)
 
     @override
     def sizeHint(self):
@@ -69,8 +71,9 @@ class DashItem(QtWidgets.QAbstractButton):
 
 class Dashboard(QtWidgets.QFrame):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.model = model
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
@@ -81,13 +84,25 @@ class Dashboard(QtWidgets.QFrame):
             """)
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget(DashItem('Dereplicate', self), 0, 0)
-        layout.addWidget(DashItem('Decontaminate', self), 0, 1)
-        layout.addWidget(DashItem('Versus All', self), 1, 0)
-        layout.addWidget(DashItem('Versus Reference', self), 1, 1)
+        layout.addWidget(DashItem('Dereplicate', self.handleDereplicate, self), 0, 0)
+        layout.addWidget(DashItem('Decontaminate', self.handleDecontaminate, self), 0, 1)
+        layout.addWidget(DashItem('Versus All', self.handleVersusAll, self), 1, 0)
+        layout.addWidget(DashItem('Versus Reference', self.handleVersusReference, self), 1, 1)
         layout.setSpacing(4)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
         layout.setRowStretch(5, 1)
         layout.setContentsMargins(4, 4, 4, 4)
         self.setLayout(layout)
+
+    def handleDereplicate(self):
+        self.model.add_task(Task('DEREP'))
+
+    def handleDecontaminate(self):
+        self.model.add_task(Task('DECONT'))
+
+    def handleVersusAll(self):
+        self.model.add_task(Task('VALL'))
+
+    def handleVersusReference(self):
+        self.model.add_task(Task('VREF'))

@@ -42,7 +42,7 @@ class TaskView(ObjectView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setStyleSheet("""background: green;""")
+        self.setStyleSheet("""background: Palette(Shadow);""")
 
 
 class SequenceView(ObjectView):
@@ -113,13 +113,14 @@ class SequenceView(ObjectView):
 
 class Body(QtWidgets.QStackedWidget):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.model = model
         self.activeItem = None
         self.activeIndex = None
         self.views = dict()
 
-        self.dashboard = Dashboard(self)
+        self.dashboard = Dashboard(self.model, self)
         self.addWidget(self.dashboard)
 
         self.addView(Task, TaskView)
@@ -146,8 +147,7 @@ class Body(QtWidgets.QStackedWidget):
         return True
 
     def removeActiveItem(self):
-        model = self.activeIndex.model()
-        model.remove_index(self.activeIndex)
+        self.model.remove_index(self.activeIndex)
 
     def showDashboard(self):
         self.setCurrentWidget(self.dashboard)

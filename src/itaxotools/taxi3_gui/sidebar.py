@@ -208,7 +208,11 @@ class ItemTreeView(QtWidgets.QTreeView):
     @override
     def setModel(self, model):
         super().setModel(model)
+        model.addedEntry.connect(self.addedEntry)
         self.expandAll()
+
+    def addedEntry(self, index):
+        self.setCurrentIndex(index)
 
 
 class SideBar(QtWidgets.QFrame):

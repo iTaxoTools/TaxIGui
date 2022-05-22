@@ -158,19 +158,12 @@ class Main(common.widgets.ToolDialog):
 
     def draw(self):
         """Draw all contents"""
-        self._test_sequence = Sequence('Unchanged')
         self.model = ItemModel()
-        self.model.add_task(Task('DEREP #1'))
-        self.model.add_task(Task('DECONT #1'))
-        self.model.add_task(Task('DECONT #2'))
-        self.model.add_sequence(Sequence('Frog Samples'))
-        self.model.add_sequence(Sequence('Finch Samples'))
-        self.model.add_sequence(self._test_sequence)
 
         self.widgets = common.utility.AttrDict()
         self.widgets.header = Header(self)
         self.widgets.sidebar = SideBar(self.model, self)
-        self.widgets.body = Body(self)
+        self.widgets.body = Body(self.model, self)
         self.widgets.footer = Footer(self)
 
         self.widgets.sidebar.selected.connect(self.widgets.body.showItem)
@@ -220,5 +213,4 @@ class Main(common.widgets.ToolDialog):
             self.model.add_sequence(Sequence(path.stem))
 
     def handleSave(self):
-        self._test_sequence.name = 'Modified'
         pass
