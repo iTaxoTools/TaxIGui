@@ -33,7 +33,7 @@ from .header import Header
 from .body import Body
 from .footer import Footer
 from .sidebar import SideBar
-from .model import Task, Sequence, ItemModel
+from .model import Task, Sequence, BulkSequences, ItemModel
 
 
 def get_icon(path):
@@ -208,9 +208,12 @@ class Main(common.widgets.ToolDialog):
 
     def handleOpen(self):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, self.title)
-        for filename in filenames:
-            path = Path(filename)
-            self.model.add_sequence(Sequence(path.stem))
+        if len(filenames) == 1:
+            path = Path(filenames[0])
+            self.model.add_sequence(Sequence(path))
+        else:
+            paths = [Path(filename) for filename in filenames]
+            self.model.add_sequence(BulkSequences(paths))
 
     def handleSave(self):
         pass

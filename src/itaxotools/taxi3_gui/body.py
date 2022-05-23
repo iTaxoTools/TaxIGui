@@ -19,7 +19,9 @@
 from PySide6 import QtCore
 from PySide6 import QtWidgets
 
-from .model import Object, Task, Sequence
+from pathlib import Path
+
+from .model import Object, Task, Sequence, BulkSequences
 from .sidebar import Item
 from .dashboard import Dashboard
 
@@ -111,6 +113,89 @@ class SequenceView(ObjectView):
         self.parent().removeActiveItem()
 
 
+class BulkSequencesView(ObjectView):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setStyleSheet("""background: Palette(Dark);""")
+        self.draw()
+
+    def draw(self):
+        self.draw_main_card()
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.frame)
+        layout.addStretch(1)
+        layout.setSpacing(8)
+        layout.setContentsMargins(8, 8, 8, 8)
+        self.setLayout(layout)
+
+    def draw_main_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""background: Palette(Midlight);""")
+        self.draw_contents()
+        self.draw_buttons()
+        layout = QtWidgets.QHBoxLayout()
+        layout.addLayout(self.contents, 1)
+        layout.addLayout(self.buttons, 0)
+        frame.setLayout(layout)
+        self.frame = frame
+
+    def draw_contents(self):
+        self.label = QtWidgets.QLabel('')
+        self.sequenceListView = QtWidgets.QListView(self)
+        self.sequenceListView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.label)
+        layout.addWidget(self.sequenceListView)
+
+        self.contents = layout
+
+    def draw_buttons(self):
+        open = QtWidgets.QPushButton('Open')
+        add = QtWidgets.QPushButton('Add')
+        remove = QtWidgets.QPushButton('Remove')
+
+        open.clicked.connect(self.handleOpen)
+        add.clicked.connect(self.handleAdd)
+        remove.clicked.connect(self.handleRemove)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(open)
+        layout.addWidget(add)
+        layout.addWidget(remove)
+        layout.addStretch(1)
+        self.buttons = layout
+
+    def setObject(self, object):
+        if self.object:
+            self.object.changed.disconnect(self.updateView)
+        self.object = object
+        self.object.changed.connect(self.updateView)
+        self.sequenceListView.setModel(self.object.sequenceModel)
+        self.updateView()
+
+    def updateView(self):
+        if not self.object:
+            return
+        self.label.setText(self.object.name)
+
+    def handleOpen(self):
+        print('open', self.object, self.object.sequences)
+
+    def handleAdd(self):
+        filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self.window(), self.window().title)
+        paths = [Path(filename) for filename in filenames]
+        sequences = [Sequence(path) for path in paths]
+        self.object.sequenceModel.add_sequences(sequences)
+
+    def handleRemove(self):
+        indexes = self.sequenceListView.selectedIndexes()
+        self.object.sequenceModel.remove_sequences(indexes)
+        if not self.object.sequences:
+            self.parent().removeActiveItem()
+
+
 class Body(QtWidgets.QStackedWidget):
 
     def __init__(self, model, *args, **kwargs):
@@ -125,6 +210,7 @@ class Body(QtWidgets.QStackedWidget):
 
         self.addView(Task, TaskView)
         self.addView(Sequence, SequenceView)
+        self.addView(BulkSequences, BulkSequencesView)
 
     def addView(self, object_type, view_type):
         view = view_type(self)
