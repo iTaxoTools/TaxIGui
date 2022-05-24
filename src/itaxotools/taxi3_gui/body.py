@@ -18,6 +18,7 @@
 
 from PySide6 import QtCore
 from PySide6 import QtWidgets
+from PySide6 import QtGui
 
 from pathlib import Path
 
@@ -32,6 +33,7 @@ class ObjectView(QtWidgets.QFrame):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setStyleSheet("""ObjectView{background: Palette(Dark);}""")
         self.object = None
 
     def setObject(self, object: Object):
@@ -46,14 +48,13 @@ class TaskView(ObjectView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setStyleSheet("""background: Palette(Shadow);""")
+        self.setStyleSheet("""TaskView{background: Palette(Shadow);}""")
 
 
 class SequenceView(ObjectView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setStyleSheet("""background: Palette(Dark);""")
         self.draw()
 
     def draw(self):
@@ -67,7 +68,7 @@ class SequenceView(ObjectView):
 
     def draw_main_card(self):
         frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""background: Palette(Midlight);""")
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
         label = QtWidgets.QLabel('')
         self.draw_buttons()
         layout = QtWidgets.QHBoxLayout()
@@ -119,7 +120,6 @@ class BulkSequencesView(ObjectView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setStyleSheet("""background: Palette(Dark);""")
         self.draw()
 
     def draw(self):
@@ -133,7 +133,7 @@ class BulkSequencesView(ObjectView):
 
     def draw_main_card(self):
         frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""background: Palette(Midlight);""")
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
         self.draw_contents()
         self.draw_buttons()
         layout = QtWidgets.QHBoxLayout()
@@ -146,6 +146,9 @@ class BulkSequencesView(ObjectView):
         self.label = QtWidgets.QLabel('')
         self.sequenceListView = QtWidgets.QListView(self)
         self.sequenceListView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.sequenceListView.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Minimum)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.label)
@@ -202,7 +205,6 @@ class DereplicateView(ObjectView):
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            self.setStyleSheet("""DereplicateView{background: Palette(Dark);}""")
             self.draw()
 
         def draw(self):
@@ -324,13 +326,17 @@ class DereplicateView(ObjectView):
             frame = QtWidgets.QFrame(self)
             frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
-            label = QtWidgets.QCheckBox('Length Threshold')
+            label = QtWidgets.QLabel('Length Threshold')
             label.setStyleSheet("""font-size: 16px;""")
 
             threshold = QtWidgets.QLineEdit('0')
             threshold.setFixedWidth(80)
 
-            description = QtWidgets.QLabel('Sequences with length below this threshold will be ignored (optional).')
+            validator = QtGui.QIntValidator(threshold)
+            validator.setBottom(0)
+            threshold.setValidator(validator)
+
+            description = QtWidgets.QLabel('Sequences with length below this threshold will be ignored.')
             description.setWordWrap(True)
 
             layout = QtWidgets.QGridLayout()
@@ -343,6 +349,14 @@ class DereplicateView(ObjectView):
             return frame
 
 
+class ScrollArea(QtWidgets.QScrollArea):
+
+    def __init__(self, widget, parent=None):
+        super().__init__(parent)
+        self.setWidgetResizable(True)
+        self.setWidget(widget)
+
+
 class Body(QtWidgets.QStackedWidget):
 
     def __init__(self, model, *args, **kwargs):
@@ -350,7 +364,7 @@ class Body(QtWidgets.QStackedWidget):
         self.model = model
         self.activeItem = None
         self.activeIndex = None
-        self.views = dict()
+        self.areas = dict()
 
         self.dashboard = Dashboard(self.model, self)
         self.addWidget(self.dashboard)
@@ -362,8 +376,9 @@ class Body(QtWidgets.QStackedWidget):
 
     def addView(self, object_type, view_type):
         view = view_type(self)
-        self.views[object_type] = view
-        self.addWidget(view)
+        area = ScrollArea(view, self)
+        self.areas[object_type] = area
+        self.addWidget(area)
 
     def showItem(self, item: Item, index: QtCore.QModelIndex):
         self.activeItem = item
@@ -372,12 +387,14 @@ class Body(QtWidgets.QStackedWidget):
             self.showDashboard()
             return False
         object = item.object
-        view = self.views.get(type(object))
-        if not view:
+        area = self.areas.get(type(object))
+        if not area:
             self.showDashboard()
             return False
+        view = area.widget()
         view.setObject(object)
-        self.setCurrentWidget(view)
+        self.setCurrentWidget(area)
+        area.ensureVisible(0, 0)
         return True
 
     def removeActiveItem(self):
