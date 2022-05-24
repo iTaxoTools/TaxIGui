@@ -208,6 +208,8 @@ class Main(common.widgets.ToolDialog):
 
     def handleOpen(self):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, self.title)
+        if not filenames:
+            return
         if len(filenames) == 1:
             path = Path(filenames[0])
             self.model.add_sequence(Sequence(path))

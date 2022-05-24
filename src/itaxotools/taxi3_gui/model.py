@@ -20,6 +20,7 @@ from PySide6 import QtCore
 
 from typing import Callable, Optional
 from pathlib import Path
+from enum import Enum, auto
 
 from itaxotools.common.utility import override
 
@@ -48,31 +49,34 @@ class _ObjectMeta(type(QtCore.QObject)):
             key: classdict[key] for key in classdict
             if isinstance(classdict[key], Property)}
         for key, property in properties.items():
-            _key = f'_val_{key}'
-            _notify = None
-            if property.notify:
-                _notify = [x for x in classdict if classdict[x] is property.notify][0]
-
-            def getter(self):
-                return getattr(self, _key)
-
-            def setter(self, value):
-                setattr(self, _key, value)
-                if _notify:
-                    getattr(self, _notify).emit(value)
-
-            property.fget = property.fget or getter
-            property.fset = property.fset or setter
-            classdict[key] = QtCore.Property(
-                type=property.type,
-                fget=property.fget,
-                fset=property.fset,
-                notify=property.notify,
-                constant=property.constant,
-                )
+            cls._register(classdict, key, property)
         obj = super().__new__(cls, name, bases, classdict)
         return obj
 
+    def _register(classdict, key, property):
+        _key = f'_val_{key}'
+        _notify = None
+        if property.notify:
+            _notify = [x for x in classdict if classdict[x] is property.notify][0]
+
+        def getter(self):
+            return getattr(self, _key)
+
+        def setter(self, value):
+            old = getattr(self, _key, None)
+            setattr(self, _key, value)
+            if _notify and old != value:
+                getattr(self, _notify).emit(value)
+
+        property.fget = property.fget or getter
+        property.fset = property.fset or setter
+        classdict[key] = QtCore.Property(
+            type=property.type,
+            fget=property.fget,
+            fset=property.fset,
+            notify=property.notify,
+            constant=property.constant,
+            )
 
 class SequenceListModel(QtCore.QAbstractListModel):
 
@@ -163,8 +167,37 @@ class Task(Object):
     pass
 
 
+class AlignmentType(Enum):
+    AlreadyAligned = auto()
+    PairwiseAlignment = auto()
+    AlignmentFree = auto()
+
+    def __str__(self) -> str:
+        return {
+            AlignmentType.AlreadyAligned: 'Already Aligned',
+            AlignmentType.PairwiseAlignment: 'Pairwise Alignment',
+            AlignmentType.AlignmentFree: 'Alignment-Free',
+        }[self]
+
+
 class Dereplicate(Task):
-    pass
+    changed = QtCore.Signal(str)
+    alignment_type = Property(AlignmentType, notify=changed)
+    similarity_threshold = Property(float, notify=changed)
+    length_threshold = Property(int, notify=changed)
+
+    def __init__(self, name, input=None):
+        super().__init__()
+        self.name = name
+        self.alignment_type = AlignmentType.AlignmentFree
+        self.similarity_threshold = 0.07
+        self.length_threshold = 0
+
+    def __str__(self):
+        return f'Dereplicate({repr(self.name)})'
+
+    def __repr__(self):
+        return str(self)
 
 
 class Item:

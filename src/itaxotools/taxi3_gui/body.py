@@ -24,7 +24,7 @@ from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
 
-from .model import Object, Task, Sequence, BulkSequences, Dereplicate
+from .model import Object, Task, Sequence, BulkSequences, Dereplicate, AlignmentType
 from .sidebar import Item
 from .dashboard import Dashboard
 
@@ -203,150 +203,273 @@ class BulkSequencesView(ObjectView):
 
 class DereplicateView(ObjectView):
 
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.draw()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.draw()
 
-        def draw(self):
-            self.cards = AttrDict()
-            self.cards.title = self.draw_title_card()
-            self.cards.input = self.draw_input_card()
-            self.cards.distance = self.draw_distance_card()
-            self.cards.similarity = self.draw_similarity_card()
-            self.cards.length = self.draw_length_card()
-            layout = QtWidgets.QVBoxLayout()
-            layout.addWidget(self.cards.title)
-            layout.addWidget(self.cards.input)
-            layout.addWidget(self.cards.distance)
-            layout.addWidget(self.cards.similarity)
-            layout.addWidget(self.cards.length)
-            layout.addStretch(1)
-            layout.setSpacing(8)
-            layout.setContentsMargins(8, 8, 8, 8)
-            self.setLayout(layout)
+    def draw(self):
+        self.controls = AttrDict()
+        self.cards = AttrDict()
+        self.cards.title = self.draw_title_card()
+        self.cards.input = self.draw_input_card()
+        self.cards.distance = self.draw_distance_card()
+        self.cards.similarity = self.draw_similarity_card()
+        self.cards.length = self.draw_length_card()
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.cards.title)
+        layout.addWidget(self.cards.input)
+        layout.addWidget(self.cards.distance)
+        layout.addWidget(self.cards.similarity)
+        layout.addWidget(self.cards.length)
+        layout.addStretch(1)
+        layout.setSpacing(8)
+        layout.setContentsMargins(8, 8, 8, 8)
+        self.setLayout(layout)
 
-        def draw_title_card(self):
-            frame = QtWidgets.QFrame(self)
-            frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+    def draw_title_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
-            self.title = QtWidgets.QLabel('Dereplicate')
-            self.title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
+        title = QtWidgets.QLabel('Dereplicate')
+        title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
 
-            self.description = QtWidgets.QLabel('Truncate similar sequences within the provided dataset.')
-            self.description.setWordWrap(True)
+        description = QtWidgets.QLabel('Truncate similar sequences within the provided dataset.')
+        description.setWordWrap(True)
 
-            self.run = QtWidgets.QPushButton('Run')
-            self.results = QtWidgets.QPushButton('Results')
-            self.remove = QtWidgets.QPushButton('Remove')
+        run = QtWidgets.QPushButton('Run')
+        results = QtWidgets.QPushButton('Results')
+        remove = QtWidgets.QPushButton('Remove')
 
-            contents = QtWidgets.QVBoxLayout()
-            contents.addWidget(self.title)
-            contents.addWidget(self.description)
-            contents.addStretch(1)
+        contents = QtWidgets.QVBoxLayout()
+        contents.addWidget(title)
+        contents.addWidget(description)
+        contents.addStretch(1)
 
-            buttons = QtWidgets.QVBoxLayout()
-            buttons.addWidget(self.run)
-            buttons.addWidget(self.results)
-            buttons.addWidget(self.remove)
-            buttons.addStretch(1)
+        buttons = QtWidgets.QVBoxLayout()
+        buttons.addWidget(run)
+        buttons.addWidget(results)
+        buttons.addWidget(remove)
+        buttons.addStretch(1)
 
-            layout = QtWidgets.QHBoxLayout()
-            layout.addLayout(contents, 1)
-            layout.addLayout(buttons, 0)
-            frame.setLayout(layout)
-            return frame
+        layout = QtWidgets.QHBoxLayout()
+        layout.addLayout(contents, 1)
+        layout.addLayout(buttons, 0)
+        frame.setLayout(layout)
 
-        def draw_input_card(self):
-            frame = QtWidgets.QFrame(self)
-            frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        self.controls.title = title
+        self.controls.description = description
+        self.controls.run = run
+        self.controls.results = results
+        self.controls.remove = remove
+        return frame
 
-            label = QtWidgets.QLabel('Input Sequence')
-            label.setStyleSheet("""font-size: 16px;""")
+    def draw_input_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
-            sequence = QtWidgets.QComboBox()
-            browse = QtWidgets.QPushButton('Import')
+        label = QtWidgets.QLabel('Input Sequence')
+        label.setStyleSheet("""font-size: 16px;""")
 
-            layout = QtWidgets.QHBoxLayout()
-            layout.addWidget(label, 1)
-            layout.addWidget(sequence)
-            layout.addWidget(browse)
-            frame.setLayout(layout)
-            return frame
+        sequence = QtWidgets.QComboBox()
+        browse = QtWidgets.QPushButton('Import')
 
-        def draw_distance_card(self):
-            frame = QtWidgets.QFrame(self)
-            frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(label, 1)
+        layout.addWidget(sequence)
+        layout.addWidget(browse)
+        frame.setLayout(layout)
+        return frame
 
-            label = QtWidgets.QLabel('Distance Calculation')
-            label.setStyleSheet("""font-size: 16px;""")
+    def draw_distance_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
-            description = QtWidgets.QLabel('The method for calculating distances between sequences.')
-            description.setWordWrap(True)
+        label = QtWidgets.QLabel('Distance Calculation')
+        label.setStyleSheet("""font-size: 16px;""")
 
-            free = QtWidgets.QRadioButton('Alignment-Free')
-            pairwise = QtWidgets.QRadioButton('Pairwise Alignment')
-            aligned = QtWidgets.QRadioButton('Already Aligned')
+        description = QtWidgets.QLabel('The method for calculating distances between sequences.')
+        description.setWordWrap(True)
 
-            layout = QtWidgets.QVBoxLayout()
-            layout.addWidget(label)
-            layout.addWidget(description)
-            layout.addWidget(free)
-            layout.addWidget(pairwise)
-            layout.addWidget(aligned)
-            frame.setLayout(layout)
-            return frame
+        free = QtWidgets.QRadioButton('Alignment-Free')
+        pairwise = QtWidgets.QRadioButton('Pairwise Alignment')
+        aligned = QtWidgets.QRadioButton('Already Aligned')
 
-        def draw_similarity_card(self):
-            frame = QtWidgets.QFrame(self)
-            frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(description)
+        layout.addWidget(free)
+        layout.addWidget(pairwise)
+        layout.addWidget(aligned)
+        frame.setLayout(layout)
 
-            label = QtWidgets.QLabel('Similarity Threshold (%)')
-            label.setStyleSheet("""font-size: 16px;""")
+        free.toggled.connect(self.setAlignmentType)
+        pairwise.toggled.connect(self.setAlignmentType)
+        aligned.toggled.connect(self.setAlignmentType)
+        self.controls.free = free
+        self.controls.pairwise = pairwise
+        self.controls.aligned = aligned
+        return frame
 
-            threshold = QtWidgets.QSpinBox()
-            threshold.setMinimum(0)
-            threshold.setMaximum(100)
-            threshold.setSingleStep(1)
-            threshold.setValue(7)
-            threshold.setFixedWidth(80)
+    def draw_similarity_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
-            description = QtWidgets.QLabel('Sequence pairs for which the uncorrected distance is below this threshold will be considered similar and will be truncated.')
-            description.setWordWrap(True)
+        label = QtWidgets.QLabel('Similarity Threshold (%)')
+        label.setStyleSheet("""font-size: 16px;""")
 
-            layout = QtWidgets.QGridLayout()
-            layout.addWidget(label, 0, 0)
-            layout.addWidget(threshold, 0, 1)
-            layout.addWidget(description, 1, 0)
-            layout.setColumnStretch(0, 1)
-            layout.setHorizontalSpacing(20)
-            frame.setLayout(layout)
-            return frame
+        threshold = QtWidgets.QSpinBox()
+        threshold.setMinimum(0)
+        threshold.setMaximum(100)
+        threshold.setSingleStep(1)
+        threshold.setValue(7)
+        threshold.setFixedWidth(80)
 
-        def draw_length_card(self):
-            frame = QtWidgets.QFrame(self)
-            frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        description = QtWidgets.QLabel('Sequence pairs for which the uncorrected distance is below this threshold will be considered similar and will be truncated.')
+        description.setWordWrap(True)
 
-            label = QtWidgets.QLabel('Length Threshold')
-            label.setStyleSheet("""font-size: 16px;""")
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(threshold, 0, 1)
+        layout.addWidget(description, 1, 0)
+        layout.setColumnStretch(0, 1)
+        layout.setHorizontalSpacing(20)
+        frame.setLayout(layout)
 
-            threshold = QtWidgets.QLineEdit('0')
-            threshold.setFixedWidth(80)
+        threshold.valueChanged.connect(self.setSimilarityThreshold)
+        self.controls.similarityThreshold = threshold
+        return frame
 
-            validator = QtGui.QIntValidator(threshold)
-            validator.setBottom(0)
-            threshold.setValidator(validator)
+    def draw_length_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
-            description = QtWidgets.QLabel('Sequences with length below this threshold will be ignored.')
-            description.setWordWrap(True)
+        label = QtWidgets.QLabel('Length Threshold')
+        label.setStyleSheet("""font-size: 16px;""")
 
-            layout = QtWidgets.QGridLayout()
-            layout.addWidget(label, 0, 0)
-            layout.addWidget(threshold, 0, 1)
-            layout.addWidget(description, 1, 0)
-            layout.setColumnStretch(0, 1)
-            layout.setHorizontalSpacing(20)
-            frame.setLayout(layout)
-            return frame
+        threshold = QtWidgets.QLineEdit('0')
+        threshold.setFixedWidth(80)
+
+        validator = QtGui.QIntValidator(threshold)
+        validator.setBottom(0)
+        threshold.setValidator(validator)
+
+        description = QtWidgets.QLabel('Sequences with length below this threshold will be ignored.')
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(threshold, 0, 1)
+        layout.addWidget(description, 1, 0)
+        layout.setColumnStretch(0, 1)
+        layout.setHorizontalSpacing(20)
+        frame.setLayout(layout)
+
+        threshold.textChanged.connect(self.setLengthThreshold)
+        self.controls.lengthThreshold = threshold
+        return frame
+
+    def getName(self):
+        if not self.object:
+            return
+        if getattr(self, '_flag_name', False):
+            return
+        print('getName')
+        value = self.object.name
+        self.controls.title.setText(value)
+
+    def setSimilarityThreshold(self, value):
+        if not self.object:
+            return
+        print('setSimilarityThreshold')
+        value = value / 100
+        if self.object.similarity_threshold == value:
+            return
+        setattr(self, '_flag_similarity_threshold', True)
+        self.object.similarity_threshold = value
+        setattr(self, '_flag_similarity_threshold', False)
+
+    def getSimilarityThreshold(self):
+        if not self.object:
+            return
+        if getattr(self, '_flag_similarity_threshold', False):
+            return
+        print('getSimilarityThreshold')
+        value = self.object.similarity_threshold
+        self.controls.similarityThreshold.setValue(round(value * 100))
+
+    def setLengthThreshold(self, text):
+        if not self.object:
+            return
+        print('setLengthThreshold')
+        value = int(text)
+        if self.object.length_threshold == value:
+            return
+        setattr(self, '_flag_length_threshold', True)
+        self.object.length_threshold = value
+        setattr(self, '_flag_length_threshold', False)
+
+    def getLengthThreshold(self):
+        if not self.object:
+            return
+        if getattr(self, '_flag_length_threshold', False):
+            return
+        print('getLengthThreshold')
+        value = self.object.length_threshold
+        self.controls.lengthThreshold.setText(str(value))
+
+    def setAlignmentType(self, checked):
+        if not self.object:
+            return
+        if not checked:
+            return
+        print('setAlignmentType')
+        value = AlignmentType.AlignmentFree
+        if self.controls.free.isChecked():
+            value = AlignmentType.AlignmentFree
+        elif self.controls.pairwise.isChecked():
+            value = AlignmentType.PairwiseAlignment
+        elif self.controls.aligned.isChecked():
+            value = AlignmentType.AlreadyAligned
+        if self.object.alignment_type == value:
+            return
+        setattr(self, '_flag_alignment_type', True)
+        self.object.alignment_type = value
+        setattr(self, '_flag_alignment_type', False)
+
+    def getAlignmentType(self):
+        if not self.object:
+            return
+        if getattr(self, '_flag_alignment_type', False):
+            return
+        print('getAlignmentType')
+        value = self.object.alignment_type
+        self.controls.free.setChecked(value == AlignmentType.AlignmentFree)
+        self.controls.pairwise.setChecked(value == AlignmentType.PairwiseAlignment)
+        self.controls.aligned.setChecked(value == AlignmentType.AlreadyAligned)
+
+    def setObject(self, object):
+        print('setObject', object, id(object))
+        if self.object:
+            self.object.changed.disconnect(self.getSimilarityThreshold)
+            self.object.changed.disconnect(self.getLengthThreshold)
+            self.object.changed.disconnect(self.getAlignmentType)
+            self.object.changed.disconnect(self.getName)
+        self.object = object
+        self.object.changed.connect(self.getSimilarityThreshold)
+        self.object.changed.connect(self.getLengthThreshold)
+        self.object.changed.connect(self.getAlignmentType)
+        self.object.changed.connect(self.getName)
+        self.getSimilarityThreshold()
+        self.getLengthThreshold()
+        self.getAlignmentType()
+        self.getName()
+    #     self.object.changed.connect(self.updateView)
+    #     self.updateView()
+    #
+    # def updateView(self):
+    #     if not self.object:
+    #         return
+    #     self.title.setText(self.object.name)
 
 
 class ScrollArea(QtWidgets.QScrollArea):
