@@ -163,6 +163,10 @@ class Task(Object):
     pass
 
 
+class Dereplicate(Task):
+    pass
+
+
 class Item:
     """Provides a hierarchical structure for Objects"""
     def __init__(self, object: Object, parent=None):
