@@ -125,7 +125,7 @@ class SequenceListModel(QtCore.QAbstractListModel):
 
 class Object(QtCore.QObject, metaclass=_ObjectMeta):
     """Interface for backend structures"""
-    changed = QtCore.Signal(str)
+    changed = QtCore.Signal(object)
     name = Property(str, notify=changed)
 
     def __init__(self, name=None):
@@ -179,7 +179,7 @@ class AlignmentType(Enum):
 
 
 class Dereplicate(Task):
-    changed = QtCore.Signal(str)
+    changed = QtCore.Signal(object)
     alignment_type = Property(AlignmentType, notify=changed)
     similarity_threshold = Property(float, notify=changed)
     length_threshold = Property(int, notify=changed)

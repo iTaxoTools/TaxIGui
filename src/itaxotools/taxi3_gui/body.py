@@ -29,6 +29,57 @@ from .sidebar import Item
 from .dashboard import Dashboard
 
 
+class Binding:
+
+    def __init__(
+        self,
+        getter_slot=None,
+        setter_slot=None,
+        getter_signal=None,
+        setter_signal=None
+    ):
+        self.getter_slot = getter_slot
+        self.setter_slot = setter_slot
+        self.getter_signal = None
+        self.setter_signal = None
+        self.value = None
+        self.busy = False
+        self.connect_getter(getter_signal)
+        self.connect_setter(setter_signal)
+
+    def connect_setter(self, signal):
+        if self.setter_signal:
+            self.setter_signal.disconnect(self.setter)
+        self.setter_signal = signal
+        if signal:
+            signal.connect(self.setter)
+
+    def connect_getter(self, signal):
+        if self.getter_signal:
+            self.getter_signal.disconnect(self.getter)
+        self.getter_signal = signal
+        if signal:
+            signal.connect(self.getter)
+
+    def disconnect_setter(self):
+        self.connect_setter(None)
+
+    def disconnect_getter(self):
+        self.connect_getter(None)
+
+    def setter(self, *args, **kwargs):
+        if not self.setter_slot or not self.getter_signal:
+            return
+        self.busy = True
+        self.setter_slot(*args, **kwargs)
+        self.busy = False
+
+    def getter(self, *args, **kwargs):
+        if not self.getter_slot or not self.getter_signal or self.busy:
+            return
+        self.getter_slot()
+
+
 class ObjectView(QtWidgets.QFrame):
 
     def __init__(self, *args, **kwargs):
@@ -241,14 +292,24 @@ class AlignmentTypeSelector(QtWidgets.QFrame):
             button.setChecked(button.alignment_type == type)
 
 
+class NoWheelSpinBox(QtWidgets.QSpinBox):
+    def wheelEvent(self, event):
+        event.ignore()
+
+
 class DereplicateView(ObjectView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.controls = AttrDict()
+        self.bindings = AttrDict()
+        self.bindings.name = Binding(self.getName)
+        self.bindings.alignmentType = Binding(self.getAlignmentType, self.setAlignmentType)
+        self.bindings.similarityThreshold = Binding(self.getSimilarityThreshold, self.setSimilarityThreshold)
+        self.bindings.lengthThreshold = Binding(self.getLengthThreshold, self.setLengthThreshold)
         self.draw()
 
     def draw(self):
-        self.controls = AttrDict()
         self.cards = AttrDict()
         self.cards.title = self.draw_title_card()
         self.cards.input = self.draw_input_card()
@@ -322,7 +383,7 @@ class DereplicateView(ObjectView):
 
     def draw_distance_card(self):
         frame = AlignmentTypeSelector(self)
-        frame.toggled.connect(self.setAlignmentType)
+        self.bindings.alignmentType.connect_setter(frame.toggled)
         self.controls.alignment_type_selector = frame
         return frame
 
@@ -333,7 +394,7 @@ class DereplicateView(ObjectView):
         label = QtWidgets.QLabel('Similarity Threshold (%)')
         label.setStyleSheet("""font-size: 16px;""")
 
-        threshold = QtWidgets.QSpinBox()
+        threshold = NoWheelSpinBox()
         threshold.setMinimum(0)
         threshold.setMaximum(100)
         threshold.setSingleStep(1)
@@ -351,7 +412,7 @@ class DereplicateView(ObjectView):
         layout.setHorizontalSpacing(20)
         frame.setLayout(layout)
 
-        threshold.valueChanged.connect(self.setSimilarityThreshold)
+        self.bindings.similarityThreshold.connect_setter(threshold.valueChanged)
         self.controls.similarityThreshold = threshold
         return frame
 
@@ -380,101 +441,49 @@ class DereplicateView(ObjectView):
         layout.setHorizontalSpacing(20)
         frame.setLayout(layout)
 
-        threshold.textChanged.connect(self.setLengthThreshold)
+        self.bindings.lengthThreshold.connect_setter(threshold.textChanged)
         self.controls.lengthThreshold = threshold
         return frame
 
     def getName(self):
-        if not self.object:
-            return
-        if getattr(self, '_flag_name', False):
-            return
-        print('getName')
         value = self.object.name
         self.controls.title.setText(value)
 
     def setSimilarityThreshold(self, value):
-        if not self.object:
-            return
-        print('setSimilarityThreshold')
         value = value / 100
         if self.object.similarity_threshold == value:
             return
-        setattr(self, '_flag_similarity_threshold', True)
         self.object.similarity_threshold = value
-        setattr(self, '_flag_similarity_threshold', False)
 
     def getSimilarityThreshold(self):
-        if not self.object:
-            return
-        if getattr(self, '_flag_similarity_threshold', False):
-            return
-        print('getSimilarityThreshold')
         value = self.object.similarity_threshold
         self.controls.similarityThreshold.setValue(round(value * 100))
 
     def setLengthThreshold(self, text):
-        if not self.object:
-            return
-        print('setLengthThreshold')
         value = int(text)
         if self.object.length_threshold == value:
             return
-        setattr(self, '_flag_length_threshold', True)
         self.object.length_threshold = value
-        setattr(self, '_flag_length_threshold', False)
 
     def getLengthThreshold(self):
-        if not self.object:
-            return
-        if getattr(self, '_flag_length_threshold', False):
-            return
-        print('getLengthThreshold')
         value = self.object.length_threshold
         self.controls.lengthThreshold.setText(str(value))
 
     def setAlignmentType(self, value):
-        if not self.object:
-            return
-        print('setAlignmentType')
         if self.object.alignment_type == value:
             return
-        setattr(self, '_flag_alignment_type', True)
         self.object.alignment_type = value
-        setattr(self, '_flag_alignment_type', False)
 
     def getAlignmentType(self):
-        if not self.object:
-            return
-        if getattr(self, '_flag_alignment_type', False):
-            return
-        print('getAlignmentType')
         value = self.object.alignment_type
         self.controls.alignment_type_selector.setAlignmentType(value)
 
     def setObject(self, object):
-        print('setObject', object, id(object))
-        if self.object:
-            self.object.changed.disconnect(self.getSimilarityThreshold)
-            self.object.changed.disconnect(self.getLengthThreshold)
-            self.object.changed.disconnect(self.getAlignmentType)
-            self.object.changed.disconnect(self.getName)
         self.object = object
-        self.object.changed.connect(self.getSimilarityThreshold)
-        self.object.changed.connect(self.getLengthThreshold)
-        self.object.changed.connect(self.getAlignmentType)
-        self.object.changed.connect(self.getName)
-        self.getSimilarityThreshold()
-        self.getLengthThreshold()
-        self.getAlignmentType()
-        self.getName()
-    #     self.object.changed.connect(self.updateView)
-    #     self.updateView()
-    #
-    # def updateView(self):
-    #     if not self.object:
-    #         return
-    #     self.title.setText(self.object.name)
+
+        for binding in self.bindings.values():
+            binding.connect_getter(self.object.changed)
+            binding.getter()
 
 
 class ScrollArea(QtWidgets.QScrollArea):
