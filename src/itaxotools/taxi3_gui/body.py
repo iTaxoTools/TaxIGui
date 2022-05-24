@@ -201,6 +201,46 @@ class BulkSequencesView(ObjectView):
             self.parent().removeActiveItem()
 
 
+class AlignmentTypeSelector(QtWidgets.QFrame):
+
+    toggled = QtCore.Signal(AlignmentType)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+
+        label = QtWidgets.QLabel('Distance Calculation')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        description = QtWidgets.QLabel('The method for calculating distances between sequences.')
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(description)
+
+        self.radio_buttons = list()
+        for type in AlignmentType:
+            button = QtWidgets.QRadioButton(str(type))
+            button.alignment_type = type
+            button.toggled.connect(self.handleToggle)
+            self.radio_buttons.append(button)
+            layout.addWidget(button)
+
+        self.setLayout(layout)
+
+    def handleToggle(self, checked):
+        if not checked:
+            return
+        for button in self.radio_buttons:
+            if button.isChecked():
+                self.toggled.emit(button.alignment_type)
+
+    def setAlignmentType(self, type):
+        for button in self.radio_buttons:
+            button.setChecked(button.alignment_type == type)
+
+
 class DereplicateView(ObjectView):
 
     def __init__(self, *args, **kwargs):
@@ -281,33 +321,9 @@ class DereplicateView(ObjectView):
         return frame
 
     def draw_distance_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
-
-        label = QtWidgets.QLabel('Distance Calculation')
-        label.setStyleSheet("""font-size: 16px;""")
-
-        description = QtWidgets.QLabel('The method for calculating distances between sequences.')
-        description.setWordWrap(True)
-
-        free = QtWidgets.QRadioButton('Alignment-Free')
-        pairwise = QtWidgets.QRadioButton('Pairwise Alignment')
-        aligned = QtWidgets.QRadioButton('Already Aligned')
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(label)
-        layout.addWidget(description)
-        layout.addWidget(free)
-        layout.addWidget(pairwise)
-        layout.addWidget(aligned)
-        frame.setLayout(layout)
-
-        free.toggled.connect(self.setAlignmentType)
-        pairwise.toggled.connect(self.setAlignmentType)
-        aligned.toggled.connect(self.setAlignmentType)
-        self.controls.free = free
-        self.controls.pairwise = pairwise
-        self.controls.aligned = aligned
+        frame = AlignmentTypeSelector(self)
+        frame.toggled.connect(self.setAlignmentType)
+        self.controls.alignment_type_selector = frame
         return frame
 
     def draw_similarity_card(self):
@@ -417,19 +433,10 @@ class DereplicateView(ObjectView):
         value = self.object.length_threshold
         self.controls.lengthThreshold.setText(str(value))
 
-    def setAlignmentType(self, checked):
+    def setAlignmentType(self, value):
         if not self.object:
             return
-        if not checked:
-            return
         print('setAlignmentType')
-        value = AlignmentType.AlignmentFree
-        if self.controls.free.isChecked():
-            value = AlignmentType.AlignmentFree
-        elif self.controls.pairwise.isChecked():
-            value = AlignmentType.PairwiseAlignment
-        elif self.controls.aligned.isChecked():
-            value = AlignmentType.AlreadyAligned
         if self.object.alignment_type == value:
             return
         setattr(self, '_flag_alignment_type', True)
@@ -443,9 +450,7 @@ class DereplicateView(ObjectView):
             return
         print('getAlignmentType')
         value = self.object.alignment_type
-        self.controls.free.setChecked(value == AlignmentType.AlignmentFree)
-        self.controls.pairwise.setChecked(value == AlignmentType.PairwiseAlignment)
-        self.controls.aligned.setChecked(value == AlignmentType.AlreadyAligned)
+        self.controls.alignment_type_selector.setAlignmentType(value)
 
     def setObject(self, object):
         print('setObject', object, id(object))

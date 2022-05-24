@@ -168,16 +168,12 @@ class Task(Object):
 
 
 class AlignmentType(Enum):
-    AlreadyAligned = auto()
-    PairwiseAlignment = auto()
-    AlignmentFree = auto()
+    AlignmentFree = 'Alignment-Free'
+    PairwiseAlignment = 'Pairwise Alignment'
+    AlreadyAligned = 'Already Aligned'
 
-    def __str__(self) -> str:
-        return {
-            AlignmentType.AlreadyAligned: 'Already Aligned',
-            AlignmentType.PairwiseAlignment: 'Pairwise Alignment',
-            AlignmentType.AlignmentFree: 'Alignment-Free',
-        }[self]
+    def __str__(self):
+        return self.value
 
 
 class Dereplicate(Task):
