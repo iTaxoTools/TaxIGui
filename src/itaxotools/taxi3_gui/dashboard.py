@@ -96,7 +96,7 @@ class Dashboard(QtWidgets.QFrame):
         self.setLayout(layout)
 
     def handleDereplicate(self):
-        self.model.add_task(Dereplicate('DEREP'))
+        self.model.add_task(Dereplicate())
 
     def handleDecontaminate(self):
         self.model.add_task(Task('DECONT'))

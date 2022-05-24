@@ -22,6 +22,8 @@ from typing import Callable, Optional
 from pathlib import Path
 from enum import Enum, auto
 
+import itertools
+
 from itaxotools.common.utility import override
 
 
@@ -182,9 +184,11 @@ class Dereplicate(Task):
     similarity_threshold = Property(float, notify=changed)
     length_threshold = Property(int, notify=changed)
 
-    def __init__(self, name, input=None):
+    count = itertools.count(1, 1)
+
+    def __init__(self, name=None, input=None):
         super().__init__()
-        self.name = name
+        self.name = name or self.get_next_name()
         self.alignment_type = AlignmentType.AlignmentFree
         self.similarity_threshold = 0.07
         self.length_threshold = 0
@@ -195,6 +199,9 @@ class Dereplicate(Task):
     def __repr__(self):
         return str(self)
 
+    @classmethod
+    def get_next_name(cls):
+        return f'Dereplicate #{next(cls.count)}'
 
 class Item:
     """Provides a hierarchical structure for Objects"""
