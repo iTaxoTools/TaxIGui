@@ -111,7 +111,7 @@ class SequenceReaderSelector(QtWidgets.QFrame):
         super().__init__(parent)
         self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
-        label = QtWidgets.QLabel('File Format:')
+        label = QtWidgets.QLabel('File Format')
         label.setStyleSheet("""font-size: 16px;""")
 
         combo = QtWidgets.QComboBox()
@@ -182,6 +182,7 @@ class SequenceView(ObjectView):
 
         contents = QtWidgets.QVBoxLayout()
         contents.addWidget(name)
+        contents.addSpacing(8)
         contents.addWidget(source)
         contents.addStretch(1)
 
@@ -250,12 +251,19 @@ class BulkSequencesView(ObjectView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.controls = AttrDict()
+        self.bindings = AttrDict()
+        self.bindings.name = Binding(self.getName)
+        self.bindings.model = Binding(self.getModel)
+        self.bindings.reader = Binding(self.getReader, self.setReader)
         self.draw()
 
     def draw(self):
-        self.draw_main_card()
+        frame = self.draw_main_card()
+        selector = self.draw_selector_card()
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.frame)
+        layout.addWidget(frame)
+        layout.addWidget(selector)
         layout.addStretch(1)
         layout.setSpacing(8)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -264,29 +272,16 @@ class BulkSequencesView(ObjectView):
     def draw_main_card(self):
         frame = QtWidgets.QFrame(self)
         frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
-        self.draw_contents()
-        self.draw_buttons()
-        layout = QtWidgets.QHBoxLayout()
-        layout.addLayout(self.contents, 1)
-        layout.addLayout(self.buttons, 0)
-        frame.setLayout(layout)
-        self.frame = frame
 
-    def draw_contents(self):
-        self.label = QtWidgets.QLabel('')
-        self.sequenceListView = QtWidgets.QListView(self)
-        self.sequenceListView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.sequenceListView.setSizePolicy(
+        name = QtWidgets.QLabel('Bulk Sequences')
+        name.setStyleSheet("""font-size: 18px; font-weight: bold; """)
+
+        view = QtWidgets.QListView(self)
+        view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        view.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.label)
-        layout.addWidget(self.sequenceListView)
-
-        self.contents = layout
-
-    def draw_buttons(self):
         open = QtWidgets.QPushButton('Open')
         add = QtWidgets.QPushButton('Add')
         remove = QtWidgets.QPushButton('Remove')
@@ -295,40 +290,76 @@ class BulkSequencesView(ObjectView):
         add.clicked.connect(self.handleAdd)
         remove.clicked.connect(self.handleRemove)
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(open)
-        layout.addWidget(add)
-        layout.addWidget(remove)
-        layout.addStretch(1)
-        self.buttons = layout
+        contents = QtWidgets.QVBoxLayout()
+        contents.addWidget(name)
+        contents.addSpacing(8)
+        contents.addWidget(view)
+        contents.addStretch(1)
+
+        buttons = QtWidgets.QVBoxLayout()
+        buttons.addWidget(open)
+        buttons.addWidget(add)
+        buttons.addWidget(remove)
+        buttons.addStretch(1)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addLayout(contents, 1)
+        layout.addLayout(buttons, 0)
+        frame.setLayout(layout)
+
+        self.controls.name = name
+        self.controls.view = view
+        self.controls.open = open
+        self.controls.add = add
+        self.controls.remove = remove
+        return frame
+
+    def draw_selector_card(self):
+        frame = SequenceReaderSelector(self)
+        self.bindings.reader.connect_setter(frame.toggled)
+        self.controls.reader = frame
+        return frame
+
+    def getName(self):
+        value = self.object.name
+        self.controls.name.setText(value)
+
+    def getModel(self):
+        value = self.object.model
+        self.controls.view.setModel(value)
+
+    def setReader(self, value):
+        if self.object.reader == value:
+            return
+        self.object.reader = value
+
+    def getReader(self):
+        value = self.object.reader
+        self.controls.reader.setSequenceReader(value)
 
     def setObject(self, object):
-        if self.object:
-            self.object.changed.disconnect(self.updateView)
         self.object = object
-        self.object.changed.connect(self.updateView)
-        self.sequenceListView.setModel(self.object.sequenceModel)
-        self.updateView()
 
-    def updateView(self):
-        if not self.object:
-            return
-        self.label.setText(self.object.name)
+        for binding in self.bindings.values():
+            binding.connect_getter(self.object.changed)
+            binding.getter()
 
     def handleOpen(self):
-        print('open', self.object, self.object.sequences)
+        print('open', self.object.name, str(self.object.path))
+        url = QtCore.QUrl.fromLocalFile(str(self.object.path))
+        QtGui.QDesktopServices.openUrl(url)
 
     def handleAdd(self):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self.window(), self.window().title)
         paths = [Path(filename) for filename in filenames]
         sequences = [Sequence(path) for path in paths]
-        self.object.sequenceModel.add_sequences(sequences)
+        self.object.model.add_sequences(sequences)
 
     def handleRemove(self):
-        indexes = self.sequenceListView.selectedIndexes()
-        self.object.sequenceModel.remove_sequences(indexes)
-        if not self.object.sequences:
-            self.parent().removeActiveItem()
+        indexes = self.controls.view.selectedIndexes()
+        self.object.model.remove_sequences(indexes)
+        # if not self.object.sequences:
+        #     self.parent().removeActiveItem()
 
 
 class AlignmentTypeSelector(QtWidgets.QFrame):

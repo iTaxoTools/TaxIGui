@@ -96,7 +96,7 @@ class SequenceListModel(QtCore.QAbstractListModel):
         sequence = self.sequences[index.row()]
 
         if role == QtCore.Qt.DisplayRole:
-            return sequence.path.name
+            return str(sequence.path)
         elif role == self.PathRole:
             return sequence.path
 
@@ -153,11 +153,11 @@ class Sequence(Object):
     path = Property(Path, notify=changed)
     reader = Property(SequenceReader, notify=changed)
 
-    def __init__(self, path):
+    def __init__(self, path, reader=SequenceReader.TabfileReader):
         super().__init__()
         self.path = path
         self.name = path.stem
-        self.reader = SequenceReader.TabfileReader
+        self.reader = reader
 
     def __str__(self):
         return f'Sequence({repr(self.name)})'
@@ -167,18 +167,34 @@ class Sequence(Object):
 
 
 class BulkSequences(Object):
+    changed = QtCore.Signal(object)
+    name = Property(str, notify=changed)
 
-    def __init__(self, paths):
+    count = itertools.count(1, 1)
+
+    def __init__(self, paths, reader=SequenceReader.TabfileReader):
         super().__init__()
+        self.name = self.get_next_name()
         self.sequences = [Sequence(path) for path in paths]
-        self.sequenceModel = SequenceListModel(self.sequences)
-        self.name = 'New Bulk Sequences'
+        self.model = SequenceListModel(self.sequences)
+        self.reader = reader
 
     def __str__(self):
         return f'BulkSequences({repr(self.name)})'
 
     def __repr__(self):
         return str(self)
+
+    @classmethod
+    def get_next_name(cls):
+        return f'Bulk Sequences #{next(cls.count)}'
+
+    def set_reader(self, value):
+        self._val_reader = value
+        for sequence in self.sequences:
+            sequence.reader = value
+
+    reader = Property(SequenceReader, fset=set_reader, notify=changed)
 
 
 class Task(Object):
