@@ -179,9 +179,9 @@ class BulkSequences(Object):
 
     count = itertools.count(1, 1)
 
-    def __init__(self, paths, reader=SequenceReader.TabfileReader):
+    def __init__(self, paths, name=None, reader=SequenceReader.TabfileReader):
         super().__init__()
-        self.name = self.get_next_name()
+        self.name = name or self.get_next_name()
         self.sequences = [Sequence(path) for path in paths]
         self.model = SequenceListModel(self.sequences)
         self.reader = reader
@@ -272,6 +272,13 @@ class Dereplicate(Task):
         self.worker.start()
 
     def work(self):
+        object = self.input_item.object
+        if isinstance(object, Sequence):
+            self.workSingle()
+        elif isinstance(object, BulkSequences):
+            self.workBulk()
+
+    def workSingle(self):
         reader = {
             SequenceReader.TabfileReader: TabfileReader,
             SequenceReader.GenbankReader: GenbankReader,
@@ -286,14 +293,14 @@ class Dereplicate(Task):
         }[self.alignment_type]
 
         input = self.input_item.object.path
-        sequences = CompleteData.from_path(ValidFilePath(input), reader)
+        sequence = CompleteData.from_path(ValidFilePath(input), reader)
 
         task = _Dereplicate(warn=print)
         task.similarity = self.similarity_threshold
         task.length_threshold = self.length_threshold or None
         task._calculate_distances.alignment = alignment
         task._calculate_distances.metrics = [_Metric.Uncorrected]
-        task.data = sequences
+        task.data = sequence
         task.start()
 
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
@@ -313,6 +320,61 @@ class Dereplicate(Task):
         if self.itemModel:
             self.itemModel.add_sequence(Sequence(excluded))
             self.itemModel.add_sequence(Sequence(dereplicated))
+
+    def workBulk(self):
+        reader = {
+            SequenceReader.TabfileReader: TabfileReader,
+            SequenceReader.GenbankReader: GenbankReader,
+            SequenceReader.XlsxReader: XlsxReader,
+            SequenceReader.FastaReader: FastaReader,
+        }[self.input_item.object.reader]
+
+        alignment = {
+            AlignmentType.AlignmentFree: _Alignment.AlignmentFree,
+            AlignmentType.PairwiseAlignment: _Alignment.Pairwise,
+            AlignmentType.AlreadyAligned: _Alignment.AlreadyAligned,
+        }[self.alignment_type]
+
+        paths = [sequence.path for sequence in self.input_item.object.sequences]
+
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        save_path = self.temporary_path / timestamp
+        save_path.mkdir()
+        excluded_path = save_path / 'excluded'
+        excluded_path.mkdir()
+        dereplicated_path = save_path / 'dereplicated'
+        dereplicated_path.mkdir()
+
+        for input in paths:
+
+            sequence = CompleteData.from_path(ValidFilePath(input), reader)
+
+            task = _Dereplicate(warn=print)
+            task.similarity = self.similarity_threshold
+            task.length_threshold = self.length_threshold or None
+            task._calculate_distances.alignment = alignment
+            task._calculate_distances.metrics = [_Metric.Uncorrected]
+            task.data = sequence
+            task.start()
+
+            excluded = excluded_path / f'{input.stem}.{timestamp}.excluded.tsv'
+            dereplicated = dereplicated_path / f'{input.stem}.{timestamp}.dereplicated.tsv'
+
+            excluded.unlink(missing_ok=True)
+            dereplicated.unlink(missing_ok=True)
+
+            for output in task.result:
+                output.excluded.append_to_file(excluded)
+                output.included.append_to_file(dereplicated)
+
+        if self.itemModel:
+            excluded_bulk = list(excluded_path.iterdir())
+            dereplicated_bulk = list(dereplicated_path.iterdir())
+            print(excluded_bulk)
+            print(dereplicated_bulk)
+            basename = self.input_item.object.name
+            self.itemModel.add_sequence(BulkSequences(excluded_bulk, name=f'{basename} excluded'))
+            self.itemModel.add_sequence(BulkSequences(dereplicated_bulk, name=f'{basename} dereplicated'))
 
     def cancel(self):
         self.worker.terminate()
