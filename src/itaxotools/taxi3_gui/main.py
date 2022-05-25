@@ -18,10 +18,13 @@
 
 """Main dialog window"""
 
+from PySide6 import QtCore
 from PySide6 import QtWidgets
 from PySide6 import QtGui
 
 from pathlib import Path
+
+import shutil
 
 from itaxotools import common
 import itaxotools.common.widgets
@@ -207,7 +210,8 @@ class Main(common.widgets.ToolDialog):
         self.widgets.body.showDashboard()
 
     def handleOpen(self):
-        filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, self.title)
+        filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
+            self, f'{self.title} - Open File')
         if not filenames:
             return
         if len(filenames) == 1:
@@ -218,4 +222,36 @@ class Main(common.widgets.ToolDialog):
             self.model.add_sequence(BulkSequences(paths))
 
     def handleSave(self):
-        pass
+        try:
+            self._handleSave()
+        except Exception as exception:
+            QtWidgets.QMessageBox.critical(self, self.title, str(exception))
+
+    def _handleSave(self):
+        item = self.widgets.body.activeItem
+        if not item:
+            QtWidgets.QMessageBox.information(self, self.title, 'Please select a sequence and try again.')
+            return
+        if isinstance(item.object, Sequence):
+            source = item.object.path
+            filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self, f'{self.title} - Save File',
+                QtCore.QDir.currentPath() + '/' + source.name)
+            if not filename:
+                return
+            destination = Path(filename)
+            shutil.copy(source, destination)
+            return
+        if isinstance(item.object, BulkSequences):
+            filename = QtWidgets.QFileDialog.getExistingDirectory(
+                self, f'{self.title} - Save Bulk Files',
+                QtCore.QDir.currentPath())
+            if not filename:
+                return
+            directory = Path(filename)
+            for sequence in item.object.sequences:
+                source = sequence.path
+                destination = directory / source.name
+                shutil.copy(source, destination)
+            return
+        QtWidgets.QMessageBox.information(self, self.title, 'Please select a sequence and try again.')
