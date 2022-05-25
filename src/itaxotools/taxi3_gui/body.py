@@ -494,6 +494,11 @@ class DereplicateView(ObjectView):
         description = QtWidgets.QLabel('Truncate similar sequences within the provided dataset.')
         description.setWordWrap(True)
 
+        progress = QtWidgets.QProgressBar()
+        progress.setMaximum(0)
+        progress.setMinimum(0)
+        progress.setValue(0)
+
         run = QtWidgets.QPushButton('Run')
         cancel = QtWidgets.QPushButton('Cancel')
         results = QtWidgets.QPushButton('Results')
@@ -509,6 +514,7 @@ class DereplicateView(ObjectView):
         contents.addWidget(title)
         contents.addWidget(description)
         contents.addStretch(1)
+        contents.addWidget(progress)
 
         buttons = QtWidgets.QVBoxLayout()
         buttons.addWidget(run)
@@ -524,6 +530,7 @@ class DereplicateView(ObjectView):
 
         self.controls.title = title
         self.controls.description = description
+        self.controls.progress = progress
         self.controls.run = run
         self.controls.cancel = cancel
         self.controls.results = results
@@ -611,6 +618,7 @@ class DereplicateView(ObjectView):
     def getBusy(self):
         busy = self.object.busy
         self.controls.cancel.setVisible(busy)
+        self.controls.progress.setVisible(busy)
         self.controls.run.setVisible(not busy)
         self.cards.input.setEnabled(not busy)
         self.cards.distance.setEnabled(not busy)
