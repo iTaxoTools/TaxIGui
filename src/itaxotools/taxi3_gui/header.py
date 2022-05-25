@@ -32,7 +32,7 @@ class ToolLogo(QtWidgets.QLabel):
         self.setPixmap(VectorPixmap(
             resources.get(
                 __package__, 'logos/taxi3.svg'),
-            size=QtCore.QSize(44, 44),
+            size=QtCore.QSize(132, 44),
             colormap=self.window().colormap_icon))
 
 
