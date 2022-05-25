@@ -26,8 +26,9 @@ from itaxotools.common.utility import AttrDict
 
 from .dashboard import Dashboard
 from .model import (
-    Object, Task, Sequence, BulkSequences, Dereplicate,
-    AlignmentType, SequenceReader, Item, ItemModel, NotificationType)
+    Object, Task, Sequence, BulkSequences, Dereplicate, Decontaminate,
+    AlignmentType, SequenceReader, Item, ItemModel, SequenceListModel,
+    DecontaminateMode, NotificationType)
 
 
 class Binding:
@@ -345,8 +346,10 @@ class BulkSequencesView(ObjectView):
             binding.getter()
 
     def handleOpen(self):
-        print('open', self.object.name, str(self.object.path))
-        url = QtCore.QUrl.fromLocalFile(str(self.object.path))
+        index = self.controls.view.currentIndex()
+        path = index.data(SequenceListModel.PathRole)
+        print('open', str(path))
+        url = QtCore.QUrl.fromLocalFile(str(path))
         QtGui.QDesktopServices.openUrl(url)
 
     def handleAdd(self):
@@ -698,6 +701,346 @@ class DereplicateView(ObjectView):
         msgBox.exec()
 
 
+
+class DecontaminateModeSelector(QtWidgets.QFrame):
+
+    toggled = QtCore.Signal(DecontaminateMode)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+
+        label = QtWidgets.QLabel('Decontaminate Mode')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        description = QtWidgets.QLabel("For DECONT2 mode, `reference 1` is outgroup (sequences closer to it are contaminates) and `reference 2` is ingroup (sequences closer to it are not contaminates)")
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(description)
+
+        self.radio_buttons = list()
+        for mode in DecontaminateMode:
+            button = QtWidgets.QRadioButton(str(mode))
+            button.decontaminate_mode = mode
+            button.toggled.connect(self.handleToggle)
+            self.radio_buttons.append(button)
+            layout.addWidget(button)
+
+        self.setLayout(layout)
+
+    def handleToggle(self, checked):
+        if not checked:
+            return
+        for button in self.radio_buttons:
+            if button.isChecked():
+                self.toggled.emit(button.decontaminate_mode)
+
+    def setDecontaminateMode(self, mode):
+        for button in self.radio_buttons:
+            button.setChecked(button.decontaminate_mode == mode)
+
+
+class DecontaminateView(ObjectView):
+
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
+        self.controls = AttrDict()
+        self.bindings = AttrDict()
+        self.bindings.name = Binding(self.getName)
+        self.bindings.busy = Binding(self.getBusy)
+        self.bindings.ready = Binding(self.getReady)
+        self.bindings.alignmentType = Binding(self.getAlignmentType, self.setAlignmentType)
+        self.bindings.similarityThreshold = Binding(self.getSimilarityThreshold, self.setSimilarityThreshold)
+        self.bindings.inputItem = Binding(self.getInputItem, self.setInputItem)
+        self.bindings.referenceItem1 = Binding(self.getReferenceItem1, self.setReferenceItem1)
+        self.bindings.referenceItem2 = Binding(self.getReferenceItem2, self.setReferenceItem2)
+        self.bindings.mode = Binding(self.getMode, self.setMode)
+        self.draw()
+
+    def draw(self):
+        self.cards = AttrDict()
+        self.cards.title = self.draw_title_card()
+        self.cards.input = self.draw_input_card()
+        self.cards.mode = self.draw_mode_card()
+        self.cards.ref1 = self.draw_ref1_card()
+        self.cards.ref2 = self.draw_ref2_card()
+        self.cards.distance = self.draw_distance_card()
+        self.cards.similarity = self.draw_similarity_card()
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.cards.title)
+        layout.addWidget(self.cards.input)
+        layout.addWidget(self.cards.mode)
+        layout.addWidget(self.cards.ref1)
+        layout.addWidget(self.cards.ref2)
+        layout.addWidget(self.cards.similarity)
+        layout.addWidget(self.cards.distance)
+        layout.addStretch(1)
+        layout.setSpacing(8)
+        layout.setContentsMargins(8, 8, 8, 8)
+        self.setLayout(layout)
+
+    def draw_title_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+
+        title = QtWidgets.QLabel('Decontaminate')
+        title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
+
+        description = QtWidgets.QLabel(
+            'Calculate distances between all input sequences towards a reference database, ' +
+            'then remove the sequences that are closest to it.')
+        description.setWordWrap(True)
+
+        progress = QtWidgets.QProgressBar()
+        progress.setMaximum(0)
+        progress.setMinimum(0)
+        progress.setValue(0)
+
+        run = QtWidgets.QPushButton('Run')
+        cancel = QtWidgets.QPushButton('Cancel')
+        results = QtWidgets.QPushButton('Results')
+        remove = QtWidgets.QPushButton('Remove')
+
+        run.clicked.connect(self.handleRun)
+        cancel.clicked.connect(self.handleCancel)
+
+        results.setEnabled(False)
+        remove.setEnabled(False)
+
+        contents = QtWidgets.QVBoxLayout()
+        contents.addWidget(title)
+        contents.addWidget(description)
+        contents.addStretch(1)
+        contents.addWidget(progress)
+
+        buttons = QtWidgets.QVBoxLayout()
+        buttons.addWidget(run)
+        buttons.addWidget(cancel)
+        buttons.addWidget(results)
+        buttons.addWidget(remove)
+        buttons.addStretch(1)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addLayout(contents, 1)
+        layout.addLayout(buttons, 0)
+        frame.setLayout(layout)
+
+        self.controls.title = title
+        self.controls.description = description
+        self.controls.progress = progress
+        self.controls.run = run
+        self.controls.cancel = cancel
+        self.controls.results = results
+        self.controls.remove = remove
+        return frame
+
+    def draw_input_card(self):
+        frame = SequenceSelector('Input Sequence(s):', self.model, self)
+        self.bindings.inputItem.connect_setter(frame.sequenceChanged)
+        self.controls.inputItem = frame
+        return frame
+
+    def draw_mode_card(self):
+        frame = DecontaminateModeSelector(self)
+        self.bindings.mode.connect_setter(frame.toggled)
+        self.controls.mode = frame
+        return frame
+
+    def draw_ref1_card(self):
+        frame = SequenceSelector('Reference 1 (outgroup):', self.model, self)
+        self.bindings.referenceItem1.connect_setter(frame.sequenceChanged)
+        self.controls.referenceItem1 = frame
+        return frame
+
+    def draw_ref2_card(self):
+        frame = SequenceSelector('Reference 2 (ingroup):', self.model, self)
+        self.bindings.referenceItem2.connect_setter(frame.sequenceChanged)
+        self.controls.referenceItem2 = frame
+        return frame
+
+    def draw_distance_card(self):
+        frame = AlignmentTypeSelector(self)
+        self.bindings.alignmentType.connect_setter(frame.toggled)
+        self.controls.alignment_type_selector = frame
+        return frame
+
+    def draw_similarity_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+
+        label = QtWidgets.QLabel('Similarity Threshold (%)')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        threshold = NoWheelSpinBox()
+        threshold.setMinimum(0)
+        threshold.setMaximum(100)
+        threshold.setSingleStep(1)
+        threshold.setValue(7)
+        threshold.setFixedWidth(80)
+
+        description = QtWidgets.QLabel(
+            'Input sequences for which the uncorrected distance to any member of the reference database is within this threshold ' +
+            'will be considered contaminants and will be truncated.')
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(threshold, 0, 1)
+        layout.addWidget(description, 1, 0)
+        layout.setColumnStretch(0, 1)
+        layout.setHorizontalSpacing(20)
+        frame.setLayout(layout)
+
+        self.bindings.similarityThreshold.connect_setter(threshold.valueChanged)
+        self.controls.similarityThreshold = threshold
+        return frame
+
+    def draw_length_card(self):
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+
+        label = QtWidgets.QLabel('Length Threshold')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        threshold = QtWidgets.QLineEdit('0')
+        threshold.setFixedWidth(80)
+
+        validator = QtGui.QIntValidator(threshold)
+        validator.setBottom(0)
+        threshold.setValidator(validator)
+
+        description = QtWidgets.QLabel('Sequences with length below this threshold will be ignored.')
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(threshold, 0, 1)
+        layout.addWidget(description, 1, 0)
+        layout.setColumnStretch(0, 1)
+        layout.setHorizontalSpacing(20)
+        frame.setLayout(layout)
+
+        self.bindings.lengthThreshold.connect_setter(threshold.textChanged)
+        self.controls.lengthThreshold = threshold
+        return frame
+
+    def getName(self):
+        value = self.object.name
+        self.controls.title.setText(value)
+
+    def getReady(self):
+        value = self.object.ready
+        self.controls.run.setEnabled(value)
+
+    def getBusy(self):
+        busy = self.object.busy
+        self.controls.cancel.setVisible(busy)
+        self.controls.progress.setVisible(busy)
+        self.controls.run.setVisible(not busy)
+        self.cards.input.setEnabled(not busy)
+        self.cards.mode.setEnabled(not busy)
+        self.cards.ref1.setEnabled(not busy)
+        self.cards.ref2.setEnabled(not busy)
+        self.cards.distance.setEnabled(not busy)
+        self.cards.similarity.setEnabled(not busy)
+
+    def setSimilarityThreshold(self, value):
+        value = value / 100
+        if self.object.similarity_threshold == value:
+            return
+        self.object.similarity_threshold = value
+
+    def getSimilarityThreshold(self):
+        value = self.object.similarity_threshold
+        self.controls.similarityThreshold.setValue(round(value * 100))
+
+    def setAlignmentType(self, value):
+        if self.object.alignment_type == value:
+            return
+        self.object.alignment_type = value
+
+    def getAlignmentType(self):
+        value = self.object.alignment_type
+        self.controls.alignment_type_selector.setAlignmentType(value)
+
+    def setInputItem(self, item):
+        if self.object.input_item == item:
+            return
+        self.object.input_item = item
+
+    def getInputItem(self):
+        item = self.object.input_item
+        self.controls.inputItem.setSequenceItem(item)
+
+    def setReferenceItem1(self, item):
+        if self.object.reference_item_1 == item:
+            return
+        self.object.reference_item_1 = item
+
+    def getReferenceItem1(self):
+        item = self.object.reference_item_1
+        self.controls.referenceItem1.setSequenceItem(item)
+
+    def setReferenceItem2(self, item):
+        if self.object.reference_item_2 == item:
+            return
+        self.object.reference_item_2 = item
+
+    def getReferenceItem2(self):
+        item = self.object.reference_item_2
+        self.controls.referenceItem2.setSequenceItem(item)
+
+    def setMode(self, mode):
+        if self.object.mode == mode:
+            return
+        self.object.mode = mode
+        self.cards.similarity.setVisible(mode == DecontaminateMode.DECONT)
+        self.cards.ref2.setVisible(mode == DecontaminateMode.DECONT2)
+
+    def getMode(self):
+        mode = self.object.mode
+        self.controls.mode.setDecontaminateMode(mode)
+        self.cards.similarity.setVisible(mode == DecontaminateMode.DECONT)
+        self.cards.ref2.setVisible(mode == DecontaminateMode.DECONT2)
+
+    def setObject(self, object):
+
+        if self.object:
+            self.object.notification.disconnect(self.showNotification)
+        object.notification.connect(self.showNotification)
+
+        self.object = object
+
+        for binding in self.bindings.values():
+            binding.connect_getter(self.object.changed)
+            binding.getter()
+
+    def handleRun(self):
+        self.object.start()
+
+    def handleCancel(self):
+        self.object.cancel()
+
+    def showNotification(self, type, text, info):
+
+        icon = {
+            NotificationType.Info: QtWidgets.QMessageBox.Information,
+            NotificationType.Warn: QtWidgets.QMessageBox.Warning,
+            NotificationType.Fail: QtWidgets.QMessageBox.Critical,
+        }[type]
+
+        msgBox = QtWidgets.QMessageBox(self.window())
+        msgBox.setWindowTitle(self.window().title)
+        msgBox.setIcon(icon)
+        msgBox.setText(text)
+        msgBox.setDetailedText(info)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msgBox.exec()
+
+
 class ScrollArea(QtWidgets.QScrollArea):
 
     def __init__(self, widget, parent=None):
@@ -722,6 +1065,7 @@ class Body(QtWidgets.QStackedWidget):
         self.addView(Sequence, SequenceView)
         self.addView(BulkSequences, BulkSequencesView)
         self.addView(Dereplicate, DereplicateView, model=model)
+        self.addView(Decontaminate, DecontaminateView, model=model)
 
     def addView(self, object_type, view_type, *args, **kwargs):
         view = view_type(parent=self, *args, **kwargs)
