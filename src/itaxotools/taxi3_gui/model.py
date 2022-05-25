@@ -19,10 +19,16 @@
 from PySide6 import QtCore
 
 from typing import Callable, Optional
+from tempfile import TemporaryDirectory
+from datetime import datetime
 from pathlib import Path
 from enum import Enum, auto
 
 import itertools
+
+from itaxotools.taxi3.library.datatypes import CompleteData, ValidFilePath, TabfileReader, XlsxReader, FastaReader, GenbankReader
+from itaxotools.taxi3.library.task import Dereplicate as _Dereplicate, Alignment as _Alignment
+from itaxotools.taxi3.library.datatypes import Metric as _Metric
 
 from itaxotools.common.utility import override
 from itaxotools.common.threading import WorkerThread
@@ -237,6 +243,9 @@ class Dereplicate(Task):
         self.input_item = None
         self.busy = False
 
+        self.temporary_directory = TemporaryDirectory(prefix='dereplicate_')
+        self.temporary_path = Path(self.temporary_directory.name)
+
         self.worker = WorkerThread(self.work)
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
@@ -262,10 +271,48 @@ class Dereplicate(Task):
         self.worker.start()
 
     def work(self):
-        print(self.name, self.similarity_threshold, self.input_item)
-        from time import sleep
-        sleep(1)
-        return 42
+        reader = {
+            SequenceReader.TabfileReader: TabfileReader,
+            SequenceReader.GenbankReader: GenbankReader,
+            SequenceReader.XlsxReader: XlsxReader,
+            SequenceReader.FastaReader: FastaReader,
+        }[self.input_item.object.reader]
+
+        alignment = {
+            AlignmentType.AlignmentFree: _Alignment.AlignmentFree,
+            AlignmentType.PairwiseAlignment: _Alignment.Pairwise,
+            AlignmentType.AlreadyAligned: _Alignment.AlreadyAligned,
+        }[self.alignment_type]
+
+        input = self.input_item.object.path
+        sequences = CompleteData.from_path(ValidFilePath(input), reader)
+
+        task = _Dereplicate(warn=print)
+        task.similarity = self.similarity_threshold
+        task.length_threshold = self.length_threshold or None
+        task._calculate_distances.alignment = alignment
+        task._calculate_distances.metrics = [_Metric.Uncorrected]
+        task.data = sequences
+        task.start()
+
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        save_path = self.temporary_path / timestamp
+        save_path.mkdir()
+
+        dereplicated = save_path / 'dereplicated.tsv'
+        excluded = save_path / 'excluded.tsv'
+
+        dereplicated.unlink(missing_ok=True)
+        excluded.unlink(missing_ok=True)
+
+        for output in task.result:
+            output.included.append_to_file(dereplicated)
+            output.excluded.append_to_file(excluded)
+
+        # print(str(dereplicated))
+        # with open(dereplicated) as f:
+        #     print(f.read())
+        # print('---')
 
     def cancel(self):
         self.worker.terminate()
@@ -274,6 +321,8 @@ class Dereplicate(Task):
         self.notification.emit(NotificationType.Info, f'{self.name} completed successfully!', '')
 
     def onFail(self, exception, traceback):
+        print(str(exception))
+        print(traceback)
         self.notification.emit(NotificationType.Fail, str(exception), traceback)
 
     def onCancel(self, exception):
