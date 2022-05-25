@@ -183,6 +183,7 @@ class Dereplicate(Task):
     alignment_type = Property(AlignmentType, notify=changed)
     similarity_threshold = Property(float, notify=changed)
     length_threshold = Property(int, notify=changed)
+    input_item = Property(object, notify=changed)
 
     count = itertools.count(1, 1)
 
@@ -192,6 +193,7 @@ class Dereplicate(Task):
         self.alignment_type = AlignmentType.AlignmentFree
         self.similarity_threshold = 0.07
         self.length_threshold = 0
+        self.input_item = None
 
     def __str__(self):
         return f'Dereplicate({repr(self.name)})'
@@ -202,6 +204,7 @@ class Dereplicate(Task):
     @classmethod
     def get_next_name(cls):
         return f'Dereplicate #{next(cls.count)}'
+
 
 class Item:
     """Provides a hierarchical structure for Objects"""
@@ -233,6 +236,16 @@ class ItemModel(QtCore.QAbstractItemModel):
         self.root = Item('')
         self.tasks = self.root.add_child(Group('Tasks'))
         self.sequences = self.root.add_child(Group('Sequences'))
+
+    @property
+    def tasks_index(self):
+        group = self.tasks
+        return self.createIndex(group.row, 0, group)
+
+    @property
+    def sequences_index(self):
+        group = self.sequences
+        return self.createIndex(group.row, 0, group)
 
     def _add_entry(self, group, child):
         parent = self.createIndex(group.row, 0, group)
@@ -277,7 +290,7 @@ class ItemModel(QtCore.QAbstractItemModel):
 
         parentItem = self.getItem(parent)
 
-        if row >= len(parentItem.children):
+        if row < 0 or row >= len(parentItem.children):
             return QtCore.QModelIndex()
 
         childItem = parentItem.children[row]

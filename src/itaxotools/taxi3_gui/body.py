@@ -24,9 +24,10 @@ from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
 
-from .model import Object, Task, Sequence, BulkSequences, Dereplicate, AlignmentType
-from .sidebar import Item
 from .dashboard import Dashboard
+from .model import (
+    Object, Task, Sequence, BulkSequences, Dereplicate,
+    AlignmentType, Item, ItemModel)
 
 
 class Binding:
@@ -292,6 +293,49 @@ class AlignmentTypeSelector(QtWidgets.QFrame):
             button.setChecked(button.alignment_type == type)
 
 
+class SequenceSelector(QtWidgets.QFrame):
+
+    sequenceChanged = QtCore.Signal(Item)
+
+    def __init__(self, text, model, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+
+        label = QtWidgets.QLabel(text)
+        label.setStyleSheet("""font-size: 16px;""")
+
+        combo = QtWidgets.QComboBox()
+        combo.setFixedWidth(180)
+        combo.setModel(model)
+        combo.setRootModelIndex(model.sequences_index)
+        combo.currentIndexChanged.connect(self.handleIndexChanged)
+
+        browse = QtWidgets.QPushButton('Import')
+        browse.setEnabled(False)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(label, 1)
+        layout.addWidget(combo)
+        layout.addWidget(browse)
+        self.setLayout(layout)
+
+        self.combo = combo
+
+    def handleIndexChanged(self, row):
+        if row < 0:
+            item = None
+        else:
+            model = self.combo.model()
+            parent = model.sequences_index
+            index = model.index(row, 0, parent)
+            item = index.data(ItemModel.ItemRole)
+        self.sequenceChanged.emit(item)
+
+    def setSequenceItem(self, item):
+        row = item.row if item else -1
+        self.combo.setCurrentIndex(row)
+
+
 class NoWheelSpinBox(QtWidgets.QSpinBox):
     def wheelEvent(self, event):
         event.ignore()
@@ -299,14 +343,16 @@ class NoWheelSpinBox(QtWidgets.QSpinBox):
 
 class DereplicateView(ObjectView):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
         self.controls = AttrDict()
         self.bindings = AttrDict()
         self.bindings.name = Binding(self.getName)
         self.bindings.alignmentType = Binding(self.getAlignmentType, self.setAlignmentType)
         self.bindings.similarityThreshold = Binding(self.getSimilarityThreshold, self.setSimilarityThreshold)
         self.bindings.lengthThreshold = Binding(self.getLengthThreshold, self.setLengthThreshold)
+        self.bindings.inputItem = Binding(self.getInputItem, self.setInputItem)
         self.draw()
 
     def draw(self):
@@ -341,6 +387,9 @@ class DereplicateView(ObjectView):
         results = QtWidgets.QPushButton('Results')
         remove = QtWidgets.QPushButton('Remove')
 
+        results.setEnabled(False)
+        remove.setEnabled(False)
+
         contents = QtWidgets.QVBoxLayout()
         contents.addWidget(title)
         contents.addWidget(description)
@@ -365,20 +414,9 @@ class DereplicateView(ObjectView):
         return frame
 
     def draw_input_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
-
-        label = QtWidgets.QLabel('Input Sequence')
-        label.setStyleSheet("""font-size: 16px;""")
-
-        sequence = QtWidgets.QComboBox()
-        browse = QtWidgets.QPushButton('Import')
-
-        layout = QtWidgets.QHBoxLayout()
-        layout.addWidget(label, 1)
-        layout.addWidget(sequence)
-        layout.addWidget(browse)
-        frame.setLayout(layout)
+        frame = SequenceSelector('Input Sequence:', self.model, self)
+        self.bindings.inputItem.connect_setter(frame.sequenceChanged)
+        self.controls.inputItem = frame
         return frame
 
     def draw_distance_card(self):
@@ -478,6 +516,15 @@ class DereplicateView(ObjectView):
         value = self.object.alignment_type
         self.controls.alignment_type_selector.setAlignmentType(value)
 
+    def setInputItem(self, item):
+        if self.object.input_item == item:
+            return
+        self.object.input_item = item
+
+    def getInputItem(self):
+        item = self.object.input_item
+        self.controls.inputItem.setSequenceItem(item)
+
     def setObject(self, object):
         self.object = object
 
@@ -509,10 +556,10 @@ class Body(QtWidgets.QStackedWidget):
         self.addView(Task, TaskView)
         self.addView(Sequence, SequenceView)
         self.addView(BulkSequences, BulkSequencesView)
-        self.addView(Dereplicate, DereplicateView)
+        self.addView(Dereplicate, DereplicateView, model=model)
 
-    def addView(self, object_type, view_type):
-        view = view_type(self)
+    def addView(self, object_type, view_type, *args, **kwargs):
+        view = view_type(parent=self, *args, **kwargs)
         area = ScrollArea(view, self)
         self.areas[object_type] = area
         self.addWidget(area)
