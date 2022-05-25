@@ -25,6 +25,7 @@ from enum import Enum, auto
 import itertools
 
 from itaxotools.common.utility import override
+from itaxotools.common.threading import WorkerThread
 
 
 class Property():
@@ -210,8 +211,15 @@ class AlignmentType(Enum):
         return self.value
 
 
+class NotificationType(Enum):
+    Info = auto()
+    Warn = auto()
+    Fail = auto()
+
+
 class Dereplicate(Task):
     changed = QtCore.Signal(object)
+    notification = QtCore.Signal(NotificationType, str, str)
     alignment_type = Property(AlignmentType, notify=changed)
     similarity_threshold = Property(float, notify=changed)
     length_threshold = Property(int, notify=changed)
@@ -229,6 +237,12 @@ class Dereplicate(Task):
         self.input_item = None
         self.busy = False
 
+        self.worker = WorkerThread(self.work)
+        self.worker.done.connect(self.onDone)
+        self.worker.fail.connect(self.onFail)
+        self.worker.cancel.connect(self.onCancel)
+        self.worker.finished.connect(self.onFinished)
+
     def __str__(self):
         return f'Dereplicate({repr(self.name)})'
 
@@ -242,6 +256,31 @@ class Dereplicate(Task):
     @QtCore.Property(object, notify=changed)
     def ready(self):
         return self.input_item is not None
+
+    def start(self):
+        self.busy = True
+        self.worker.start()
+
+    def work(self):
+        print(self.name, self.similarity_threshold, self.input_item)
+        from time import sleep
+        sleep(1)
+        return 42
+
+    def cancel(self):
+        self.worker.terminate()
+
+    def onDone(self, result):
+        self.notification.emit(NotificationType.Info, f'{self.name} completed successfully!', '')
+
+    def onFail(self, exception, traceback):
+        self.notification.emit(NotificationType.Fail, str(exception), traceback)
+
+    def onCancel(self, exception):
+        self.notification.emit(NotificationType.Warn, 'Cancelled by user.', '')
+
+    def onFinished(self):
+        self.busy = False
 
 
 class Item:

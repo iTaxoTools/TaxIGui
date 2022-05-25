@@ -27,7 +27,7 @@ from itaxotools.common.utility import AttrDict
 from .dashboard import Dashboard
 from .model import (
     Object, Task, Sequence, BulkSequences, Dereplicate,
-    AlignmentType, SequenceReader, Item, ItemModel)
+    AlignmentType, SequenceReader, Item, ItemModel, NotificationType)
 
 
 class Binding:
@@ -664,6 +664,11 @@ class DereplicateView(ObjectView):
         self.controls.inputItem.setSequenceItem(item)
 
     def setObject(self, object):
+
+        if self.object:
+            self.object.notification.disconnect(self.showNotification)
+        object.notification.connect(self.showNotification)
+
         self.object = object
 
         for binding in self.bindings.values():
@@ -671,10 +676,26 @@ class DereplicateView(ObjectView):
             binding.getter()
 
     def handleRun(self):
-        self.object.busy = ~ self.object.busy
+        self.object.start()
 
     def handleCancel(self):
-        self.object.busy = ~ self.object.busy
+        self.object.cancel()
+
+    def showNotification(self, type, text, info):
+
+        icon = {
+            NotificationType.Info: QtWidgets.QMessageBox.Information,
+            NotificationType.Warn: QtWidgets.QMessageBox.Warning,
+            NotificationType.Fail: QtWidgets.QMessageBox.Critical,
+        }[type]
+
+        msgBox = QtWidgets.QMessageBox(self.window())
+        msgBox.setWindowTitle(self.window().title)
+        msgBox.setIcon(icon)
+        msgBox.setText(text)
+        msgBox.setDetailedText(info)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msgBox.exec()
 
 
 class ScrollArea(QtWidgets.QScrollArea):
