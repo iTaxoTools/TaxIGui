@@ -216,6 +216,7 @@ class Dereplicate(Task):
     similarity_threshold = Property(float, notify=changed)
     length_threshold = Property(int, notify=changed)
     input_item = Property(object, notify=changed)
+    busy = Property(bool, notify=changed)
 
     count = itertools.count(1, 1)
 
@@ -226,6 +227,7 @@ class Dereplicate(Task):
         self.similarity_threshold = 0.07
         self.length_threshold = 0
         self.input_item = None
+        self.busy = False
 
     def __str__(self):
         return f'Dereplicate({repr(self.name)})'
@@ -236,6 +238,10 @@ class Dereplicate(Task):
     @classmethod
     def get_next_name(cls):
         return f'Dereplicate #{next(cls.count)}'
+
+    @QtCore.Property(object, notify=changed)
+    def ready(self):
+        return self.input_item is not None
 
 
 class Item:

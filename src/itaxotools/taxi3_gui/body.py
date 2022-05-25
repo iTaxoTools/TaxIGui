@@ -458,6 +458,8 @@ class DereplicateView(ObjectView):
         self.controls = AttrDict()
         self.bindings = AttrDict()
         self.bindings.name = Binding(self.getName)
+        self.bindings.busy = Binding(self.getBusy)
+        self.bindings.ready = Binding(self.getReady)
         self.bindings.alignmentType = Binding(self.getAlignmentType, self.setAlignmentType)
         self.bindings.similarityThreshold = Binding(self.getSimilarityThreshold, self.setSimilarityThreshold)
         self.bindings.lengthThreshold = Binding(self.getLengthThreshold, self.setLengthThreshold)
@@ -493,8 +495,12 @@ class DereplicateView(ObjectView):
         description.setWordWrap(True)
 
         run = QtWidgets.QPushButton('Run')
+        cancel = QtWidgets.QPushButton('Cancel')
         results = QtWidgets.QPushButton('Results')
         remove = QtWidgets.QPushButton('Remove')
+
+        run.clicked.connect(self.handleRun)
+        cancel.clicked.connect(self.handleCancel)
 
         results.setEnabled(False)
         remove.setEnabled(False)
@@ -506,6 +512,7 @@ class DereplicateView(ObjectView):
 
         buttons = QtWidgets.QVBoxLayout()
         buttons.addWidget(run)
+        buttons.addWidget(cancel)
         buttons.addWidget(results)
         buttons.addWidget(remove)
         buttons.addStretch(1)
@@ -518,6 +525,7 @@ class DereplicateView(ObjectView):
         self.controls.title = title
         self.controls.description = description
         self.controls.run = run
+        self.controls.cancel = cancel
         self.controls.results = results
         self.controls.remove = remove
         return frame
@@ -596,6 +604,19 @@ class DereplicateView(ObjectView):
         value = self.object.name
         self.controls.title.setText(value)
 
+    def getReady(self):
+        value = self.object.ready
+        self.controls.run.setEnabled(value)
+
+    def getBusy(self):
+        busy = self.object.busy
+        self.controls.cancel.setVisible(busy)
+        self.controls.run.setVisible(not busy)
+        self.cards.input.setEnabled(not busy)
+        self.cards.distance.setEnabled(not busy)
+        self.cards.similarity.setEnabled(not busy)
+        self.cards.length.setEnabled(not busy)
+
     def setSimilarityThreshold(self, value):
         value = value / 100
         if self.object.similarity_threshold == value:
@@ -640,6 +661,12 @@ class DereplicateView(ObjectView):
         for binding in self.bindings.values():
             binding.connect_getter(self.object.changed)
             binding.getter()
+
+    def handleRun(self):
+        self.object.busy = ~ self.object.busy
+
+    def handleCancel(self):
+        self.object.busy = ~ self.object.busy
 
 
 class ScrollArea(QtWidgets.QScrollArea):
