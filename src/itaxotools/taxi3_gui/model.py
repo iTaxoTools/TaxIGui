@@ -137,11 +137,27 @@ class Group(Object):
     pass
 
 
+class SequenceReader(Enum):
+    TabfileReader = 'Tab-separated'
+    GenbankReader = 'Genbank (flat)'
+    XlsxReader = 'Excel (xlsx)'
+    FastaReader = 'Fasta'
+
+    def __str__(self):
+        return self.value
+
+
 class Sequence(Object):
+    changed = QtCore.Signal(object)
+    name = Property(str, notify=changed)
+    path = Property(Path, notify=changed)
+    reader = Property(SequenceReader, notify=changed)
+
     def __init__(self, path):
         super().__init__()
         self.path = path
         self.name = path.stem
+        self.reader = SequenceReader.TabfileReader
 
     def __str__(self):
         return f'Sequence({repr(self.name)})'

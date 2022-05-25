@@ -27,7 +27,7 @@ from itaxotools.common.utility import AttrDict
 from .dashboard import Dashboard
 from .model import (
     Object, Task, Sequence, BulkSequences, Dereplicate,
-    AlignmentType, Item, ItemModel)
+    AlignmentType, SequenceReader, Item, ItemModel)
 
 
 class Binding:
@@ -103,16 +103,57 @@ class TaskView(ObjectView):
         self.setStyleSheet("""TaskView{background: Palette(Shadow);}""")
 
 
+class SequenceReaderSelector(QtWidgets.QFrame):
+
+    toggled = QtCore.Signal(SequenceReader)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+
+        label = QtWidgets.QLabel('File Format:')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        combo = QtWidgets.QComboBox()
+        combo.setFixedWidth(160)
+        for reader in SequenceReader:
+            combo.addItem(str(reader), reader)
+        combo.currentIndexChanged.connect(self.handleIndexChanged)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(label)
+        layout.addStretch(1)
+        layout.addWidget(combo)
+        self.setLayout(layout)
+
+        self.combo = combo
+
+    def handleIndexChanged(self, index):
+        value = self.combo.currentData()
+        self.toggled.emit(value)
+
+    def setSequenceReader(self, reader):
+        index = self.combo.findData(reader)
+        self.combo.setCurrentIndex(index)
+
+
 class SequenceView(ObjectView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.controls = AttrDict()
+        self.bindings = AttrDict()
+        self.bindings.name = Binding(self.getName)
+        self.bindings.source = Binding(self.getSource)
+        self.bindings.reader = Binding(self.getReader, self.setReader)
         self.draw()
 
     def draw(self):
-        self.draw_main_card()
+        main = self.draw_main_card()
+        selector = self.draw_selector_card()
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.frame)
+        layout.addWidget(main)
+        layout.addWidget(selector)
         layout.addStretch(1)
         layout.setSpacing(8)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -121,16 +162,13 @@ class SequenceView(ObjectView):
     def draw_main_card(self):
         frame = QtWidgets.QFrame(self)
         frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
-        label = QtWidgets.QLabel('')
-        self.draw_buttons()
-        layout = QtWidgets.QHBoxLayout()
-        layout.addWidget(label, 1)
-        layout.addLayout(self.buttons, 0)
-        frame.setLayout(layout)
-        self.frame = frame
-        self.label = label
 
-    def draw_buttons(self):
+        name = QtWidgets.QLabel('Sequence')
+        name.setStyleSheet("""font-size: 18px; font-weight: bold; """)
+
+        source = QtWidgets.QLabel('...')
+        source.setWordWrap(True)
+
         open = QtWidgets.QPushButton('Open')
         inspect = QtWidgets.QPushButton('Inspect')
         remove = QtWidgets.QPushButton('Remove')
@@ -139,33 +177,73 @@ class SequenceView(ObjectView):
         inspect.clicked.connect(self.handleInspect)
         remove.clicked.connect(self.handleRemove)
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(open)
-        layout.addWidget(inspect)
-        layout.addWidget(remove)
-        self.buttons = layout
+        inspect.setEnabled(False)
+        remove.setEnabled(False)
+
+        contents = QtWidgets.QVBoxLayout()
+        contents.addWidget(name)
+        contents.addWidget(source)
+        contents.addStretch(1)
+
+        buttons = QtWidgets.QVBoxLayout()
+        buttons.addWidget(open)
+        buttons.addWidget(inspect)
+        buttons.addWidget(remove)
+        buttons.addStretch(1)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addLayout(contents, 1)
+        layout.addLayout(buttons, 0)
+        frame.setLayout(layout)
+
+        self.controls.name = name
+        self.controls.source = source
+        self.controls.open = open
+        self.controls.inspect = inspect
+        self.controls.remove = remove
+        return frame
+
+    def draw_selector_card(self):
+        frame = SequenceReaderSelector(self)
+        self.bindings.reader.connect_setter(frame.toggled)
+        self.controls.reader = frame
+        return frame
+
+    def getName(self):
+        value = self.object.name
+        self.controls.name.setText(value)
+
+    def getSource(self):
+        value = str(self.object.path)
+        self.controls.source.setText(value)
+
+    def setReader(self, value):
+        if self.object.reader == value:
+            return
+        self.object.reader = value
+
+    def getReader(self):
+        value = self.object.reader
+        self.controls.reader.setSequenceReader(value)
 
     def setObject(self, object):
-        if self.object:
-            self.object.changed.disconnect(self.updateView)
         self.object = object
-        self.object.changed.connect(self.updateView)
-        self.updateView()
 
-    def updateView(self):
-        if not self.object:
-            return
-        self.label.setText(self.object.name)
+        for binding in self.bindings.values():
+            binding.connect_getter(self.object.changed)
+            binding.getter()
 
     def handleOpen(self):
-        print('open', self.object.name)
+        print('open', self.object.name, str(self.object.path))
+        url = QtCore.QUrl.fromLocalFile(str(self.object.path))
+        QtGui.QDesktopServices.openUrl(url)
 
     def handleInspect(self):
         print('inspect', self.object.name)
 
     def handleRemove(self):
         print('remove', self.object.name)
-        self.parent().removeActiveItem()
+        self.parent().parent().parent().removeActiveItem()
 
 
 class BulkSequencesView(ObjectView):
