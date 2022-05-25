@@ -234,9 +234,10 @@ class Dereplicate(Task):
 
     count = itertools.count(1, 1)
 
-    def __init__(self, name=None, input=None):
+    def __init__(self, name=None, model=None):
         super().__init__()
         self.name = name or self.get_next_name()
+        self.itemModel = model
         self.alignment_type = AlignmentType.AlignmentFree
         self.similarity_threshold = 0.07
         self.length_threshold = 0
@@ -299,20 +300,19 @@ class Dereplicate(Task):
         save_path = self.temporary_path / timestamp
         save_path.mkdir()
 
-        dereplicated = save_path / 'dereplicated.tsv'
-        excluded = save_path / 'excluded.tsv'
+        excluded = save_path / f'{input.stem}.{timestamp}.excluded.tsv'
+        dereplicated = save_path / f'{input.stem}.{timestamp}.dereplicated.tsv'
 
-        dereplicated.unlink(missing_ok=True)
         excluded.unlink(missing_ok=True)
+        dereplicated.unlink(missing_ok=True)
 
         for output in task.result:
-            output.included.append_to_file(dereplicated)
             output.excluded.append_to_file(excluded)
+            output.included.append_to_file(dereplicated)
 
-        # print(str(dereplicated))
-        # with open(dereplicated) as f:
-        #     print(f.read())
-        # print('---')
+        if self.itemModel:
+            self.itemModel.add_sequence(Sequence(excluded))
+            self.itemModel.add_sequence(Sequence(dereplicated))
 
     def cancel(self):
         self.worker.terminate()
