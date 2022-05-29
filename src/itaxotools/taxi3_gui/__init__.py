@@ -20,4 +20,4 @@ def run():
     main.setWindowFlags(QtCore.Qt.Window)
     main.setModal(True)
     main.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

@@ -28,58 +28,7 @@ from .dashboard import Dashboard
 from .model import (
     Object, Task, Sequence, BulkSequences, Dereplicate, Decontaminate,
     AlignmentType, SequenceReader, Item, ItemModel, SequenceListModel,
-    DecontaminateMode, NotificationType)
-
-
-class Binding:
-
-    def __init__(
-        self,
-        getter_slot=None,
-        setter_slot=None,
-        getter_signal=None,
-        setter_signal=None
-    ):
-        self.getter_slot = getter_slot
-        self.setter_slot = setter_slot
-        self.getter_signal = None
-        self.setter_signal = None
-        self.value = None
-        self.busy = False
-        self.connect_getter(getter_signal)
-        self.connect_setter(setter_signal)
-
-    def connect_setter(self, signal):
-        if self.setter_signal:
-            self.setter_signal.disconnect(self.setter)
-        self.setter_signal = signal
-        if signal:
-            signal.connect(self.setter)
-
-    def connect_getter(self, signal):
-        if self.getter_signal:
-            self.getter_signal.disconnect(self.getter)
-        self.getter_signal = signal
-        if signal:
-            signal.connect(self.getter)
-
-    def disconnect_setter(self):
-        self.connect_setter(None)
-
-    def disconnect_getter(self):
-        self.connect_getter(None)
-
-    def setter(self, *args, **kwargs):
-        if not self.setter_slot or not self.getter_signal:
-            return
-        self.busy = True
-        self.setter_slot(*args, **kwargs)
-        self.busy = False
-
-    def getter(self, *args, **kwargs):
-        if not self.getter_slot or not self.getter_signal or self.busy:
-            return
-        self.getter_slot()
+    DecontaminateMode, NotificationType, bind, unbind)
 
 
 class ObjectView(QtWidgets.QFrame):
@@ -87,6 +36,7 @@ class ObjectView(QtWidgets.QFrame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setStyleSheet("""ObjectView{background: Palette(Dark);}""")
+        self.bindings = set()
         self.object = None
 
     def setObject(self, object: Object):
@@ -95,6 +45,19 @@ class ObjectView(QtWidgets.QFrame):
 
     def updateView(self):
         pass
+
+    def bind(self, src, dst, proxy=None):
+        key = bind(src, dst, proxy)
+        self.bindings.add(key)
+
+    def unbind(self, src, dst):
+        key = unbind(src, dst)
+        self.bindings.remove(key)
+
+    def unbind_all(self):
+        for key in self.bindings:
+            unbind(key.signal, key.slot)
+        self.bindings.clear()
 
 
 class TaskView(ObjectView):
@@ -143,10 +106,6 @@ class SequenceView(ObjectView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.controls = AttrDict()
-        self.bindings = AttrDict()
-        self.bindings.name = Binding(self.getName)
-        self.bindings.source = Binding(self.getSource)
-        self.bindings.reader = Binding(self.getReader, self.setReader)
         self.draw()
 
     def draw(self):
@@ -207,33 +166,18 @@ class SequenceView(ObjectView):
 
     def draw_selector_card(self):
         frame = SequenceReaderSelector(self)
-        self.bindings.reader.connect_setter(frame.toggled)
         self.controls.reader = frame
         return frame
-
-    def getName(self):
-        value = self.object.name
-        self.controls.name.setText(value)
-
-    def getSource(self):
-        value = str(self.object.path)
-        self.controls.source.setText(value)
-
-    def setReader(self, value):
-        if self.object.reader == value:
-            return
-        self.object.reader = value
-
-    def getReader(self):
-        value = self.object.reader
-        self.controls.reader.setSequenceReader(value)
 
     def setObject(self, object):
         self.object = object
 
-        for binding in self.bindings.values():
-            binding.connect_getter(self.object.changed)
-            binding.getter()
+        self.unbind_all()
+
+        self.bind(object.properties.name, self.controls.name.setText)
+        self.bind(object.properties.path, self.controls.source.setText, lambda x: str(x))
+        self.bind(object.properties.reader, self.controls.reader.setSequenceReader)
+        self.bind(self.controls.reader.toggled, object.properties.reader)
 
     def handleOpen(self):
         print('open', self.object.name, str(self.object.path))
@@ -253,10 +197,6 @@ class BulkSequencesView(ObjectView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.controls = AttrDict()
-        self.bindings = AttrDict()
-        self.bindings.name = Binding(self.getName)
-        self.bindings.model = Binding(self.getModel)
-        self.bindings.reader = Binding(self.getReader, self.setReader)
         self.draw()
 
     def draw(self):
@@ -317,33 +257,19 @@ class BulkSequencesView(ObjectView):
 
     def draw_selector_card(self):
         frame = SequenceReaderSelector(self)
-        self.bindings.reader.connect_setter(frame.toggled)
         self.controls.reader = frame
         return frame
-
-    def getName(self):
-        value = self.object.name
-        self.controls.name.setText(value)
-
-    def getModel(self):
-        value = self.object.model
-        self.controls.view.setModel(value)
-
-    def setReader(self, value):
-        if self.object.reader == value:
-            return
-        self.object.reader = value
-
-    def getReader(self):
-        value = self.object.reader
-        self.controls.reader.setSequenceReader(value)
 
     def setObject(self, object):
         self.object = object
 
-        for binding in self.bindings.values():
-            binding.connect_getter(self.object.changed)
-            binding.getter()
+        self.unbind_all()
+
+        self.bind(object.properties.name, self.controls.name.setText)
+        self.bind(object.properties.reader, self.controls.reader.setSequenceReader)
+        self.bind(self.controls.reader.toggled, object.properties.reader)
+
+        self.controls.view.setModel(object.model)
 
     def handleOpen(self):
         index = self.controls.view.currentIndex()
@@ -459,14 +385,6 @@ class DereplicateView(ObjectView):
         super().__init__(parent)
         self.model = model
         self.controls = AttrDict()
-        self.bindings = AttrDict()
-        self.bindings.name = Binding(self.getName)
-        self.bindings.busy = Binding(self.getBusy)
-        self.bindings.ready = Binding(self.getReady)
-        self.bindings.alignmentType = Binding(self.getAlignmentType, self.setAlignmentType)
-        self.bindings.similarityThreshold = Binding(self.getSimilarityThreshold, self.setSimilarityThreshold)
-        self.bindings.lengthThreshold = Binding(self.getLengthThreshold, self.setLengthThreshold)
-        self.bindings.inputItem = Binding(self.getInputItem, self.setInputItem)
         self.draw()
 
     def draw(self):
@@ -542,14 +460,12 @@ class DereplicateView(ObjectView):
 
     def draw_input_card(self):
         frame = SequenceSelector('Input Sequence:', self.model, self)
-        self.bindings.inputItem.connect_setter(frame.sequenceChanged)
         self.controls.inputItem = frame
         return frame
 
     def draw_distance_card(self):
         frame = AlignmentTypeSelector(self)
-        self.bindings.alignmentType.connect_setter(frame.toggled)
-        self.controls.alignment_type_selector = frame
+        self.controls.alignmentTypeSelector = frame
         return frame
 
     def draw_similarity_card(self):
@@ -577,7 +493,6 @@ class DereplicateView(ObjectView):
         layout.setHorizontalSpacing(20)
         frame.setLayout(layout)
 
-        self.bindings.similarityThreshold.connect_setter(threshold.valueChanged)
         self.controls.similarityThreshold = threshold
         return frame
 
@@ -606,20 +521,10 @@ class DereplicateView(ObjectView):
         layout.setHorizontalSpacing(20)
         frame.setLayout(layout)
 
-        self.bindings.lengthThreshold.connect_setter(threshold.textChanged)
         self.controls.lengthThreshold = threshold
         return frame
 
-    def getName(self):
-        value = self.object.name
-        self.controls.title.setText(value)
-
-    def getReady(self):
-        value = self.object.ready
-        self.controls.run.setEnabled(value)
-
-    def getBusy(self):
-        busy = self.object.busy
+    def handleBusy(self, busy):
         self.controls.cancel.setVisible(busy)
         self.controls.progress.setVisible(busy)
         self.controls.run.setVisible(not busy)
@@ -627,44 +532,6 @@ class DereplicateView(ObjectView):
         self.cards.distance.setEnabled(not busy)
         self.cards.similarity.setEnabled(not busy)
         self.cards.length.setEnabled(not busy)
-
-    def setSimilarityThreshold(self, value):
-        value = value / 100
-        if self.object.similarity_threshold == value:
-            return
-        self.object.similarity_threshold = value
-
-    def getSimilarityThreshold(self):
-        value = self.object.similarity_threshold
-        self.controls.similarityThreshold.setValue(round(value * 100))
-
-    def setLengthThreshold(self, text):
-        value = int(text)
-        if self.object.length_threshold == value:
-            return
-        self.object.length_threshold = value
-
-    def getLengthThreshold(self):
-        value = self.object.length_threshold
-        self.controls.lengthThreshold.setText(str(value))
-
-    def setAlignmentType(self, value):
-        if self.object.alignment_type == value:
-            return
-        self.object.alignment_type = value
-
-    def getAlignmentType(self):
-        value = self.object.alignment_type
-        self.controls.alignment_type_selector.setAlignmentType(value)
-
-    def setInputItem(self, item):
-        if self.object.input_item == item:
-            return
-        self.object.input_item = item
-
-    def getInputItem(self):
-        item = self.object.input_item
-        self.controls.inputItem.setSequenceItem(item)
 
     def setObject(self, object):
 
@@ -674,9 +541,23 @@ class DereplicateView(ObjectView):
 
         self.object = object
 
-        for binding in self.bindings.values():
-            binding.connect_getter(self.object.changed)
-            binding.getter()
+        self.unbind_all()
+
+        self.bind(object.properties.name, self.controls.title.setText)
+        self.bind(object.properties.ready, self.controls.run.setEnabled)
+        self.bind(object.properties.busy, self.handleBusy)
+
+        self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setValue, lambda x: round(x * 100))
+        self.bind(self.controls.similarityThreshold.valueChanged, object.properties.similarity_threshold, lambda x: x / 100)
+
+        self.bind(object.properties.length_threshold, self.controls.lengthThreshold.setText, lambda x: str(x))
+        self.bind(self.controls.lengthThreshold.textChanged, object.properties.length_threshold, lambda x: int(x))
+
+        self.bind(object.properties.alignment_type, self.controls.alignmentTypeSelector.setAlignmentType)
+        self.bind(self.controls.alignmentTypeSelector.toggled, object.properties.alignment_type)
+
+        self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
+        self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
 
     def handleRun(self):
         self.object.start()
@@ -748,16 +629,6 @@ class DecontaminateView(ObjectView):
         super().__init__(parent)
         self.model = model
         self.controls = AttrDict()
-        self.bindings = AttrDict()
-        self.bindings.name = Binding(self.getName)
-        self.bindings.busy = Binding(self.getBusy)
-        self.bindings.ready = Binding(self.getReady)
-        self.bindings.alignmentType = Binding(self.getAlignmentType, self.setAlignmentType)
-        self.bindings.similarityThreshold = Binding(self.getSimilarityThreshold, self.setSimilarityThreshold)
-        self.bindings.inputItem = Binding(self.getInputItem, self.setInputItem)
-        self.bindings.referenceItem1 = Binding(self.getReferenceItem1, self.setReferenceItem1)
-        self.bindings.referenceItem2 = Binding(self.getReferenceItem2, self.setReferenceItem2)
-        self.bindings.mode = Binding(self.getMode, self.setMode)
         self.draw()
 
     def draw(self):
@@ -839,32 +710,27 @@ class DecontaminateView(ObjectView):
 
     def draw_input_card(self):
         frame = SequenceSelector('Input Sequence(s):', self.model, self)
-        self.bindings.inputItem.connect_setter(frame.sequenceChanged)
         self.controls.inputItem = frame
         return frame
 
     def draw_mode_card(self):
         frame = DecontaminateModeSelector(self)
-        self.bindings.mode.connect_setter(frame.toggled)
         self.controls.mode = frame
         return frame
 
     def draw_ref1_card(self):
         frame = SequenceSelector('Reference 1 (outgroup):', self.model, self)
-        self.bindings.referenceItem1.connect_setter(frame.sequenceChanged)
         self.controls.referenceItem1 = frame
         return frame
 
     def draw_ref2_card(self):
         frame = SequenceSelector('Reference 2 (ingroup):', self.model, self)
-        self.bindings.referenceItem2.connect_setter(frame.sequenceChanged)
         self.controls.referenceItem2 = frame
         return frame
 
     def draw_distance_card(self):
         frame = AlignmentTypeSelector(self)
-        self.bindings.alignmentType.connect_setter(frame.toggled)
-        self.controls.alignment_type_selector = frame
+        self.controls.alignmentTypeSelector = frame
         return frame
 
     def draw_similarity_card(self):
@@ -894,7 +760,6 @@ class DecontaminateView(ObjectView):
         layout.setHorizontalSpacing(20)
         frame.setLayout(layout)
 
-        self.bindings.similarityThreshold.connect_setter(threshold.valueChanged)
         self.controls.similarityThreshold = threshold
         return frame
 
@@ -923,20 +788,10 @@ class DecontaminateView(ObjectView):
         layout.setHorizontalSpacing(20)
         frame.setLayout(layout)
 
-        self.bindings.lengthThreshold.connect_setter(threshold.textChanged)
         self.controls.lengthThreshold = threshold
         return frame
 
-    def getName(self):
-        value = self.object.name
-        self.controls.title.setText(value)
-
-    def getReady(self):
-        value = self.object.ready
-        self.controls.run.setEnabled(value)
-
-    def getBusy(self):
-        busy = self.object.busy
+    def handleBusy(self, busy):
         self.controls.cancel.setVisible(busy)
         self.controls.progress.setVisible(busy)
         self.controls.run.setVisible(not busy)
@@ -947,62 +802,7 @@ class DecontaminateView(ObjectView):
         self.cards.distance.setEnabled(not busy)
         self.cards.similarity.setEnabled(not busy)
 
-    def setSimilarityThreshold(self, value):
-        value = value / 100
-        if self.object.similarity_threshold == value:
-            return
-        self.object.similarity_threshold = value
-
-    def getSimilarityThreshold(self):
-        value = self.object.similarity_threshold
-        self.controls.similarityThreshold.setValue(round(value * 100))
-
-    def setAlignmentType(self, value):
-        if self.object.alignment_type == value:
-            return
-        self.object.alignment_type = value
-
-    def getAlignmentType(self):
-        value = self.object.alignment_type
-        self.controls.alignment_type_selector.setAlignmentType(value)
-
-    def setInputItem(self, item):
-        if self.object.input_item == item:
-            return
-        self.object.input_item = item
-
-    def getInputItem(self):
-        item = self.object.input_item
-        self.controls.inputItem.setSequenceItem(item)
-
-    def setReferenceItem1(self, item):
-        if self.object.reference_item_1 == item:
-            return
-        self.object.reference_item_1 = item
-
-    def getReferenceItem1(self):
-        item = self.object.reference_item_1
-        self.controls.referenceItem1.setSequenceItem(item)
-
-    def setReferenceItem2(self, item):
-        if self.object.reference_item_2 == item:
-            return
-        self.object.reference_item_2 = item
-
-    def getReferenceItem2(self):
-        item = self.object.reference_item_2
-        self.controls.referenceItem2.setSequenceItem(item)
-
-    def setMode(self, mode):
-        if self.object.mode == mode:
-            return
-        self.object.mode = mode
-        self.cards.similarity.setVisible(mode == DecontaminateMode.DECONT)
-        self.cards.ref2.setVisible(mode == DecontaminateMode.DECONT2)
-
-    def getMode(self):
-        mode = self.object.mode
-        self.controls.mode.setDecontaminateMode(mode)
+    def handleMode(self, mode):
         self.cards.similarity.setVisible(mode == DecontaminateMode.DECONT)
         self.cards.ref2.setVisible(mode == DecontaminateMode.DECONT2)
 
@@ -1014,9 +814,30 @@ class DecontaminateView(ObjectView):
 
         self.object = object
 
-        for binding in self.bindings.values():
-            binding.connect_getter(self.object.changed)
-            binding.getter()
+        self.unbind_all()
+
+        self.bind(object.properties.name, self.controls.title.setText)
+        self.bind(object.properties.ready, self.controls.run.setEnabled)
+        self.bind(object.properties.busy, self.handleBusy)
+
+        self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setValue, lambda x: round(x * 100))
+        self.bind(self.controls.similarityThreshold.valueChanged, object.properties.similarity_threshold, lambda x: x / 100)
+
+        self.bind(object.properties.alignment_type, self.controls.alignmentTypeSelector.setAlignmentType)
+        self.bind(self.controls.alignmentTypeSelector.toggled, object.properties.alignment_type)
+
+        self.bind(object.properties.mode, self.controls.mode.setDecontaminateMode)
+        self.bind(self.controls.mode.toggled, object.properties.mode)
+        self.bind(object.properties.mode, self.handleMode)
+
+        self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
+        self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
+
+        self.bind(object.properties.reference_item_1, self.controls.referenceItem1.setSequenceItem)
+        self.bind(self.controls.referenceItem1.sequenceChanged, object.properties.reference_item_1)
+
+        self.bind(object.properties.reference_item_2, self.controls.referenceItem2.setSequenceItem)
+        self.bind(self.controls.referenceItem2.sequenceChanged, object.properties.reference_item_2)
 
     def handleRun(self):
         self.object.start()

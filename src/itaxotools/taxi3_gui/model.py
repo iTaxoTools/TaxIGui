@@ -18,8 +18,9 @@
 
 from PySide6 import QtCore
 
-from typing import Callable, Optional
+from typing import Callable, ClassVar, Optional, Union
 from tempfile import TemporaryDirectory
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from enum import Enum, auto
@@ -34,58 +35,202 @@ from itaxotools.common.utility import override
 from itaxotools.common.threading import WorkerThread
 
 
-class Property():
-    """Convenience declaration of Qt Properties"""
-    def __init__(
-        self,
-        type: type = object,
-        fget: Optional[Callable] = None,
-        fset: Optional[Callable] = None,
-        notify: Optional[Callable] = None,
-        constant: bool = False,
-    ):
+class Property:
+
+    key_ref = 'properties'
+    key_list = '_property_list'
+
+    def __init__(self, type = object):
         self.type = type
-        self.fget = fget
-        self.fset = fset
-        self.notify = notify
-        self.constant = constant
+
+    @staticmethod
+    def key_value(key):
+        return f'_property_{key}_value'
+
+    @staticmethod
+    def key_notify(key):
+        return f'_property_{key}_notify'
+
+    @staticmethod
+    def key_getter(key):
+        return f'_property_{key}_getter'
+
+    @staticmethod
+    def key_setter(key):
+        return f'_property_{key}_setter'
 
 
-class _ObjectMeta(type(QtCore.QObject)):
-    """Translates class Properties to Qt Properties"""
-    def __new__(cls, name, bases, classdict):
+class PropertyRef:
+    def __init__(self, parent, key):
+        self._parent = parent
+        self._key = key
+
+    @property
+    def notify(self):
+        return getattr(self._parent, Property.key_notify(self._key))
+
+    @property
+    def get(self):
+        return getattr(self._parent, Property.key_getter(self._key))
+
+    @property
+    def set(self):
+        return getattr(self._parent, Property.key_setter(self._key))
+
+    @property
+    def key(self):
+        return self._key
+
+    @property
+    def value(self):
+        return self.get()
+
+    @value.setter
+    def value(self, value):
+        return self.set(value)
+
+    def update(self):
+        self.notify.emit(self.get())
+
+
+class PropertiesRef:
+    def __init__(self, parent):
+        self._parent = parent
+
+    def __getattr__(self, attr):
+        if attr in self._list():
+            return PropertyRef(self._parent, attr)
+
+    def __dir__(self):
+        return super().__dir__() + self._list()
+
+    def _list(self):
+        return getattr(self._parent, Property.key_list)
+
+
+class PropertyMeta(type(QtCore.QObject)):
+    def __new__(cls, name, bases, attrs):
         properties = {
-            key: classdict[key] for key in classdict
-            if isinstance(classdict[key], Property)}
-        for key, property in properties.items():
-            cls._register(classdict, key, property)
-        obj = super().__new__(cls, name, bases, classdict)
+            key: attrs[key] for key in attrs
+            if isinstance(attrs[key], Property)}
+        cls._init_list(bases, attrs)
+        for key, prop in properties.items():
+            cls._register_property(attrs, key, prop)
+        cls._add_ref(attrs)
+        obj = super().__new__(cls, name, bases, attrs)
         return obj
 
-    def _register(classdict, key, property):
-        _key = f'_val_{key}'
-        _notify = None
-        if property.notify:
-            _notify = [x for x in classdict if classdict[x] is property.notify][0]
+    def _init_list(bases, attrs):
+        key_list = Property.key_list
+        lists = [getattr(base, key_list, []) for base in bases]
+        attrs[key_list] = sum(lists, [])
+
+    def _register_property(attrs, key, prop):
+        key_value = Property.key_value(key)
+        key_notify = Property.key_notify(key)
+        key_getter = Property.key_getter(key)
+        key_setter = Property.key_setter(key)
+        key_list = Property.key_list
+
+        notify = QtCore.Signal(prop.type)
 
         def getter(self):
-            return getattr(self, _key)
+            return getattr(self, key_value, None)
 
         def setter(self, value):
-            old = getattr(self, _key, None)
-            setattr(self, _key, value)
-            if _notify and old != value:
-                getattr(self, _notify).emit(value)
+            old = getattr(self, key_value, None)
+            setattr(self, key_value, value)
+            if old != value:
+                getattr(self, key_notify).emit(value)
 
-        property.fget = property.fget or getter
-        property.fset = property.fset or setter
-        classdict[key] = QtCore.Property(
-            type=property.type,
-            fget=property.fget,
-            fset=property.fset,
-            notify=property.notify,
-            constant=property.constant,
+        attrs[key_list].append(key)
+
+        attrs[key_notify] = notify
+        attrs[key_getter] = getter
+        attrs[key_setter] = setter
+
+        attrs[key] = QtCore.Property(
+            type=prop.type,
+            fget=getter,
+            fset=setter,
+            notify=notify,
             )
+
+    def _add_ref(attrs):
+        key_ref = Property.key_ref
+
+        def getref(self):
+            return PropertiesRef(self)
+
+        attrs[key_ref] = property(getref)
+
+
+@dataclass(frozen=True)
+class Binding:
+    bindings: ClassVar = dict()
+
+    signal: QtCore.SignalInstance
+    slot: Callable
+
+    @classmethod
+    def _bind(cls, signal, slot, proxy=None):
+        if proxy:
+            def proxy_slot(value):
+                slot(proxy(value))
+            bind_slot = proxy_slot
+        else:
+            bind_slot = slot
+        signal.connect(bind_slot)
+        id = cls(signal, slot)
+        cls.bindings[id] = bind_slot
+        return id
+
+    @classmethod
+    def _unbind(cls, signal, slot):
+        id = cls(signal, slot)
+        bind_slot = cls.bindings[id]
+        signal.disconnect(bind_slot)
+
+
+def bind(
+    source: Union[PropertyRef, QtCore.SignalInstance],
+    destination: Union[PropertyRef, Callable],
+    proxy: Optional[Callable] = None,
+):
+
+    if isinstance(source, PropertyRef):
+        signal = source.notify
+    else:
+        signal = source
+
+    if isinstance(destination, PropertyRef):
+        slot = destination.set
+    else:
+        slot = destination
+
+    key = Binding._bind(signal, slot, proxy)
+    if isinstance(source, PropertyRef):
+        source.update()
+    return key
+
+
+def unbind(
+    source: Union[PropertyRef, QtCore.SignalInstance],
+    destination: Union[PropertyRef, Callable],
+):
+
+    if isinstance(source, PropertyRef):
+        signal = source.notify
+    else:
+        signal = source
+
+    if isinstance(destination, PropertyRef):
+        slot = destination.set
+    else:
+        slot = destination
+
+    return Binding._unbind(signal, slot)
+
 
 class SequenceListModel(QtCore.QAbstractListModel):
 
@@ -130,10 +275,9 @@ class SequenceListModel(QtCore.QAbstractListModel):
         self.endRemoveRows()
 
 
-class Object(QtCore.QObject, metaclass=_ObjectMeta):
+class Object(QtCore.QObject, metaclass=PropertyMeta):
     """Interface for backend structures"""
-    changed = QtCore.Signal(object)
-    name = Property(str, notify=changed)
+    name = Property(str)
 
     def __init__(self, name=None):
         super().__init__()
@@ -155,10 +299,8 @@ class SequenceReader(Enum):
 
 
 class Sequence(Object):
-    changed = QtCore.Signal(object)
-    name = Property(str, notify=changed)
-    path = Property(Path, notify=changed)
-    reader = Property(SequenceReader, notify=changed)
+    path = Property(Path)
+    reader = Property(SequenceReader)
 
     def __init__(self, path, reader=SequenceReader.TabfileReader):
         super().__init__()
@@ -174,9 +316,7 @@ class Sequence(Object):
 
 
 class BulkSequences(Object):
-    changed = QtCore.Signal(object)
-    name = Property(str, notify=changed)
-
+    reader = Property(SequenceReader)
     count = itertools.count(1, 1)
 
     def __init__(self, paths, name=None, reader=SequenceReader.TabfileReader):
@@ -185,6 +325,7 @@ class BulkSequences(Object):
         self.sequences = [Sequence(path) for path in paths]
         self.model = SequenceListModel(self.sequences)
         self.reader = reader
+        self.properties.reader.notify.connect(self.update_members)
 
     def __str__(self):
         return f'BulkSequences({repr(self.name)})'
@@ -196,12 +337,10 @@ class BulkSequences(Object):
     def get_next_name(cls):
         return f'Bulk Sequences #{next(cls.count)}'
 
-    def set_reader(self, value):
+    def update_members(self, value):
         self._val_reader = value
         for sequence in self.sequences:
             sequence.reader = value
-
-    reader = Property(SequenceReader, fset=set_reader, notify=changed)
 
 
 class Task(Object):
@@ -224,13 +363,13 @@ class NotificationType(Enum):
 
 
 class Dereplicate(Task):
-    changed = QtCore.Signal(object)
     notification = QtCore.Signal(NotificationType, str, str)
-    alignment_type = Property(AlignmentType, notify=changed)
-    similarity_threshold = Property(float, notify=changed)
-    length_threshold = Property(int, notify=changed)
-    input_item = Property(object, notify=changed)
-    busy = Property(bool, notify=changed)
+    alignment_type = Property(AlignmentType)
+    similarity_threshold = Property(float)
+    length_threshold = Property(int)
+    input_item = Property(object)
+    ready = Property(bool)
+    busy = Property(bool)
 
     count = itertools.count(1, 1)
 
@@ -242,6 +381,7 @@ class Dereplicate(Task):
         self.similarity_threshold = 0.07
         self.length_threshold = 0
         self.input_item = None
+        self.ready = True
         self.busy = False
 
         self.temporary_directory = TemporaryDirectory(prefix='dereplicate_')
@@ -253,6 +393,8 @@ class Dereplicate(Task):
         self.worker.cancel.connect(self.onCancel)
         self.worker.finished.connect(self.onFinished)
 
+        self.properties.input_item.notify.connect(self.checkReady)
+
     def __str__(self):
         return f'Dereplicate({repr(self.name)})'
 
@@ -263,9 +405,8 @@ class Dereplicate(Task):
     def get_next_name(cls):
         return f'Dereplicate #{next(cls.count)}'
 
-    @QtCore.Property(object, notify=changed)
-    def ready(self):
-        return self.input_item is not None
+    def checkReady(self, value):
+        self.ready = bool(value is not None)
 
     def start(self):
         self.busy = True
@@ -405,13 +546,14 @@ class DecontaminateMode(Enum):
 class Decontaminate(Task):
     changed = QtCore.Signal(object)
     notification = QtCore.Signal(NotificationType, str, str)
-    alignment_type = Property(AlignmentType, notify=changed)
-    similarity_threshold = Property(float, notify=changed)
-    mode = Property(DecontaminateMode, notify=changed)
-    input_item = Property(object, notify=changed)
-    reference_item_1 = Property(object, notify=changed)
-    reference_item_2 = Property(object, notify=changed)
-    busy = Property(bool, notify=changed)
+    alignment_type = Property(AlignmentType)
+    similarity_threshold = Property(float)
+    mode = Property(DecontaminateMode)
+    input_item = Property(object)
+    reference_item_1 = Property(object)
+    reference_item_2 = Property(object)
+    ready = Property(bool)
+    busy = Property(bool)
 
     count = itertools.count(1, 1)
 
@@ -425,6 +567,7 @@ class Decontaminate(Task):
         self.input_item = None
         self.reference_item_1 = None
         self.reference_item_2 = None
+        self.ready = False
         self.busy = False
 
         self.temporary_directory = TemporaryDirectory(prefix='decontaminate_')
@@ -436,6 +579,10 @@ class Decontaminate(Task):
         self.worker.cancel.connect(self.onCancel)
         self.worker.finished.connect(self.onFinished)
 
+        self.properties.input_item.notify.connect(self.updateReady)
+        self.properties.reference_item_1.notify.connect(self.updateReady)
+        self.properties.input_item.notify.connect(self.updateReady)
+
     def __str__(self):
         return f'Decontaminate({repr(self.name)})'
 
@@ -446,8 +593,7 @@ class Decontaminate(Task):
     def get_next_name(cls):
         return f'Decontaminate #{next(cls.count)}'
 
-    @QtCore.Property(object, notify=changed)
-    def ready(self):
+    def isReady(self):
         if self.input_item is None:
             return False
         if self.reference_item_1 is None:
@@ -460,6 +606,9 @@ class Decontaminate(Task):
             if not isinstance(self.reference_item_2.object, Sequence):
                 return False
         return True
+
+    def updateReady(self):
+        self.ready = self.isReady()
 
     def start(self):
         self.busy = True
@@ -711,7 +860,7 @@ class ItemModel(QtCore.QAbstractItemModel):
             index = self.index(row, 0, parent)
             self.dataChanged.emit(index, index)
 
-        child.changed.connect(entryChanged)
+        child.properties.name.notify.connect(entryChanged)
         self.endInsertRows()
         index = self.index(row, 0, parent)
         self.addedEntry.emit(index)
