@@ -299,10 +299,14 @@ class AlignmentTypeSelector(QtWidgets.QFrame):
         super().__init__(parent)
         self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
-        label = QtWidgets.QLabel('Distance Calculation')
+        label = QtWidgets.QLabel('Sequence comparison mode')
         label.setStyleSheet("""font-size: 16px;""")
 
-        description = QtWidgets.QLabel('The method for calculating distances between sequences.')
+        description = QtWidgets.QLabel(
+            'Choose which method to use to compare sequences, '
+            'either by alignment-free distances, by calculating distances '
+            'between sequences after performing pairwise alignment, or '
+            'by calculating distances between already aligned sequences.')
         description.setWordWrap(True)
 
         layout = QtWidgets.QVBoxLayout()
@@ -412,7 +416,9 @@ class DereplicateView(ObjectView):
         title = QtWidgets.QLabel('Dereplicate')
         title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
 
-        description = QtWidgets.QLabel('Truncate similar sequences within the provided dataset.')
+        description = QtWidgets.QLabel(
+            'Remove sequences that are identical or similar to other '
+            'sequences in the dataset.')
         description.setWordWrap(True)
 
         progress = QtWidgets.QProgressBar()
@@ -482,7 +488,9 @@ class DereplicateView(ObjectView):
         threshold.setValue(7)
         threshold.setFixedWidth(80)
 
-        description = QtWidgets.QLabel('Sequence pairs for which the uncorrected distance is below this threshold will be considered similar and will be truncated.')
+        description = QtWidgets.QLabel(
+            'Sequence pairs for which the uncorrected distance is below '
+            'this threshold will be considered similar and will be truncated.')
         description.setWordWrap(True)
 
         layout = QtWidgets.QGridLayout()
@@ -661,8 +669,8 @@ class DecontaminateView(ObjectView):
         title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
 
         description = QtWidgets.QLabel(
-            'Calculate distances between all input sequences towards a reference database, ' +
-            'then remove the sequences that are closest to it.')
+            'Compare input sequences to one or several reference databases '
+            'and remove sequences matching possible contaminants.')
         description.setWordWrap(True)
 
         progress = QtWidgets.QProgressBar()
@@ -749,7 +757,7 @@ class DecontaminateView(ObjectView):
 
         description = QtWidgets.QLabel(
             'Input sequences for which the uncorrected distance to any member of the reference database is within this threshold ' +
-            'will be considered contaminants and will be truncated.')
+            'will be considered contaminants and will be removed from the decontaminated output file.')
         description.setWordWrap(True)
 
         layout = QtWidgets.QGridLayout()
