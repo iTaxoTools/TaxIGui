@@ -305,7 +305,7 @@ class Sequence(Object):
     def __init__(self, path, reader=SequenceReader.TabfileReader):
         super().__init__()
         self.path = path
-        self.name = path.stem
+        self.name = path.name
         self.reader = reader
 
     def __str__(self):

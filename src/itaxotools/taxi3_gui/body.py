@@ -101,6 +101,17 @@ class SequenceReaderSelector(QtWidgets.QFrame):
         self.combo.setCurrentIndex(index)
 
 
+class SourceLabel(QtWidgets.QLabel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.textalignment = QtCore.Qt.AlignLeft | QtCore.Qt.TextWrapAnywhere
+
+    def setText(self, text):
+        for char in r'\/':
+            text = text.replace(char, f"{char}\u200b")
+        super().setText(text)
+
+
 class SequenceView(ObjectView):
 
     def __init__(self, *args, **kwargs):
@@ -126,7 +137,7 @@ class SequenceView(ObjectView):
         name = QtWidgets.QLabel('Sequence')
         name.setStyleSheet("""font-size: 18px; font-weight: bold; """)
 
-        source = QtWidgets.QLabel('...')
+        source = SourceLabel('...')
         source.setWordWrap(True)
 
         open = QtWidgets.QPushButton('Open')
