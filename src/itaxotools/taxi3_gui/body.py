@@ -22,7 +22,7 @@ from PySide6 import QtGui
 
 from pathlib import Path
 
-from itaxotools.common.utility import AttrDict
+from itaxotools.common.utility import AttrDict, override
 
 from .dashboard import Dashboard
 from .model import (
@@ -67,13 +67,59 @@ class TaskView(ObjectView):
         self.setStyleSheet("""TaskView{background: Palette(Shadow);}""")
 
 
-class SequenceReaderSelector(QtWidgets.QFrame):
+class Card(QtWidgets.QFrame):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setStyleSheet("""Card{background: Palette(Midlight);}""")
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(16)
+        self.setLayout(layout)
+
+    def addWidget(self, widget):
+        self.layout().addWidget(widget)
+
+    def addLayout(self, widget):
+        self.layout().addLayout(widget)
+
+    @override
+    def paintEvent(self, event):
+        super().paintEvent(event)
+
+        if self.layout().count():
+            self.paintSeparators()
+
+    def paintSeparators(self):
+        option = QtWidgets.QStyleOption()
+        option.initFrom(self)
+        painter = QtGui.QPainter(self)
+        painter.setPen(option.palette.color(QtGui.QPalette.Mid))
+
+        layout = self.layout()
+        frame = layout.contentsRect()
+        left = frame.left()
+        right = frame.right()
+
+        items = [
+            item for item in (layout.itemAt(id) for id in range(0, layout.count()))
+            if item.widget() and item.widget().isVisible()
+            or item.layout()
+        ]
+        pairs = zip(items[:-1], items[1:])
+
+        for first, second in pairs:
+            bottom = first.geometry().bottom()
+            top = second.geometry().top()
+            middle = (bottom + top) / 2
+            painter.drawLine(left, middle, right, middle)
+
+
+class SequenceReaderSelector(Card):
 
     toggled = QtCore.Signal(SequenceReader)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
         label = QtWidgets.QLabel('File Format')
         label.setStyleSheet("""font-size: 16px;""")
@@ -88,7 +134,7 @@ class SequenceReaderSelector(QtWidgets.QFrame):
         layout.addWidget(label)
         layout.addStretch(1)
         layout.addWidget(combo)
-        self.setLayout(layout)
+        self.addLayout(layout)
 
         self.combo = combo
 
@@ -131,8 +177,7 @@ class SequenceView(ObjectView):
         self.setLayout(layout)
 
     def draw_main_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        card = Card(self)
 
         name = QtWidgets.QLabel('Sequence')
         name.setStyleSheet("""font-size: 18px; font-weight: bold; """)
@@ -162,23 +207,24 @@ class SequenceView(ObjectView):
         buttons.addWidget(inspect)
         buttons.addWidget(remove)
         buttons.addStretch(1)
+        buttons.setSpacing(8)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addLayout(contents, 1)
         layout.addLayout(buttons, 0)
-        frame.setLayout(layout)
+        card.addLayout(layout)
 
         self.controls.name = name
         self.controls.source = source
         self.controls.open = open
         self.controls.inspect = inspect
         self.controls.remove = remove
-        return frame
+        return card
 
     def draw_selector_card(self):
-        frame = SequenceReaderSelector(self)
-        self.controls.reader = frame
-        return frame
+        card = SequenceReaderSelector(self)
+        self.controls.reader = card
+        return card
 
     def setObject(self, object):
         self.object = object
@@ -211,10 +257,10 @@ class BulkSequencesView(ObjectView):
         self.draw()
 
     def draw(self):
-        frame = self.draw_main_card()
+        main = self.draw_main_card()
         selector = self.draw_selector_card()
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(frame)
+        layout.addWidget(main)
         layout.addWidget(selector)
         layout.addStretch(1)
         layout.setSpacing(8)
@@ -222,8 +268,7 @@ class BulkSequencesView(ObjectView):
         self.setLayout(layout)
 
     def draw_main_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        card = Card(self)
 
         name = QtWidgets.QLabel('Bulk Sequences')
         name.setStyleSheet("""font-size: 18px; font-weight: bold; """)
@@ -253,18 +298,19 @@ class BulkSequencesView(ObjectView):
         buttons.addWidget(add)
         buttons.addWidget(remove)
         buttons.addStretch(1)
+        buttons.setSpacing(8)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addLayout(contents, 1)
         layout.addLayout(buttons, 0)
-        frame.setLayout(layout)
+        card.addLayout(layout)
 
         self.controls.name = name
         self.controls.view = view
         self.controls.open = open
         self.controls.add = add
         self.controls.remove = remove
-        return frame
+        return card
 
     def draw_selector_card(self):
         frame = SequenceReaderSelector(self)
@@ -302,13 +348,12 @@ class BulkSequencesView(ObjectView):
         #     self.parent().removeActiveItem()
 
 
-class AlignmentTypeSelector(QtWidgets.QFrame):
+class AlignmentTypeSelector(Card):
 
     toggled = QtCore.Signal(AlignmentType)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
         label = QtWidgets.QLabel('Sequence comparison mode')
         label.setStyleSheet("""font-size: 16px;""")
@@ -323,6 +368,7 @@ class AlignmentTypeSelector(QtWidgets.QFrame):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(label)
         layout.addWidget(description)
+        layout.setSpacing(8)
 
         self.radio_buttons = list()
         for type in AlignmentType:
@@ -332,7 +378,7 @@ class AlignmentTypeSelector(QtWidgets.QFrame):
             self.radio_buttons.append(button)
             layout.addWidget(button)
 
-        self.setLayout(layout)
+        self.addLayout(layout)
 
     def handleToggle(self, checked):
         if not checked:
@@ -346,13 +392,12 @@ class AlignmentTypeSelector(QtWidgets.QFrame):
             button.setChecked(button.alignment_type == type)
 
 
-class SequenceSelector(QtWidgets.QFrame):
+class SequenceSelector(Card):
 
     sequenceChanged = QtCore.Signal(Item)
 
     def __init__(self, text, model, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
         label = QtWidgets.QLabel(text)
         label.setStyleSheet("""font-size: 16px;""")
@@ -370,7 +415,7 @@ class SequenceSelector(QtWidgets.QFrame):
         layout.addWidget(label, 1)
         layout.addWidget(combo)
         layout.addWidget(browse)
-        self.setLayout(layout)
+        self.addLayout(layout)
 
         self.combo = combo
 
@@ -421,8 +466,7 @@ class DereplicateView(ObjectView):
         self.setLayout(layout)
 
     def draw_title_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        card = Card(self)
 
         title = QtWidgets.QLabel('Dereplicate')
         title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
@@ -460,11 +504,12 @@ class DereplicateView(ObjectView):
         buttons.addWidget(results)
         buttons.addWidget(remove)
         buttons.addStretch(1)
+        buttons.setSpacing(8)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addLayout(contents, 1)
         layout.addLayout(buttons, 0)
-        frame.setLayout(layout)
+        card.addLayout(layout)
 
         self.controls.title = title
         self.controls.description = description
@@ -473,21 +518,20 @@ class DereplicateView(ObjectView):
         self.controls.cancel = cancel
         self.controls.results = results
         self.controls.remove = remove
-        return frame
+        return card
 
     def draw_input_card(self):
-        frame = SequenceSelector('Input Sequence:', self.model, self)
-        self.controls.inputItem = frame
-        return frame
+        card = SequenceSelector('Input Sequence:', self.model, self)
+        self.controls.inputItem = card
+        return card
 
     def draw_distance_card(self):
-        frame = AlignmentTypeSelector(self)
-        self.controls.alignmentTypeSelector = frame
-        return frame
+        card = AlignmentTypeSelector(self)
+        self.controls.alignmentTypeSelector = card
+        return card
 
     def draw_similarity_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        card = Card(self)
 
         label = QtWidgets.QLabel('Similarity Threshold (%)')
         label.setStyleSheet("""font-size: 16px;""")
@@ -510,14 +554,14 @@ class DereplicateView(ObjectView):
         layout.addWidget(description, 1, 0)
         layout.setColumnStretch(0, 1)
         layout.setHorizontalSpacing(20)
-        frame.setLayout(layout)
+        layout.setSpacing(8)
+        card.addLayout(layout)
 
         self.controls.similarityThreshold = threshold
-        return frame
+        return card
 
     def draw_length_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        card = Card(self)
 
         label = QtWidgets.QLabel('Length Threshold')
         label.setStyleSheet("""font-size: 16px;""")
@@ -538,10 +582,11 @@ class DereplicateView(ObjectView):
         layout.addWidget(description, 1, 0)
         layout.setColumnStretch(0, 1)
         layout.setHorizontalSpacing(20)
-        frame.setLayout(layout)
+        layout.setSpacing(8)
+        card.addLayout(layout)
 
         self.controls.lengthThreshold = threshold
-        return frame
+        return card
 
     def handleBusy(self, busy):
         self.controls.cancel.setVisible(busy)
@@ -602,13 +647,12 @@ class DereplicateView(ObjectView):
 
 
 
-class DecontaminateModeSelector(QtWidgets.QFrame):
+class DecontaminateModeSelector(Card):
 
     toggled = QtCore.Signal(DecontaminateMode)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
 
         label = QtWidgets.QLabel('Decontaminate Mode')
         label.setStyleSheet("""font-size: 16px;""")
@@ -619,6 +663,7 @@ class DecontaminateModeSelector(QtWidgets.QFrame):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(label)
         layout.addWidget(description)
+        layout.setSpacing(8)
 
         self.radio_buttons = list()
         for mode in DecontaminateMode:
@@ -628,7 +673,7 @@ class DecontaminateModeSelector(QtWidgets.QFrame):
             self.radio_buttons.append(button)
             layout.addWidget(button)
 
-        self.setLayout(layout)
+        self.addLayout(layout)
 
     def handleToggle(self, checked):
         if not checked:
@@ -673,8 +718,7 @@ class DecontaminateView(ObjectView):
         self.setLayout(layout)
 
     def draw_title_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        card = Card(self)
 
         title = QtWidgets.QLabel('Decontaminate')
         title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
@@ -712,11 +756,12 @@ class DecontaminateView(ObjectView):
         buttons.addWidget(results)
         buttons.addWidget(remove)
         buttons.addStretch(1)
+        buttons.setSpacing(8)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addLayout(contents, 1)
         layout.addLayout(buttons, 0)
-        frame.setLayout(layout)
+        card.addLayout(layout)
 
         self.controls.title = title
         self.controls.description = description
@@ -725,36 +770,35 @@ class DecontaminateView(ObjectView):
         self.controls.cancel = cancel
         self.controls.results = results
         self.controls.remove = remove
-        return frame
+        return card
 
     def draw_input_card(self):
-        frame = SequenceSelector('Input Sequence(s):', self.model, self)
-        self.controls.inputItem = frame
-        return frame
+        card = SequenceSelector('Input Sequence(s):', self.model, self)
+        self.controls.inputItem = card
+        return card
 
     def draw_mode_card(self):
-        frame = DecontaminateModeSelector(self)
-        self.controls.mode = frame
-        return frame
+        card = DecontaminateModeSelector(self)
+        self.controls.mode = card
+        return card
 
     def draw_ref1_card(self):
-        frame = SequenceSelector('Reference 1 (outgroup):', self.model, self)
-        self.controls.referenceItem1 = frame
-        return frame
+        card = SequenceSelector('Reference 1 (outgroup):', self.model, self)
+        self.controls.referenceItem1 = card
+        return card
 
     def draw_ref2_card(self):
-        frame = SequenceSelector('Reference 2 (ingroup):', self.model, self)
-        self.controls.referenceItem2 = frame
-        return frame
+        card = SequenceSelector('Reference 2 (ingroup):', self.model, self)
+        self.controls.referenceItem2 = card
+        return card
 
     def draw_distance_card(self):
-        frame = AlignmentTypeSelector(self)
-        self.controls.alignmentTypeSelector = frame
-        return frame
+        card = AlignmentTypeSelector(self)
+        self.controls.alignmentTypeSelector = card
+        return card
 
     def draw_similarity_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        card = Card(self)
 
         label = QtWidgets.QLabel('Similarity Threshold (%)')
         label.setStyleSheet("""font-size: 16px;""")
@@ -777,14 +821,14 @@ class DecontaminateView(ObjectView):
         layout.addWidget(description, 1, 0)
         layout.setColumnStretch(0, 1)
         layout.setHorizontalSpacing(20)
-        frame.setLayout(layout)
+        layout.setSpacing(8)
+        card.addLayout(layout)
 
         self.controls.similarityThreshold = threshold
-        return frame
+        return card
 
     def draw_length_card(self):
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("""QFrame{background: Palette(Midlight);}""")
+        card = Card(self)
 
         label = QtWidgets.QLabel('Length Threshold')
         label.setStyleSheet("""font-size: 16px;""")
@@ -805,10 +849,11 @@ class DecontaminateView(ObjectView):
         layout.addWidget(description, 1, 0)
         layout.setColumnStretch(0, 1)
         layout.setHorizontalSpacing(20)
-        frame.setLayout(layout)
+        layout.setSpacing(8)
+        card.addLayout(layout)
 
         self.controls.lengthThreshold = threshold
-        return frame
+        return card
 
     def handleBusy(self, busy):
         self.controls.cancel.setVisible(busy)
