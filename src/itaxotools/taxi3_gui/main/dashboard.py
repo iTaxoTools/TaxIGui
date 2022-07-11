@@ -22,7 +22,7 @@ from PySide6 import QtGui
 
 from itaxotools.common.utility import override
 
-from .model import Task, Dereplicate, Decontaminate
+from ..model import Task, DereplicateModel, DecontaminateModel
 
 
 class DashItem(QtWidgets.QAbstractButton):
@@ -96,10 +96,10 @@ class Dashboard(QtWidgets.QFrame):
         self.setLayout(layout)
 
     def handleDereplicate(self):
-        self.model.add_task(Dereplicate(model=self.model))
+        self.model.add_task(DereplicateModel(model=self.model))
 
     def handleDecontaminate(self):
-        self.model.add_task(Decontaminate(model=self.model))
+        self.model.add_task(DecontaminateModel(model=self.model))
 
     def handleVersusAll(self):
         self.model.add_task(Task('VALL'))

@@ -30,8 +30,7 @@ class ToolLogo(QtWidgets.QLabel):
         self.setFixedWidth(256)
         self.setAlignment(QtCore.Qt.AlignCenter)
         self.setPixmap(VectorPixmap(
-            resources.get(
-                __package__, 'logos/taxi3.svg'),
+            resources.get('itaxotools.taxi3_gui', 'logos/taxi3.svg'),
             size=QtCore.QSize(132, 44),
             colormap=self.window().colormap_icon))
 

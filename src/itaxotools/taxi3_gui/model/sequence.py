@@ -16,25 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-"""GUI entry point"""
+from pathlib import Path
+
+from .common import Object, Property, SequenceReader
 
 
-def run():
-    """
-    Show the Taxi3 window and enter the main event loop.
-    Imports are made locally to optimize multiprocessing.
-    """
+class SequenceModel(Object):
+    path = Property(Path)
+    reader = Property(SequenceReader)
 
-    import sys
-    from PySide6 import QtWidgets
-    from PySide6 import QtCore
-    from .main import Main
+    def __init__(self, path, reader=SequenceReader.TabfileReader):
+        super().__init__()
+        self.path = path
+        self.name = path.name
+        self.reader = reader
 
-    app = QtWidgets.QApplication(sys.argv)
-    app.setStyle('Fusion')
-    files = [file for file in sys.argv[1:]]
-    main = Main(files=files)
-    main.setWindowFlags(QtCore.Qt.Window)
-    main.setModal(True)
-    main.show()
-    sys.exit(app.exec())
+    def __str__(self):
+        return f'SequenceModel({repr(self.name)})'
+
+    def __repr__(self):
+        return str(self)

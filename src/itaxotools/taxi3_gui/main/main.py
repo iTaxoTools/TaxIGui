@@ -32,11 +32,12 @@ import itaxotools.common.resources # noqa
 import itaxotools.common.utility # noqa
 import itaxotools.common.io # noqa
 
+from ..model import ItemModel, SequenceModel, BulkSequencesModel
+
 from .header import Header
 from .body import Body
 from .footer import Footer
 from .sidebar import SideBar
-from .model import Task, Sequence, BulkSequences, ItemModel
 
 
 def get_icon(path):
@@ -44,7 +45,8 @@ def get_icon(path):
 
 
 def get_local_icon(path):
-    return common.resources.get_local(__package__, Path('icons') / path)
+    root = 'itaxotools.taxi3_gui'
+    return common.resources.get_local(root, Path('icons') / path)
 
 
 class Main(common.widgets.ToolDialog):
@@ -216,10 +218,10 @@ class Main(common.widgets.ToolDialog):
             return
         if len(filenames) == 1:
             path = Path(filenames[0])
-            self.model.add_sequence(Sequence(path))
+            self.model.add_sequence(SequenceModel(path))
         else:
             paths = [Path(filename) for filename in filenames]
-            self.model.add_sequence(BulkSequences(paths))
+            self.model.add_sequence(BulkSequencesModel(paths))
 
     def handleSave(self):
         try:
@@ -232,7 +234,7 @@ class Main(common.widgets.ToolDialog):
         if not item:
             QtWidgets.QMessageBox.information(self, self.title, 'Please select a sequence and try again.')
             return
-        if isinstance(item.object, Sequence):
+        if isinstance(item.object, SequenceModel):
             source = item.object.path
             filename, _ = QtWidgets.QFileDialog.getSaveFileName(
                 self, f'{self.title} - Save File',
@@ -242,7 +244,7 @@ class Main(common.widgets.ToolDialog):
             destination = Path(filename)
             shutil.copy(source, destination)
             return
-        if isinstance(item.object, BulkSequences):
+        if isinstance(item.object, BulkSequencesModel):
             filename = QtWidgets.QFileDialog.getExistingDirectory(
                 self, f'{self.title} - Save Bulk Files',
                 QtCore.QDir.currentPath())

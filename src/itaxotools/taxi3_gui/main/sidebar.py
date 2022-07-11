@@ -27,7 +27,7 @@ from itaxotools.common.widgets import VectorIcon
 from itaxotools.common.resources import get_common
 from itaxotools.common.utility import override
 
-from .model import Item, Group, ItemModel
+from ..model import Item, ItemModel, Group
 
 
 class ItemView(ABC):
