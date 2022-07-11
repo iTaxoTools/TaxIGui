@@ -29,7 +29,7 @@ setup(
         'itaxotools-common==0.2.dev3',
     ],
     extras_require={
-        'dev': ['pyinstaller>=4.5.1'],
+        'dev': ['pyinstaller>=4.5.1', 'flake8>=4.0.0'],
     },
     entry_points={
         'console_scripts': [

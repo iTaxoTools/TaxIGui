@@ -1,0 +1,6 @@
+[flake8]
+ignore = E501, W503, W504
+per-file-ignores =
+    src/itaxotools/taxi3_gui/app/resources.py:E251
+    src/itaxotools/taxi3_gui/app/skin.py:E241
+    src/itaxotools/taxi3_gui/**/__init__.py:F401
