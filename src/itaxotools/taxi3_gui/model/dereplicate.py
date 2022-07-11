@@ -34,6 +34,8 @@ from .common import Property, Task, NotificationType, AlignmentType
 from .sequence import SequenceModel, SequenceReader
 from .bulk_sequences import BulkSequencesModel
 
+from .. import app
+
 
 class DereplicateModel(Task):
     notification = QtCore.Signal(NotificationType, str, str)
@@ -46,10 +48,9 @@ class DereplicateModel(Task):
 
     count = itertools.count(1, 1)
 
-    def __init__(self, name=None, model=None):
+    def __init__(self, name=None):
         super().__init__()
         self.name = name or self.get_next_name()
-        self.itemModel = model
         self.alignment_type = AlignmentType.AlignmentFree
         self.similarity_threshold = 0.07
         self.length_threshold = 0
@@ -131,9 +132,8 @@ class DereplicateModel(Task):
             output.excluded.append_to_file(excluded)
             output.included.append_to_file(dereplicated)
 
-        if self.itemModel:
-            self.itemModel.add_sequence(SequenceModel(excluded))
-            self.itemModel.add_sequence(SequenceModel(dereplicated))
+        app.model.items.add_sequence(SequenceModel(excluded))
+        app.model.items.add_sequence(SequenceModel(dereplicated))
 
     def workBulk(self):
         reader = {
@@ -181,14 +181,13 @@ class DereplicateModel(Task):
                 output.excluded.append_to_file(excluded)
                 output.included.append_to_file(dereplicated)
 
-        if self.itemModel:
-            excluded_bulk = list(excluded_path.iterdir())
-            dereplicated_bulk = list(dereplicated_path.iterdir())
-            print(excluded_bulk)
-            print(dereplicated_bulk)
-            basename = self.input_item.object.name
-            self.itemModel.add_sequence(BulkSequencesModel(excluded_bulk, name=f'{basename} excluded'))
-            self.itemModel.add_sequence(BulkSequencesModel(dereplicated_bulk, name=f'{basename} dereplicated'))
+        excluded_bulk = list(excluded_path.iterdir())
+        dereplicated_bulk = list(dereplicated_path.iterdir())
+        print(excluded_bulk)
+        print(dereplicated_bulk)
+        basename = self.input_item.object.name
+        app.model.items.add_sequence(BulkSequencesModel(excluded_bulk, name=f'{basename} excluded'))
+        app.model.items.add_sequence(BulkSequencesModel(dereplicated_bulk, name=f'{basename} dereplicated'))
 
     def cancel(self):
         self.worker.terminate()

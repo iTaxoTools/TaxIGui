@@ -21,7 +21,7 @@ from PySide6 import QtWidgets
 
 from itaxotools.common.widgets import ScalingImage, VLineSeparator
 
-from ..app import resources
+from .. import app
 
 
 class ToolLogo(QtWidgets.QLabel):
@@ -29,14 +29,14 @@ class ToolLogo(QtWidgets.QLabel):
         super().__init__(*args, **kwargs)
         self.setFixedWidth(256)
         self.setAlignment(QtCore.Qt.AlignCenter)
-        self.setPixmap(resources.pixmaps.logo_tool)
+        self.setPixmap(app.resources.pixmaps.logo_tool)
 
 
 class ProjectLogo(ScalingImage):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.setFixedHeight(64)
-        self.logo = resources.pixmaps.logo_project
+        self.logo = app.resources.pixmaps.logo_project
 
 
 class ToolBar(QtWidgets.QToolBar):

@@ -30,9 +30,8 @@ from .common import (
 
 class DereplicateView(ObjectView):
 
-    def __init__(self, model, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.model = model
         self.controls = AttrDict()
         self.draw()
 
@@ -110,7 +109,7 @@ class DereplicateView(ObjectView):
         return card
 
     def draw_input_card(self):
-        card = SequenceSelector('Input SequenceModel:', self.model, self)
+        card = SequenceSelector('Input SequenceModel:', self)
         self.controls.inputItem = card
         return card
 

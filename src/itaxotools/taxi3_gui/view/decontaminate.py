@@ -72,9 +72,8 @@ class DecontaminateModeSelector(Card):
 
 class DecontaminateView(ObjectView):
 
-    def __init__(self, model, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.model = model
         self.controls = AttrDict()
         self.draw()
 
@@ -156,7 +155,7 @@ class DecontaminateView(ObjectView):
         return card
 
     def draw_input_card(self):
-        card = SequenceSelector('Input SequenceModel(s):', self.model, self)
+        card = SequenceSelector('Input SequenceModel(s):', self)
         self.controls.inputItem = card
         return card
 
@@ -166,12 +165,12 @@ class DecontaminateView(ObjectView):
         return card
 
     def draw_ref1_card(self):
-        card = SequenceSelector('Reference 1 (outgroup):', self.model, self)
+        card = SequenceSelector('Reference 1 (outgroup):', self)
         self.controls.referenceItem1 = card
         return card
 
     def draw_ref2_card(self):
-        card = SequenceSelector('Reference 2 (ingroup):', self.model, self)
+        card = SequenceSelector('Reference 2 (ingroup):', self)
         self.controls.referenceItem2 = card
         return card
 

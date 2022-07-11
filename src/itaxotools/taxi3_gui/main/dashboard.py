@@ -24,6 +24,8 @@ from itaxotools.common.utility import override
 
 from ..model import Task, DereplicateModel, DecontaminateModel
 
+from .. import app
+
 
 class DashItem(QtWidgets.QAbstractButton):
 
@@ -71,9 +73,8 @@ class DashItem(QtWidgets.QAbstractButton):
 
 class Dashboard(QtWidgets.QFrame):
 
-    def __init__(self, model, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.model = model
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
@@ -96,13 +97,13 @@ class Dashboard(QtWidgets.QFrame):
         self.setLayout(layout)
 
     def handleDereplicate(self):
-        self.model.add_task(DereplicateModel(model=self.model))
+        app.model.items.add_task(DereplicateModel())
 
     def handleDecontaminate(self):
-        self.model.add_task(DecontaminateModel(model=self.model))
+        app.model.items.add_task(DecontaminateModel())
 
     def handleVersusAll(self):
-        self.model.add_task(Task('VALL'))
+        app.model.items.add_task(Task('VALL'))
 
     def handleVersusReference(self):
-        self.model.add_task(Task('VREF'))
+        app.model.items.add_task(Task('VREF'))

@@ -22,8 +22,10 @@ from PySide6 import QtGui
 
 from itaxotools.common.utility import override
 
-from .. import model
-from .. import utility
+from ..model import Object, Item, ItemModel, AlignmentType
+from ..utility import bind, unbind
+
+from .. import app
 
 
 class ObjectView(QtWidgets.QFrame):
@@ -34,7 +36,7 @@ class ObjectView(QtWidgets.QFrame):
         self.bindings = set()
         self.object = None
 
-    def setObject(self, object: model.Object):
+    def setObject(self, object: Object):
         self.object = object
         self.updateView()
 
@@ -42,16 +44,16 @@ class ObjectView(QtWidgets.QFrame):
         pass
 
     def bind(self, src, dst, proxy=None):
-        key = utility.bind(src, dst, proxy)
+        key = bind(src, dst, proxy)
         self.bindings.add(key)
 
     def unbind(self, src, dst):
-        key = utility.unbind(src, dst)
+        key = unbind(src, dst)
         self.bindings.remove(key)
 
     def unbind_all(self):
         for key in self.bindings:
-            utility.unbind(key.signal, key.slot)
+            unbind(key.signal, key.slot)
         self.bindings.clear()
 
 
@@ -111,9 +113,9 @@ class Card(QtWidgets.QFrame):
 
 class SequenceSelector(Card):
 
-    sequenceChanged = QtCore.Signal(model.Item)
+    sequenceChanged = QtCore.Signal(Item)
 
-    def __init__(self, text, model, parent=None):
+    def __init__(self, text, parent=None, model=app.model.items):
         super().__init__(parent)
 
         label = QtWidgets.QLabel(text)
@@ -140,10 +142,10 @@ class SequenceSelector(Card):
         if row < 0:
             item = None
         else:
-            _model = self.combo.model()
-            parent = _model.sequences_index
-            index = _model.index(row, 0, parent)
-            item = index.data(model.ItemModel.ItemRole)
+            model = self.combo.model()
+            parent = model.sequences_index
+            index = model.index(row, 0, parent)
+            item = index.data(ItemModel.ItemRole)
         self.sequenceChanged.emit(item)
 
     def setSequenceItem(self, item):
@@ -153,7 +155,7 @@ class SequenceSelector(Card):
 
 class AlignmentTypeSelector(Card):
 
-    toggled = QtCore.Signal(model.AlignmentType)
+    toggled = QtCore.Signal(AlignmentType)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -174,7 +176,7 @@ class AlignmentTypeSelector(Card):
         layout.setSpacing(8)
 
         self.radio_buttons = list()
-        for type in model.AlignmentType:
+        for type in AlignmentType:
             button = QtWidgets.QRadioButton(str(type))
             button.alignment_type = type
             button.toggled.connect(self.handleToggle)

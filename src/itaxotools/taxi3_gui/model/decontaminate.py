@@ -39,6 +39,8 @@ from .common import Property, Task, NotificationType, AlignmentType
 from .sequence import SequenceModel, SequenceReader
 from .bulk_sequences import BulkSequencesModel
 
+from .. import app
+
 
 class DecontaminateMode(Enum):
     DECONT = 'DECONT'
@@ -62,10 +64,9 @@ class DecontaminateModel(Task):
 
     count = itertools.count(1, 1)
 
-    def __init__(self, name=None, model=None):
+    def __init__(self, name=None):
         super().__init__()
         self.name = name or self.get_next_name()
-        self.itemModel = model
         self.alignment_type = AlignmentType.AlignmentFree
         self.similarity_threshold = 0.07
         self.mode = DecontaminateMode.DECONT
@@ -196,11 +197,10 @@ class DecontaminateModel(Task):
             if self.mode == DecontaminateMode.DECONT:
                 output.summary.append_to_file(summary)
 
-        if self.itemModel:
-            self.itemModel.add_sequence(SequenceModel(contaminates))
-            self.itemModel.add_sequence(SequenceModel(decontaminated))
-            if self.mode == DecontaminateMode.DECONT:
-                self.itemModel.add_sequence(SequenceModel(summary))
+        app.model.items.add_sequence(SequenceModel(contaminates))
+        app.model.items.add_sequence(SequenceModel(decontaminated))
+        if self.mode == DecontaminateMode.DECONT:
+            app.model.items.add_sequence(SequenceModel(summary))
 
     def workBulk(self):
         alignment = {
@@ -281,20 +281,19 @@ class DecontaminateModel(Task):
                 if self.mode == DecontaminateMode.DECONT:
                     output.summary.append_to_file(summary)
 
-        if self.itemModel:
-            contaminates_bulk = list(contaminates_path.iterdir())
-            decontaminated_bulk = list(decontaminated_path.iterdir())
-            if self.mode == DecontaminateMode.DECONT:
-                summary_bulk = list(summary_path.iterdir())
-            print(contaminates_bulk)
-            print(decontaminated_bulk)
-            if self.mode == DecontaminateMode.DECONT:
-                print(summary_bulk)
-            basename = self.input_item.object.name
-            self.itemModel.add_sequence(BulkSequencesModel(contaminates_bulk, name=f'{basename} contaminates'))
-            self.itemModel.add_sequence(BulkSequencesModel(decontaminated_bulk, name=f'{basename} decontaminated'))
-            if self.mode == DecontaminateMode.DECONT:
-                self.itemModel.add_sequence(BulkSequencesModel(summary_bulk, name=f'{basename} summary'))
+        contaminates_bulk = list(contaminates_path.iterdir())
+        decontaminated_bulk = list(decontaminated_path.iterdir())
+        if self.mode == DecontaminateMode.DECONT:
+            summary_bulk = list(summary_path.iterdir())
+        print(contaminates_bulk)
+        print(decontaminated_bulk)
+        if self.mode == DecontaminateMode.DECONT:
+            print(summary_bulk)
+        basename = self.input_item.object.name
+        app.model.items.add_sequence(BulkSequencesModel(contaminates_bulk, name=f'{basename} contaminates'))
+        app.model.items.add_sequence(BulkSequencesModel(decontaminated_bulk, name=f'{basename} decontaminated'))
+        if self.mode == DecontaminateMode.DECONT:
+            app.model.items.add_sequence(BulkSequencesModel(summary_bulk, name=f'{basename} summary'))
 
     def cancel(self):
         self.worker.terminate()

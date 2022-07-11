@@ -37,6 +37,8 @@ from ..view import (
 
 from .dashboard import Dashboard
 
+from .. import app
+
 
 class ScrollArea(QtWidgets.QScrollArea):
 
@@ -48,21 +50,20 @@ class ScrollArea(QtWidgets.QScrollArea):
 
 class Body(QtWidgets.QStackedWidget):
 
-    def __init__(self, model, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.model = model
         self.activeItem = None
         self.activeIndex = None
         self.areas = dict()
 
-        self.dashboard = Dashboard(self.model, self)
+        self.dashboard = Dashboard(self)
         self.addWidget(self.dashboard)
 
         self.addView(Task, TaskView)
         self.addView(SequenceModel, SequenceView)
         self.addView(BulkSequencesModel, BulkSequencesView)
-        self.addView(DereplicateModel, DereplicateView, model=model)
-        self.addView(DecontaminateModel, DecontaminateView, model=model)
+        self.addView(DereplicateModel, DereplicateView)
+        self.addView(DecontaminateModel, DecontaminateView)
 
     def addView(self, object_type, view_type, *args, **kwargs):
         view = view_type(parent=self, *args, **kwargs)
@@ -88,7 +89,7 @@ class Body(QtWidgets.QStackedWidget):
         return True
 
     def removeActiveItem(self):
-        self.model.remove_index(self.activeIndex)
+        app.model.items.remove_index(self.activeIndex)
 
     def showDashboard(self):
         self.setCurrentWidget(self.dashboard)

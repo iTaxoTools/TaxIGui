@@ -25,7 +25,8 @@ from abc import ABC, abstractmethod
 from itaxotools.common.utility import override
 
 from ..model import Item, ItemModel, Group
-from ..app import resources
+
+from .. import app
 
 
 class ItemView(ABC):
@@ -131,7 +132,7 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.icon = resources.icons.arrow
+        self.icon = app.resources.icons.arrow
 
     def indexView(self, index):
         item = index.data(ItemModel.ItemRole)
@@ -213,7 +214,7 @@ class ItemTreeView(QtWidgets.QTreeView):
 class SideBar(QtWidgets.QFrame):
     selected = QtCore.Signal(Item, QtCore.QModelIndex)
 
-    def __init__(self, model=None, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setStyleSheet("""
@@ -223,9 +224,8 @@ class SideBar(QtWidgets.QFrame):
             }
         """)
 
-        self.model = model or ItemModel()
         self.view = ItemTreeView(self)
-        self.view.setModel(self.model)
+        self.view.setModel(app.model.items)
         self.view.selected.connect(self.selected)
 
         layout = QtWidgets.QVBoxLayout()

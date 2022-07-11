@@ -26,21 +26,20 @@ from pathlib import Path
 
 import shutil
 
-from itaxotools import common
-import itaxotools.common.widgets
-import itaxotools.common.utility # noqa
-import itaxotools.common.io # noqa
+from itaxotools.common.widgets import ToolDialog
+from itaxotools.common.utility import AttrDict
 
-from ..model import ItemModel, SequenceModel, BulkSequencesModel
-from ..app import resources
+from ..model import SequenceModel, BulkSequencesModel
 
 from .header import Header
 from .body import Body
 from .footer import Footer
 from .sidebar import SideBar
 
+from .. import app
 
-class Main(common.widgets.ToolDialog):
+
+class Main(ToolDialog):
     """Main window, handles everything"""
 
     def __init__(self, parent=None, files=[]):
@@ -48,7 +47,7 @@ class Main(common.widgets.ToolDialog):
 
         self.title = 'Taxi3'
 
-        self.setWindowIcon(resources.icons.app)
+        self.setWindowIcon(app.resources.icons.app)
         self.setWindowTitle(self.title)
         self.resize(800, 500)
 
@@ -57,12 +56,10 @@ class Main(common.widgets.ToolDialog):
 
     def draw(self):
         """Draw all contents"""
-        self.model = ItemModel()
-
-        self.widgets = common.utility.AttrDict()
+        self.widgets = AttrDict()
         self.widgets.header = Header(self)
-        self.widgets.sidebar = SideBar(self.model, self)
-        self.widgets.body = Body(self.model, self)
+        self.widgets.sidebar = SideBar(self)
+        self.widgets.body = Body(self)
         self.widgets.footer = Footer(self)
 
         self.widgets.sidebar.selected.connect(self.widgets.body.showItem)
@@ -82,18 +79,18 @@ class Main(common.widgets.ToolDialog):
         self.actions = {}
 
         self.actions['home'] = QtGui.QAction('&Home', self)
-        self.actions['home'].setIcon(resources.icons.home)
+        self.actions['home'].setIcon(app.resources.icons.home)
         self.actions['home'].setStatusTip('Open the dashboard')
         self.actions['home'].triggered.connect(self.handleHome)
 
         self.actions['open'] = QtGui.QAction('&Open', self)
-        self.actions['open'].setIcon(resources.icons.open)
+        self.actions['open'].setIcon(app.resources.icons.open)
         self.actions['open'].setShortcut(QtGui.QKeySequence.Open)
         self.actions['open'].setStatusTip('Open an existing file')
         self.actions['open'].triggered.connect(self.handleOpen)
 
         self.actions['save'] = QtGui.QAction('&Save', self)
-        self.actions['save'].setIcon(resources.icons.save)
+        self.actions['save'].setIcon(app.resources.icons.save)
         self.actions['save'].setShortcut(QtGui.QKeySequence.Save)
         self.actions['save'].setStatusTip('Save results')
         self.actions['save'].triggered.connect(self.handleSave)
@@ -112,10 +109,10 @@ class Main(common.widgets.ToolDialog):
             return
         if len(filenames) == 1:
             path = Path(filenames[0])
-            self.model.add_sequence(SequenceModel(path))
+            app.model.items.add_sequence(SequenceModel(path))
         else:
             paths = [Path(filename) for filename in filenames]
-            self.model.add_sequence(BulkSequencesModel(paths))
+            app.model.items.add_sequence(BulkSequencesModel(paths))
 
     def handleSave(self):
         try:

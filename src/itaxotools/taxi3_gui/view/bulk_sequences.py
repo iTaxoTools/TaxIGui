@@ -24,7 +24,7 @@ from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
 
-from .. import model
+from ..model import SequenceModel, SequenceListModel
 
 from .common import ObjectView, Card
 from .sequence import SequenceReaderSelector
@@ -111,7 +111,7 @@ class BulkSequencesView(ObjectView):
 
     def handleOpen(self):
         index = self.controls.view.currentIndex()
-        path = index.data(model.SequenceListModel.PathRole)
+        path = index.data(SequenceListModel.PathRole)
         print('open', str(path))
         url = QtCore.QUrl.fromLocalFile(str(path))
         QtGui.QDesktopServices.openUrl(url)
@@ -119,7 +119,7 @@ class BulkSequencesView(ObjectView):
     def handleAdd(self):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self.window(), self.window().title)
         paths = [Path(filename) for filename in filenames]
-        sequences = [model.SequenceModel(path) for path in paths]
+        sequences = [SequenceModel(path) for path in paths]
         self.object.model.add_sequences(sequences)
 
     def handleRemove(self):
