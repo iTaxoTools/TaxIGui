@@ -26,14 +26,14 @@ from ..model import (
     BulkSequencesModel,
     DereplicateModel,
     DecontaminateModel,
-    )
+)
 from ..view import (
     TaskView,
     SequenceView,
     BulkSequencesView,
     DereplicateView,
     DecontaminateView,
-    )
+)
 
 from .dashboard import Dashboard
 

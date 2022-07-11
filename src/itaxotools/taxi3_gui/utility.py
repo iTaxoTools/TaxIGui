@@ -141,7 +141,7 @@ class PropertyMeta(type(QtCore.QObject)):
             fget=getter,
             fset=setter,
             notify=notify,
-            )
+        )
 
     def _add_ref(attrs):
         key_ref = Property.key_ref

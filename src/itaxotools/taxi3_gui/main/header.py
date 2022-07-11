@@ -18,10 +18,10 @@
 
 from PySide6 import QtCore
 from PySide6 import QtWidgets
-from PySide6 import QtGui
 
-from itaxotools.common import resources
-from itaxotools.common.widgets import ScalingImage, VectorPixmap, VLineSeparator
+from itaxotools.common.widgets import ScalingImage, VLineSeparator
+
+from ..app import resources
 
 
 class ToolLogo(QtWidgets.QLabel):
@@ -29,18 +29,14 @@ class ToolLogo(QtWidgets.QLabel):
         super().__init__(*args, **kwargs)
         self.setFixedWidth(256)
         self.setAlignment(QtCore.Qt.AlignCenter)
-        self.setPixmap(VectorPixmap(
-            resources.get('itaxotools.taxi3_gui', 'logos/taxi3.svg'),
-            size=QtCore.QSize(132, 44),
-            colormap=self.window().colormap_icon))
+        self.setPixmap(resources.pixmaps.logo_tool)
 
 
 class ProjectLogo(ScalingImage):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.setFixedHeight(64)
-        self.logo = QtGui.QPixmap(
-            resources.get('logos/itaxotools-logo-64px.png'))
+        self.logo = resources.pixmaps.logo_project
 
 
 class ToolBar(QtWidgets.QToolBar):

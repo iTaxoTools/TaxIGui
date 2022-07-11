@@ -27,7 +27,7 @@ setup(
         'pyside6>=6.1.1',
         'taxi3==0.1.0',
         'itaxotools-common==0.2.dev3',
-        ],
+    ],
     extras_require={
         'dev': ['pyinstaller>=4.5.1'],
     },

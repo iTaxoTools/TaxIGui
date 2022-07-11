@@ -21,13 +21,11 @@ from PySide6 import QtWidgets
 from PySide6 import QtGui
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 
-from itaxotools.common.widgets import VectorIcon
-from itaxotools.common.resources import get_common
 from itaxotools.common.utility import override
 
 from ..model import Item, ItemModel, Group
+from ..app import resources
 
 
 class ItemView(ABC):
@@ -73,7 +71,7 @@ class GroupView(ItemView):
             option.rect.bottom(),
             option.rect.right(),
             option.rect.bottom(),
-            )
+        )
         painter.drawLine(line)
 
 
@@ -108,14 +106,14 @@ class EntryView(ItemView):
         mode = QtGui.QIcon.Disabled
         if option.state & QtWidgets.QStyle.State_Selected:
             mode = QtGui.QIcon.Normal
-        pix = self.icon.pixmap(QtCore.QSize(*[self.iconSize]*2), mode)
+        pix = self.icon.pixmap(QtCore.QSize(* [self.iconSize] * 2), mode)
         painter.drawPixmap(rect, pix)
 
     def iconRect(self, option):
         left = option.rect.left() + self.marginLeft
         vCenter = option.rect.center().y()
         return QtCore.QRect(
-            left, vCenter - self.iconSize/2 + 1,
+            left, vCenter - self.iconSize / 2 + 1,
             self.iconSize, self.iconSize)
 
     def textRect(self, option):
@@ -133,10 +131,7 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
 
     def __init__(self, parent):
         super().__init__(parent)
-
-        self.icon = VectorIcon(
-            get_common(Path('icons/svg/arrow-right.svg')),
-            self.parent().window().colormap)
+        self.icon = resources.icons.arrow
 
     def indexView(self, index):
         item = index.data(ItemModel.ItemRole)
@@ -190,7 +185,7 @@ class ItemTreeView(QtWidgets.QTreeView):
         # self.setSpacing(2)
         self.setHeaderHidden(True)
         self.setIndentation(0)
-        ##????? condense
+        # ????? condense
         self.delegate = ItemDelegate(self)
         self.setItemDelegate(self.delegate)
 

@@ -28,25 +28,16 @@ import shutil
 
 from itaxotools import common
 import itaxotools.common.widgets
-import itaxotools.common.resources # noqa
 import itaxotools.common.utility # noqa
 import itaxotools.common.io # noqa
 
 from ..model import ItemModel, SequenceModel, BulkSequencesModel
+from ..app import resources
 
 from .header import Header
 from .body import Body
 from .footer import Footer
 from .sidebar import SideBar
-
-
-def get_icon(path):
-    return common.resources.get_common(Path('icons/svg') / path)
-
-
-def get_local_icon(path):
-    root = 'itaxotools.taxi3_gui'
-    return common.resources.get_local(root, Path('icons') / path)
 
 
 class Main(common.widgets.ToolDialog):
@@ -57,109 +48,12 @@ class Main(common.widgets.ToolDialog):
 
         self.title = 'Taxi3'
 
-        icon = QtGui.QIcon(common.resources.get(
-            'itaxotools.taxi3_gui', 'logos/taxi3.ico'))
-        self.setWindowIcon(icon)
+        self.setWindowIcon(resources.icons.app)
         self.setWindowTitle(self.title)
         self.resize(800, 500)
 
-        self.skin()
         self.draw()
         self.act()
-
-    def skin(self):
-        """Configure widget appearance"""
-        color = {
-            'white':  '#ffffff',
-            'light':  '#eff1ee',
-            'beige':  '#e1e0de',
-            'gray':   '#abaaa8',
-            'iron':   '#8b8d8a',
-            'black':  '#454241',
-            'red':    '#ee4e5f',
-            'pink':   '#eb9597',
-            'orange': '#eb6a4a',
-            'brown':  '#655c5d',
-            'green':  '#00ff00',
-            }
-        # using green for debugging
-        palette = QtGui.QGuiApplication.palette()
-        scheme = {
-            QtGui.QPalette.Active: {
-                QtGui.QPalette.Window: 'light',
-                QtGui.QPalette.WindowText: 'black',
-                QtGui.QPalette.Base: 'white',
-                QtGui.QPalette.AlternateBase: 'light',
-                QtGui.QPalette.PlaceholderText: 'brown',
-                QtGui.QPalette.Text: 'black',
-                QtGui.QPalette.Button: 'light',
-                QtGui.QPalette.ButtonText: 'black',
-                QtGui.QPalette.Light: 'white',
-                QtGui.QPalette.Midlight: 'beige',
-                QtGui.QPalette.Mid: 'gray',
-                QtGui.QPalette.Dark: 'iron',
-                QtGui.QPalette.Shadow: 'brown',
-                QtGui.QPalette.Highlight: 'red',
-                QtGui.QPalette.HighlightedText: 'white',
-                # These work on linux only?
-                QtGui.QPalette.ToolTipBase: 'beige',
-                QtGui.QPalette.ToolTipText: 'brown',
-                # These seem bugged anyway
-                QtGui.QPalette.BrightText: 'green',
-                QtGui.QPalette.Link: 'red',
-                QtGui.QPalette.LinkVisited: 'pink',
-                },
-            QtGui.QPalette.Disabled: {
-                QtGui.QPalette.Window: 'light',
-                QtGui.QPalette.WindowText: 'iron',
-                QtGui.QPalette.Base: 'white',
-                QtGui.QPalette.AlternateBase: 'light',
-                QtGui.QPalette.PlaceholderText: 'green',
-                QtGui.QPalette.Text: 'iron',
-                QtGui.QPalette.Button: 'light',
-                QtGui.QPalette.ButtonText: 'gray',
-                QtGui.QPalette.Light: 'white',
-                QtGui.QPalette.Midlight: 'beige',
-                QtGui.QPalette.Mid: 'gray',
-                QtGui.QPalette.Dark: 'iron',
-                QtGui.QPalette.Shadow: 'brown',
-                QtGui.QPalette.Highlight: 'pink',
-                QtGui.QPalette.HighlightedText: 'white',
-                # These seem bugged anyway
-                QtGui.QPalette.BrightText: 'green',
-                QtGui.QPalette.ToolTipBase: 'green',
-                QtGui.QPalette.ToolTipText: 'green',
-                QtGui.QPalette.Link: 'green',
-                QtGui.QPalette.LinkVisited: 'green',
-                },
-            }
-        scheme[QtGui.QPalette.Inactive] = scheme[QtGui.QPalette.Active]
-        for group in scheme:
-            for role in scheme[group]:
-                palette.setColor(
-                    group, role, QtGui.QColor(color[scheme[group][role]]))
-        QtGui.QGuiApplication.setPalette(palette)
-
-        self.colormap = {
-            common.widgets.VectorIcon.Normal: {
-                '#000': color['brown'],
-                '#f00': color['red'],
-                },
-            common.widgets.VectorIcon.Disabled: {
-                '#000': color['gray'],
-                '#f00': color['orange'],
-                },
-            }
-        self.colormap_icon = {
-            '#000': color['black'],
-            '#f00': color['red'],
-            '#f88': color['pink'],
-            }
-        self.colormap_icon_light = {
-            '#000': color['iron'],
-            '#ff0000': color['red'],
-            '#ffa500': color['pink'],
-            }
 
     def draw(self):
         """Draw all contents"""
@@ -188,18 +82,18 @@ class Main(common.widgets.ToolDialog):
         self.actions = {}
 
         self.actions['home'] = QtGui.QAction('&Home', self)
-        self.actions['home'].setIcon(common.widgets.VectorIcon(get_local_icon('home.svg'), self.colormap))
+        self.actions['home'].setIcon(resources.icons.home)
         self.actions['home'].setStatusTip('Open the dashboard')
         self.actions['home'].triggered.connect(self.handleHome)
 
         self.actions['open'] = QtGui.QAction('&Open', self)
-        self.actions['open'].setIcon(common.widgets.VectorIcon(get_icon('open.svg'), self.colormap))
+        self.actions['open'].setIcon(resources.icons.open)
         self.actions['open'].setShortcut(QtGui.QKeySequence.Open)
         self.actions['open'].setStatusTip('Open an existing file')
         self.actions['open'].triggered.connect(self.handleOpen)
 
         self.actions['save'] = QtGui.QAction('&Save', self)
-        self.actions['save'].setIcon(common.widgets.VectorIcon(get_icon('save.svg'), self.colormap))
+        self.actions['save'].setIcon(resources.icons.save)
         self.actions['save'].setShortcut(QtGui.QKeySequence.Save)
         self.actions['save'].setStatusTip('Save results')
         self.actions['save'].triggered.connect(self.handleSave)
