@@ -16,11 +16,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+# from .dereplicate import dereplicate
+# from .decontaminate import decontaminate, decontaminate2, DecontaminateResults, Decontaminate2Results
 
-from .common import (
-    Object, Group, Task, NotificationType,
-    Item, ItemModel)
-from .sequence import SequenceModel
-from .bulk_sequences import BulkSequencesModel, SequenceListModel
-from .dereplicate import DereplicateModel
-from .decontaminate import DecontaminateModel, DecontaminateMode
+# def dummy(num, foo):
+#
+#     import sys
+#     print(sys.modules.keys())
+#
+#     # from itaxotools.taxi3.library.datatypes import CompleteData, ValidFilePath, TabfileReader, XlsxReader, FastaReader, GenbankReader
+#     # from itaxotools.taxi3.library.task import Dereplicate, Alignment
+#     # from itaxotools.taxi3.library.datatypes import Metric
+#
+#     # raise Exception('OHNO')
+#
+#     # import sys
+#     # sys.exit(33)
+#
+#     # from time import sleep
+#     # sleep(3)
+#
+#     print('DEREP', num, foo)
+#     return num

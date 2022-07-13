@@ -48,25 +48,6 @@ class NotificationType(Enum):
     Fail = auto()
 
 
-class AlignmentType(Enum):
-    AlignmentFree = 'Alignment-Free'
-    PairwiseAlignment = 'Pairwise Alignment'
-    AlreadyAligned = 'Already Aligned'
-
-    def __str__(self):
-        return self.value
-
-
-class SequenceReader(Enum):
-    TabfileReader = 'Tab-separated'
-    GenbankReader = 'Genbank (flat)'
-    XlsxReader = 'Excel (xlsx)'
-    FastaReader = 'Fasta'
-
-    def __str__(self):
-        return self.value
-
-
 class Item:
     """Provides a hierarchical structure for Objects"""
     def __init__(self, object: Object, parent=None):

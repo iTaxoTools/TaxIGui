@@ -24,14 +24,12 @@ from pathlib import Path
 
 import itertools
 
-from itaxotools.taxi3.library.datatypes import CompleteData, ValidFilePath, TabfileReader, XlsxReader, FastaReader, GenbankReader
-from itaxotools.taxi3.library.task import Dereplicate as _Dereplicate, Alignment as _Alignment
-from itaxotools.taxi3.library.datatypes import Metric as _Metric
+from ..threading import Worker
+from ..tasks.dereplicate import dereplicate
+from ..types import AlignmentType
 
-from itaxotools.common.threading import WorkerThread
-
-from .common import Property, Task, NotificationType, AlignmentType
-from .sequence import SequenceModel, SequenceReader
+from .common import Property, Task, NotificationType
+from .sequence import SequenceModel
 from .bulk_sequences import BulkSequencesModel
 
 from .. import app
@@ -58,14 +56,13 @@ class DereplicateModel(Task):
         self.ready = True
         self.busy = False
 
-        self.temporary_directory = TemporaryDirectory(prefix='dereplicate_')
-        self.temporary_path = Path(self.temporary_directory.name)
-
-        self.worker = WorkerThread(self.work)
+        self.worker = Worker()
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
-        self.worker.cancel.connect(self.onCancel)
-        self.worker.finished.connect(self.onFinished)
+        self.worker.error.connect(self.onError)
+
+        self.temporary_directory = TemporaryDirectory(prefix='dereplicate_')
+        self.temporary_path = Path(self.temporary_directory.name)
 
         self.properties.input_item.notify.connect(self.checkReady)
 
@@ -84,124 +81,59 @@ class DereplicateModel(Task):
 
     def start(self):
         self.busy = True
-        self.worker.start()
-
-    def work(self):
-        object = self.input_item.object
-        if isinstance(object, SequenceModel):
-            self.workSingle()
-        elif isinstance(object, BulkSequencesModel):
-            self.workBulk()
-
-    def workSingle(self):
-        reader = {
-            SequenceReader.TabfileReader: TabfileReader,
-            SequenceReader.GenbankReader: GenbankReader,
-            SequenceReader.XlsxReader: XlsxReader,
-            SequenceReader.FastaReader: FastaReader,
-        }[self.input_item.object.reader]
-
-        alignment = {
-            AlignmentType.AlignmentFree: _Alignment.AlignmentFree,
-            AlignmentType.PairwiseAlignment: _Alignment.Pairwise,
-            AlignmentType.AlreadyAligned: _Alignment.AlreadyAligned,
-        }[self.alignment_type]
-
-        input = self.input_item.object.path
-        sequence = CompleteData.from_path(ValidFilePath(input), reader)
-
-        task = _Dereplicate(warn=print)
-        task.similarity = self.similarity_threshold
-        task.length_threshold = self.length_threshold or None
-        task._calculate_distances.alignment = alignment
-        task._calculate_distances.metrics = [_Metric.Uncorrected]
-        task.data = sequence
-        task.start()
 
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-        save_path = self.temporary_path / timestamp
-        save_path.mkdir()
+        work_dir = self.temporary_path / timestamp
+        work_dir.mkdir()
 
-        excluded = save_path / f'{input.stem}.{timestamp}.excluded.tsv'
-        dereplicated = save_path / f'{input.stem}.{timestamp}.dereplicated.tsv'
+        input = self.input_item.object
+        if isinstance(input, SequenceModel):
+            input_paths = [input.path]
+        elif isinstance(input, BulkSequencesModel):
+            input_paths = [sequence.path for sequence in input.sequences]
 
-        excluded.unlink(missing_ok=True)
-        dereplicated.unlink(missing_ok=True)
-
-        for output in task.result:
-            output.excluded.append_to_file(excluded)
-            output.included.append_to_file(dereplicated)
-
-        app.model.items.add_sequence(SequenceModel(excluded))
-        app.model.items.add_sequence(SequenceModel(dereplicated))
-
-    def workBulk(self):
-        reader = {
-            SequenceReader.TabfileReader: TabfileReader,
-            SequenceReader.GenbankReader: GenbankReader,
-            SequenceReader.XlsxReader: XlsxReader,
-            SequenceReader.FastaReader: FastaReader,
-        }[self.input_item.object.reader]
-
-        alignment = {
-            AlignmentType.AlignmentFree: _Alignment.AlignmentFree,
-            AlignmentType.PairwiseAlignment: _Alignment.Pairwise,
-            AlignmentType.AlreadyAligned: _Alignment.AlreadyAligned,
-        }[self.alignment_type]
-
-        paths = [sequence.path for sequence in self.input_item.object.sequences]
-
-        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-        save_path = self.temporary_path / timestamp
-        save_path.mkdir()
-        excluded_path = save_path / 'excluded'
-        excluded_path.mkdir()
-        dereplicated_path = save_path / 'dereplicated'
-        dereplicated_path.mkdir()
-
-        for input in paths:
-
-            sequence = CompleteData.from_path(ValidFilePath(input), reader)
-
-            task = _Dereplicate(warn=print)
-            task.similarity = self.similarity_threshold
-            task.length_threshold = self.length_threshold or None
-            task._calculate_distances.alignment = alignment
-            task._calculate_distances.metrics = [_Metric.Uncorrected]
-            task.data = sequence
-            task.start()
-
-            excluded = excluded_path / f'{input.stem}.{timestamp}.excluded.tsv'
-            dereplicated = dereplicated_path / f'{input.stem}.{timestamp}.dereplicated.tsv'
-
-            excluded.unlink(missing_ok=True)
-            dereplicated.unlink(missing_ok=True)
-
-            for output in task.result:
-                output.excluded.append_to_file(excluded)
-                output.included.append_to_file(dereplicated)
-
-        excluded_bulk = list(excluded_path.iterdir())
-        dereplicated_bulk = list(dereplicated_path.iterdir())
-        print(excluded_bulk)
-        print(dereplicated_bulk)
-        basename = self.input_item.object.name
-        app.model.items.add_sequence(BulkSequencesModel(excluded_bulk, name=f'{basename} excluded'))
-        app.model.items.add_sequence(BulkSequencesModel(dereplicated_bulk, name=f'{basename} dereplicated'))
+        self.worker.exec(
+            dereplicate, work_dir,
+            input_paths, input.reader,
+            self.alignment_type,
+            self.similarity_threshold,
+            self.length_threshold or None,
+        )
 
     def cancel(self):
-        self.worker.terminate()
+        if self.worker is None:
+            return
+        self.worker.reset()
+        self.notification.emit(NotificationType.Warn, 'Cancelled by user.', '')
+        self.onFinished()
 
-    def onDone(self, result):
+    def onDone(self, results):
+        dereplicated_bulk = list()
+        excluded_bulk = list()
+        for input, result in results.items():
+            dereplicated_bulk.append(result.dereplicated)
+            excluded_bulk.append(result.excluded)
+
+        if len(results) == 1:
+            app.model.items.add_sequence(SequenceModel(result.dereplicated))
+            app.model.items.add_sequence(SequenceModel(result.excluded))
+        else:
+            basename = self.input_item.object.name
+            app.model.items.add_sequence(BulkSequencesModel(dereplicated_bulk, name=f'{basename} dereplicated'))
+            app.model.items.add_sequence(BulkSequencesModel(excluded_bulk, name=f'{basename} excluded'))
+
         self.notification.emit(NotificationType.Info, f'{self.name} completed successfully!', '')
+        self.onFinished()
 
     def onFail(self, exception, traceback):
         print(str(exception))
         print(traceback)
         self.notification.emit(NotificationType.Fail, str(exception), traceback)
+        self.onFinished()
 
-    def onCancel(self, exception):
-        self.notification.emit(NotificationType.Warn, 'Cancelled by user.', '')
+    def onError(self, exitcode):
+        self.notification.emit(NotificationType.Fail, f'Process failed with exit code: {exitcode}', '')
+        self.onFinished()
 
     def onFinished(self):
         self.busy = False

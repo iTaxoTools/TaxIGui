@@ -18,7 +18,9 @@
 
 from pathlib import Path
 
-from .common import Object, Property, SequenceReader
+from ..types import SequenceReader
+
+from .common import Object, Property
 
 
 class SequenceModel(Object):

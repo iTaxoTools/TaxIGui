@@ -22,7 +22,7 @@ from PySide6 import QtGui
 
 from itaxotools.common.utility import AttrDict
 
-from ..model import SequenceReader
+from ..types import SequenceReader
 
 from .common import ObjectView, Card
 

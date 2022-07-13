@@ -16,11 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from enum import Enum
 
-from .common import (
-    Object, Group, Task, NotificationType,
-    Item, ItemModel)
-from .sequence import SequenceModel
-from .bulk_sequences import BulkSequencesModel, SequenceListModel
-from .dereplicate import DereplicateModel
-from .decontaminate import DecontaminateModel, DecontaminateMode
+
+class AlignmentType(Enum):
+    AlignmentFree = 'Alignment-Free'
+    PairwiseAlignment = 'Pairwise Alignment'
+    AlreadyAligned = 'Already Aligned'
+
+    def __str__(self):
+        return self.value
+
+
+class SequenceReader(Enum):
+    TabfileReader = 'Tab-separated'
+    GenbankReader = 'Genbank (flat)'
+    XlsxReader = 'Excel (xlsx)'
+    FastaReader = 'Fasta'
+
+    def __str__(self):
+        return self.value

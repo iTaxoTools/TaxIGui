@@ -25,18 +25,12 @@ from enum import Enum
 
 import itertools
 
-from itaxotools.taxi3.library.datatypes import (
-    CompleteData, SequenceData, ValidFilePath,
-    TabfileReader, XlsxReader, FastaReader, GenbankReader)
-from itaxotools.taxi3.library.task import (
-    Decontaminate as _Decontaminate,
-    Alignment as _Alignment)
-from itaxotools.taxi3.library.datatypes import Metric as _Metric
+from ..threading import Worker
+from ..tasks.decontaminate import decontaminate, decontaminate2, DecontaminateResults
+from ..types import AlignmentType
 
-from itaxotools.common.threading import WorkerThread
-
-from .common import Property, Task, NotificationType, AlignmentType
-from .sequence import SequenceModel, SequenceReader
+from .common import Property, Task, NotificationType
+from .sequence import SequenceModel
 from .bulk_sequences import BulkSequencesModel
 
 from .. import app
@@ -76,14 +70,13 @@ class DecontaminateModel(Task):
         self.ready = False
         self.busy = False
 
-        self.temporary_directory = TemporaryDirectory(prefix='decontaminate_')
-        self.temporary_path = Path(self.temporary_directory.name)
-
-        self.worker = WorkerThread(self.work)
+        self.worker = Worker()
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
-        self.worker.cancel.connect(self.onCancel)
-        self.worker.finished.connect(self.onFinished)
+        self.worker.error.connect(self.onError)
+
+        self.temporary_directory = TemporaryDirectory(prefix='decontaminate_')
+        self.temporary_path = Path(self.temporary_directory.name)
 
         self.properties.input_item.notify.connect(self.updateReady)
         self.properties.reference_item_1.notify.connect(self.updateReady)
@@ -118,196 +111,83 @@ class DecontaminateModel(Task):
 
     def start(self):
         self.busy = True
-        self.worker.start()
-
-    def work(self):
-        object = self.input_item.object
-        if isinstance(object, SequenceModel):
-            self.workSingle()
-        elif isinstance(object, BulkSequencesModel):
-            self.workBulk()
-
-    def workSingle(self):
-        alignment = {
-            AlignmentType.AlignmentFree: _Alignment.AlignmentFree,
-            AlignmentType.PairwiseAlignment: _Alignment.Pairwise,
-            AlignmentType.AlreadyAligned: _Alignment.AlreadyAligned,
-        }[self.alignment_type]
-
-        reader = {
-            SequenceReader.TabfileReader: TabfileReader,
-            SequenceReader.GenbankReader: GenbankReader,
-            SequenceReader.XlsxReader: XlsxReader,
-            SequenceReader.FastaReader: FastaReader,
-        }[self.input_item.object.reader]
-
-        input = self.input_item.object.path
-        sequence = CompleteData.from_path(ValidFilePath(input), reader)
-
-        reader = {
-            SequenceReader.TabfileReader: TabfileReader,
-            SequenceReader.GenbankReader: GenbankReader,
-            SequenceReader.XlsxReader: XlsxReader,
-            SequenceReader.FastaReader: FastaReader,
-        }[self.reference_item_1.object.reader]
-
-        input = self.reference_item_1.object.path
-        reference_1 = SequenceData.from_path(ValidFilePath(input), reader)
-
-        if self.mode == DecontaminateMode.DECONT2:
-            reader = {
-                SequenceReader.TabfileReader: TabfileReader,
-                SequenceReader.GenbankReader: GenbankReader,
-                SequenceReader.XlsxReader: XlsxReader,
-                SequenceReader.FastaReader: FastaReader,
-            }[self.reference_item_2.object.reader]
-
-            input = self.reference_item_2.object.path
-            reference_2 = SequenceData.from_path(ValidFilePath(input), reader)
-
-        else:
-            reference_2 = None
-
-        task = _Decontaminate(warn=print)
-        task.similarity = self.similarity_threshold
-        task.alignment = alignment
-        task._calculate_distances.metrics = [_Metric.Uncorrected]
-        task.data = sequence
-        task.reference = reference_1
-        task.reference2 = reference_2
-        task.start()
 
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-        save_path = self.temporary_path / timestamp
-        save_path.mkdir()
+        work_dir = self.temporary_path / timestamp
+        work_dir.mkdir()
 
-        contaminates = save_path / f'{input.stem}.{timestamp}.contaminates.tsv'
-        decontaminated = save_path / f'{input.stem}.{timestamp}.decontaminated.tsv'
+        input = self.input_item.object
+        if isinstance(input, SequenceModel):
+            input_paths = [input.path]
+        elif isinstance(input, BulkSequencesModel):
+            input_paths = [sequence.path for sequence in input.sequences]
+
         if self.mode == DecontaminateMode.DECONT:
-            summary = save_path / f'{input.stem}.{timestamp}.summary.txt'
 
-        contaminates.unlink(missing_ok=True)
-        decontaminated.unlink(missing_ok=True)
-        if self.mode == DecontaminateMode.DECONT:
-            summary.unlink(missing_ok=True)
+            reference = self.reference_item_1.object
 
-        for output in task.result:
-            output.contaminates.append_to_file(contaminates)
-            output.decontaminated.append_to_file(decontaminated)
-            if self.mode == DecontaminateMode.DECONT:
-                output.summary.append_to_file(summary)
+            self.worker.exec(
+                decontaminate, work_dir,
+                input_paths, input.reader,
+                reference.path, reference.reader,
+                self.alignment_type,
+                self.similarity_threshold,
+            )
 
-        app.model.items.add_sequence(SequenceModel(contaminates))
-        app.model.items.add_sequence(SequenceModel(decontaminated))
-        if self.mode == DecontaminateMode.DECONT:
-            app.model.items.add_sequence(SequenceModel(summary))
+        elif self.mode == DecontaminateMode.DECONT2:
 
-    def workBulk(self):
-        alignment = {
-            AlignmentType.AlignmentFree: _Alignment.AlignmentFree,
-            AlignmentType.PairwiseAlignment: _Alignment.Pairwise,
-            AlignmentType.AlreadyAligned: _Alignment.AlreadyAligned,
-        }[self.alignment_type]
+            reference_outgroup = self.reference_item_1.object
+            reference_ingroup = self.reference_item_2.object
 
-        reader = {
-            SequenceReader.TabfileReader: TabfileReader,
-            SequenceReader.GenbankReader: GenbankReader,
-            SequenceReader.XlsxReader: XlsxReader,
-            SequenceReader.FastaReader: FastaReader,
-        }[self.reference_item_1.object.reader]
-
-        input = self.reference_item_1.object.path
-        reference_1 = SequenceData.from_path(ValidFilePath(input), reader)
-
-        if self.mode == DecontaminateMode.DECONT2:
-            reader = {
-                SequenceReader.TabfileReader: TabfileReader,
-                SequenceReader.GenbankReader: GenbankReader,
-                SequenceReader.XlsxReader: XlsxReader,
-                SequenceReader.FastaReader: FastaReader,
-            }[self.reference_item_2.object.reader]
-
-            input = self.reference_item_2.object.path
-            reference_2 = SequenceData.from_path(ValidFilePath(input), reader)
-
-        else:
-            reference_2 = None
-
-        reader = {
-            SequenceReader.TabfileReader: TabfileReader,
-            SequenceReader.GenbankReader: GenbankReader,
-            SequenceReader.XlsxReader: XlsxReader,
-            SequenceReader.FastaReader: FastaReader,
-        }[self.input_item.object.reader]
-
-        paths = [sequence.path for sequence in self.input_item.object.sequences]
-
-        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-        save_path = self.temporary_path / timestamp
-        save_path.mkdir()
-        contaminates_path = save_path / 'contaminates'
-        contaminates_path.mkdir()
-        decontaminated_path = save_path / 'decontaminated'
-        decontaminated_path.mkdir()
-        summary_path = save_path / 'summary'
-        summary_path.mkdir()
-
-        for input in paths:
-
-            sequence = CompleteData.from_path(ValidFilePath(input), reader)
-
-            task = _Decontaminate(warn=print)
-            task.similarity = self.similarity_threshold
-            task.alignment = alignment
-            task._calculate_distances.metrics = [_Metric.Uncorrected]
-            task.data = sequence
-            task.reference = reference_1
-            task.reference2 = reference_2
-            task.start()
-
-            contaminates = contaminates_path / f'{input.stem}.{timestamp}.contaminates.tsv'
-            decontaminated = decontaminated_path / f'{input.stem}.{timestamp}.decontaminated.tsv'
-            if self.mode == DecontaminateMode.DECONT:
-                summary = summary_path / f'{input.stem}.{timestamp}.summary.txt'
-
-            contaminates.unlink(missing_ok=True)
-            decontaminated.unlink(missing_ok=True)
-            if self.mode == DecontaminateMode.DECONT:
-                summary.unlink(missing_ok=True)
-
-            for output in task.result:
-                output.contaminates.append_to_file(contaminates)
-                output.decontaminated.append_to_file(decontaminated)
-                if self.mode == DecontaminateMode.DECONT:
-                    output.summary.append_to_file(summary)
-
-        contaminates_bulk = list(contaminates_path.iterdir())
-        decontaminated_bulk = list(decontaminated_path.iterdir())
-        if self.mode == DecontaminateMode.DECONT:
-            summary_bulk = list(summary_path.iterdir())
-        print(contaminates_bulk)
-        print(decontaminated_bulk)
-        if self.mode == DecontaminateMode.DECONT:
-            print(summary_bulk)
-        basename = self.input_item.object.name
-        app.model.items.add_sequence(BulkSequencesModel(contaminates_bulk, name=f'{basename} contaminates'))
-        app.model.items.add_sequence(BulkSequencesModel(decontaminated_bulk, name=f'{basename} decontaminated'))
-        if self.mode == DecontaminateMode.DECONT:
-            app.model.items.add_sequence(BulkSequencesModel(summary_bulk, name=f'{basename} summary'))
+            self.worker.exec(
+                decontaminate2, work_dir,
+                input_paths, input.reader,
+                reference_outgroup.path, reference_outgroup.reader,
+                reference_ingroup.path, reference_ingroup.reader,
+                self.alignment_type,
+            )
 
     def cancel(self):
-        self.worker.terminate()
+        if self.worker is None:
+            return
+        self.worker.reset()
+        self.notification.emit(NotificationType.Warn, 'Cancelled by user.', '')
+        self.onFinished()
 
-    def onDone(self, result):
+    def onDone(self, results):
+        decontaminated_bulk = list()
+        contaminants_bulk = list()
+        summary_bulk = list()
+        for input, result in results.items():
+            decontaminated_bulk.append(result.decontaminated)
+            contaminants_bulk.append(result.contaminants)
+            if isinstance(results, DecontaminateResults):
+                summary_bulk.append(result.summary)
+
+        if len(results) == 1:
+            app.model.items.add_sequence(SequenceModel(result.decontaminated))
+            app.model.items.add_sequence(SequenceModel(result.contaminants))
+            if isinstance(results, DecontaminateResults):
+                app.model.items.add_sequence(SequenceModel(result.summary))
+        else:
+            basename = self.input_item.object.name
+            app.model.items.add_sequence(BulkSequencesModel(decontaminated_bulk, name=f'{basename} decontaminated'))
+            app.model.items.add_sequence(BulkSequencesModel(contaminants_bulk, name=f'{basename} contaminants'))
+            if isinstance(results, DecontaminateResults):
+                app.model.items.add_sequence(BulkSequencesModel(summary_bulk, name=f'{basename} summary'))
+
         self.notification.emit(NotificationType.Info, f'{self.name} completed successfully!', '')
+        self.onFinished()
 
     def onFail(self, exception, traceback):
         print(str(exception))
         print(traceback)
         self.notification.emit(NotificationType.Fail, str(exception), traceback)
+        self.onFinished()
 
-    def onCancel(self, exception):
-        self.notification.emit(NotificationType.Warn, 'Cancelled by user.', '')
+    def onError(self, exitcode):
+        self.notification.emit(NotificationType.Fail, f'Process failed with exit code: {exitcode}', '')
+        self.onFinished()
 
     def onFinished(self):
         self.busy = False

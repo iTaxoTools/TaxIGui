@@ -22,8 +22,9 @@ from PySide6 import QtGui
 
 from itaxotools.common.utility import override
 
-from ..model import Object, Item, ItemModel, AlignmentType
+from ..model import Object, Item, ItemModel
 from ..utility import bind, unbind
+from ..types import AlignmentType
 
 from .. import app
 
