@@ -75,9 +75,10 @@ class DecontaminateModel(Task):
         self.temporary_directory = TemporaryDirectory(prefix='decontaminate_')
         self.temporary_path = Path(self.temporary_directory.name)
 
+        self.properties.mode.notify.connect(self.updateReady)
         self.properties.input_item.notify.connect(self.updateReady)
         self.properties.reference_item_1.notify.connect(self.updateReady)
-        self.properties.input_item.notify.connect(self.updateReady)
+        self.properties.reference_item_2.notify.connect(self.updateReady)
 
     def __str__(self):
         return f'Decontaminate({repr(self.name)})'
