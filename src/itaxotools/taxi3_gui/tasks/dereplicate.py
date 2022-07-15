@@ -29,6 +29,11 @@ class DereplicateResults:
     excluded: Path
 
 
+def initialize():
+    from itaxotools.taxi3.library import datatypes  # noqa
+    from itaxotools.taxi3.library import task  # noqa
+
+
 def dereplicate(
     work_dir: Path,
     inputs: List[Path],
@@ -38,9 +43,8 @@ def dereplicate(
     length_threshold: Optional[int],
 ) -> Dict[Path, Tuple[Path, Path]]:
 
-    from itaxotools.taxi3.library.datatypes import CompleteData, ValidFilePath, TabfileReader, XlsxReader, FastaReader, GenbankReader
+    from itaxotools.taxi3.library.datatypes import CompleteData, ValidFilePath, TabfileReader, XlsxReader, FastaReader, GenbankReader, Metric
     from itaxotools.taxi3.library.task import Dereplicate, Alignment
-    from itaxotools.taxi3.library.datatypes import Metric
 
     reader = {
         SequenceReader.TabfileReader: TabfileReader,

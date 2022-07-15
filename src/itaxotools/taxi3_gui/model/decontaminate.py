@@ -26,7 +26,7 @@ from enum import Enum
 import itertools
 
 from ..threading import Worker
-from ..tasks.decontaminate import decontaminate, decontaminate2, DecontaminateResults
+from ..tasks import decontaminate
 from ..types import AlignmentType
 
 from .common import Property, Task, NotificationType
@@ -70,7 +70,7 @@ class DecontaminateModel(Task):
         self.ready = False
         self.busy = False
 
-        self.worker = Worker()
+        self.worker = Worker(eager=True, init=decontaminate.initialize)
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
         self.worker.error.connect(self.onError)
@@ -127,7 +127,7 @@ class DecontaminateModel(Task):
             reference = self.reference_item_1.object
 
             self.worker.exec(
-                decontaminate, work_dir,
+                decontaminate.decontaminate, work_dir,
                 input_paths, input.reader,
                 reference.path, reference.reader,
                 self.alignment_type,
@@ -140,7 +140,7 @@ class DecontaminateModel(Task):
             reference_ingroup = self.reference_item_2.object
 
             self.worker.exec(
-                decontaminate2, work_dir,
+                decontaminate.decontaminate2, work_dir,
                 input_paths, input.reader,
                 reference_outgroup.path, reference_outgroup.reader,
                 reference_ingroup.path, reference_ingroup.reader,
@@ -161,19 +161,19 @@ class DecontaminateModel(Task):
         for input, result in results.items():
             decontaminated_bulk.append(result.decontaminated)
             contaminants_bulk.append(result.contaminants)
-            if isinstance(results, DecontaminateResults):
+            if isinstance(results, decontaminate.DecontaminateResults):
                 summary_bulk.append(result.summary)
 
         if len(results) == 1:
             app.model.items.add_sequence(SequenceModel(result.decontaminated))
             app.model.items.add_sequence(SequenceModel(result.contaminants))
-            if isinstance(results, DecontaminateResults):
+            if isinstance(results, decontaminate.DecontaminateResults):
                 app.model.items.add_sequence(SequenceModel(result.summary))
         else:
             basename = self.input_item.object.name
             app.model.items.add_sequence(BulkSequencesModel(decontaminated_bulk, name=f'{basename} decontaminated'))
             app.model.items.add_sequence(BulkSequencesModel(contaminants_bulk, name=f'{basename} contaminants'))
-            if isinstance(results, DecontaminateResults):
+            if isinstance(results, decontaminate.DecontaminateResults):
                 app.model.items.add_sequence(BulkSequencesModel(summary_bulk, name=f'{basename} summary'))
 
         self.notification.emit(NotificationType.Info, f'{self.name} completed successfully!', '')

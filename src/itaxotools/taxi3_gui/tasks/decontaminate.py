@@ -36,6 +36,11 @@ class Decontaminate2Results:
     contaminants: Path
 
 
+def initialize():
+    from itaxotools.taxi3.library import datatypes  # noqa
+    from itaxotools.taxi3.library import task  # noqa
+
+
 def decontaminate(
     work_dir: Path,
     inputs: List[Path],
@@ -47,10 +52,9 @@ def decontaminate(
 ) -> Dict[Path, Tuple[Path, Path]]:
 
     from itaxotools.taxi3.library.datatypes import (
-        CompleteData, SequenceData, ValidFilePath,
+        CompleteData, SequenceData, ValidFilePath, Metric,
         TabfileReader, XlsxReader, FastaReader, GenbankReader)
     from itaxotools.taxi3.library.task import Decontaminate, Alignment
-    from itaxotools.taxi3.library.datatypes import Metric
 
     readers = {
         SequenceReader.TabfileReader: TabfileReader,
@@ -120,10 +124,9 @@ def decontaminate2(
 ) -> Dict[Path, Tuple[Path, Path]]:
 
     from itaxotools.taxi3.library.datatypes import (
-        CompleteData, SequenceData, ValidFilePath,
+        CompleteData, SequenceData, ValidFilePath, Metric,
         TabfileReader, XlsxReader, FastaReader, GenbankReader)
     from itaxotools.taxi3.library.task import Decontaminate, Alignment
-    from itaxotools.taxi3.library.datatypes import Metric
 
     readers = {
         SequenceReader.TabfileReader: TabfileReader,

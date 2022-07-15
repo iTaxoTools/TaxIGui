@@ -38,8 +38,11 @@ class ResultFail:
         self.trace = trace
 
 
-def _work(commands, results, pipeIn, pipeOut, pipeErr):
+def _work(initializer, commands, results, pipeIn, pipeOut, pipeErr):
     """Wait for commands, send back results"""
+
+    if initializer:
+        initializer()
 
     inp = PipeIO(pipeIn, 'r')
     out = PipeIO(pipeOut, 'w')
@@ -73,11 +76,13 @@ class Worker(QtCore.QThread):
     fail = QtCore.Signal(object, str)
     error = QtCore.Signal(int)
 
-    def __init__(self, stream=None):
+    def __init__(self, eager=True, init=None, stream=None):
         """Immediately starts thread execution"""
         super().__init__()
+        self.eager = eager
+        self.initializer = init
 
-        self.ready = mp.Condition()
+        self.ready = mp.Semaphore(0)
         self.pipeIn = None
         self.pipeOut = None
         self.pipeErr = None
@@ -85,7 +90,8 @@ class Worker(QtCore.QThread):
         self.results = None
         self.process = None
         self.stream = None
-        self.die = False
+        self.resetting = False
+        self.quitting = False
 
         app = QtCore.QCoreApplication.instance()
         app.aboutToQuit.connect(self.quit)
@@ -93,17 +99,19 @@ class Worker(QtCore.QThread):
         self.setStream(stream or sys.stdout)
         self.start()
 
+        if eager:
+            self.init()
+
     @override
     def run(self):
         """
         Internal. This is executed on the new thread after start() is called.
         Once a child process is ready, enter an event loop.
         """
-        while not self.die:
-            with self.ready:
-                self.ready.wait()
+        while not self.quitting:
+            self.ready.acquire()
             # check again in case of quit()
-            if self.die:
+            if self.quitting:
                 break
             self.loop()
 
@@ -135,8 +143,9 @@ class Worker(QtCore.QThread):
                     else:
                         waitList[connection](data)
 
-        if self.process and self.process.exitcode != 0 and not self.die:
-            self.error.emit(self.process.exitcode)
+        if self.process and self.process.exitcode != 0:
+            if not self.resetting and not self.quitting:
+                self.error.emit(self.process.exitcode)
 
         self.pipeIn.close()
         self.pipeOut.close()
@@ -144,6 +153,9 @@ class Worker(QtCore.QThread):
         self.commands.close()
         self.results.close()
         self.process = None
+
+        if self.eager and not self.quitting:
+            self.init()
 
     def handleResults(self, result):
         """Internal. Emit results."""
@@ -154,17 +166,17 @@ class Worker(QtCore.QThread):
 
     def init(self):
         """Internal. Initialize process and pipes"""
-        with self.ready:
-            pipeIn, self.pipeIn = mp.Pipe(duplex=False)
-            self.pipeOut, pipeOut = mp.Pipe(duplex=False)
-            self.pipeErr, pipeErr = mp.Pipe(duplex=False)
-            commands, self.commands = mp.Pipe(duplex=False)
-            self.results, results = mp.Pipe(duplex=False)
-            self.process = mp.Process(
-                target=_work, daemon=True,
-                args=(commands, results, pipeIn, pipeOut, pipeErr))
-            self.process.start()
-            self.ready.notify()
+        self.resetting = False
+        pipeIn, self.pipeIn = mp.Pipe(duplex=False)
+        self.pipeOut, pipeOut = mp.Pipe(duplex=False)
+        self.pipeErr, pipeErr = mp.Pipe(duplex=False)
+        commands, self.commands = mp.Pipe(duplex=False)
+        self.results, results = mp.Pipe(duplex=False)
+        self.process = mp.Process(
+            target=_work, daemon=True,
+            args=(self.initializer, commands, results, pipeIn, pipeOut, pipeErr))
+        self.process.start()
+        self.ready.release()
 
     def setStream(self, stream):
         """Internal. Send process output to given file-like stream"""
@@ -198,16 +210,15 @@ class Worker(QtCore.QThread):
     def reset(self):
         """Interrupt the current task"""
         if self.process is not None and self.process.is_alive():
+            self.resetting = True
             self.process.terminate()
-            self.process = None
 
     @override
     def quit(self):
         """Also kills the child process"""
-        with self.ready:
-            self.reset()
-            self.die = True
-            self.ready.notify()
+        self.reset()
+        self.quitting = True
+        self.ready.release()
 
         super().quit()
         self.wait()

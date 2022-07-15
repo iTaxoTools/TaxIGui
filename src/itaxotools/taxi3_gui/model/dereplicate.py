@@ -25,7 +25,7 @@ from pathlib import Path
 import itertools
 
 from ..threading import Worker
-from ..tasks.dereplicate import dereplicate
+from ..tasks import dereplicate
 from ..types import AlignmentType
 
 from .common import Property, Task, NotificationType
@@ -56,7 +56,7 @@ class DereplicateModel(Task):
         self.ready = True
         self.busy = False
 
-        self.worker = Worker()
+        self.worker = Worker(eager=True, init=dereplicate.initialize)
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
         self.worker.error.connect(self.onError)
@@ -93,7 +93,7 @@ class DereplicateModel(Task):
             input_paths = [sequence.path for sequence in input.sequences]
 
         self.worker.exec(
-            dereplicate, work_dir,
+            dereplicate.dereplicate, work_dir,
             input_paths, input.reader,
             self.alignment_type,
             self.similarity_threshold,
