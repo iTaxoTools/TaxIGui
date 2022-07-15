@@ -2,10 +2,10 @@
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_namespace_packages
-import pathlib
+from pathlib import Path
 
 # Get the long description from the README file
-here = pathlib.Path(__file__).parent.resolve()
+here = Path(__file__).parent.resolve()
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 

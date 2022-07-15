@@ -20,7 +20,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
-from ..model import DecontaminateMode, NotificationType
+from ..types import DecontaminateMode, NotificationType
 from .common import (
     AlignmentTypeSelector, Card, NoWheelSpinBox, ObjectView, SequenceSelector)
 

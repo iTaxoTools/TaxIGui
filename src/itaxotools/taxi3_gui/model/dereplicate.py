@@ -26,9 +26,9 @@ from tempfile import TemporaryDirectory
 from .. import app
 from ..tasks import dereplicate
 from ..threading import Worker
-from ..types import AlignmentType
+from ..types import AlignmentType, NotificationType
 from .bulk_sequences import BulkSequencesModel
-from .common import NotificationType, Property, Task
+from .common import Property, Task
 from .sequence import SequenceModel
 
 

@@ -20,25 +20,16 @@ from PySide6 import QtCore
 
 import itertools
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from .. import app
 from ..tasks import decontaminate
 from ..threading import Worker
-from ..types import AlignmentType
+from ..types import AlignmentType, DecontaminateMode, NotificationType
 from .bulk_sequences import BulkSequencesModel
-from .common import NotificationType, Property, Task
+from .common import Property, Task
 from .sequence import SequenceModel
-
-
-class DecontaminateMode(Enum):
-    DECONT = 'DECONT'
-    DECONT2 = 'DECONT2'
-
-    def __str__(self):
-        return self.value
 
 
 class DecontaminateModel(Task):

@@ -20,7 +20,7 @@ from PySide6 import QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
-from ..model import NotificationType
+from ..types import NotificationType
 from .common import (
     AlignmentTypeSelector, Card, NoWheelSpinBox, ObjectView, SequenceSelector)
 

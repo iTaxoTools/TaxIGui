@@ -18,8 +18,6 @@
 
 from PySide6 import QtCore
 
-from enum import Enum, auto
-
 from itaxotools.common.utility import override
 
 from ..utility import Property, PropertyMeta
@@ -40,12 +38,6 @@ class Group(Object):
 
 class Task(Object):
     pass
-
-
-class NotificationType(Enum):
-    Info = auto()
-    Warn = auto()
-    Fail = auto()
 
 
 class Item:

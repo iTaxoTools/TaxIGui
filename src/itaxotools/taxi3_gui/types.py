@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from enum import Enum
+from enum import Enum, auto
 
 
 class AlignmentType(Enum):
@@ -36,3 +36,17 @@ class SequenceReader(Enum):
 
     def __str__(self):
         return self.value
+
+
+class DecontaminateMode(Enum):
+    DECONT = 'DECONT'
+    DECONT2 = 'DECONT2'
+
+    def __str__(self):
+        return self.value
+
+
+class NotificationType(Enum):
+    Info = auto()
+    Warn = auto()
+    Fail = auto()
