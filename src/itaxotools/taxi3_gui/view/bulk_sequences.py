@@ -16,17 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore
-from PySide6 import QtWidgets
-from PySide6 import QtGui
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
 
-from ..model import SequenceModel, SequenceListModel
-
-from .common import ObjectView, Card
+from ..model import SequenceListModel, SequenceModel
+from .common import Card, ObjectView
 from .sequence import SequenceReaderSelector
 
 

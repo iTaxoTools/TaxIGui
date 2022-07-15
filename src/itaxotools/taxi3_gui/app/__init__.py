@@ -18,6 +18,4 @@
 
 """Program globals"""
 
-from . import skin
-from . import resources
-from . import model
+from . import model, resources, skin

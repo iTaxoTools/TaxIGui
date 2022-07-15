@@ -23,7 +23,6 @@ import itertools
 from itaxotools.common.utility import override
 
 from ..types import SequenceReader
-
 from .common import Object, Property
 from .sequence import SequenceModel
 

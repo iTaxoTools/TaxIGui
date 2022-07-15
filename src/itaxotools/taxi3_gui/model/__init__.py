@@ -17,10 +17,8 @@
 # -----------------------------------------------------------------------------
 
 
-from .common import (
-    Object, Group, Task, NotificationType,
-    Item, ItemModel)
-from .sequence import SequenceModel
 from .bulk_sequences import BulkSequencesModel, SequenceListModel
+from .common import Group, Item, ItemModel, NotificationType, Object, Task
+from .decontaminate import DecontaminateMode, DecontaminateModel
 from .dereplicate import DereplicateModel
-from .decontaminate import DecontaminateModel, DecontaminateMode
+from .sequence import SequenceModel

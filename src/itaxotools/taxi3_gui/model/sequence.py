@@ -19,7 +19,6 @@
 from pathlib import Path
 
 from ..types import SequenceReader
-
 from .common import Object, Property
 
 

@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from typing import Optional, Tuple, List, Dict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 from ..types import AlignmentType, SequenceReader
 
@@ -43,8 +43,10 @@ def dereplicate(
     length_threshold: Optional[int],
 ) -> Dict[Path, Tuple[Path, Path]]:
 
-    from itaxotools.taxi3.library.datatypes import CompleteData, ValidFilePath, TabfileReader, XlsxReader, FastaReader, GenbankReader, Metric
-    from itaxotools.taxi3.library.task import Dereplicate, Alignment
+    from itaxotools.taxi3.library.datatypes import (
+        CompleteData, FastaReader, GenbankReader, Metric, TabfileReader,
+        ValidFilePath, XlsxReader)
+    from itaxotools.taxi3.library.task import Alignment, Dereplicate
 
     reader = {
         SequenceReader.TabfileReader: TabfileReader,

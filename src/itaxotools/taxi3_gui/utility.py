@@ -18,8 +18,8 @@
 
 from PySide6 import QtCore
 
-from typing import Callable, ClassVar, Optional, Union
 from dataclasses import dataclass
+from typing import Callable, ClassVar, Optional, Union
 
 
 class Property:

@@ -25,11 +25,12 @@ def run():
     Imports are made locally to optimize multiprocessing.
     """
 
+    from PySide6 import QtCore, QtWidgets
+
     import sys
-    from PySide6 import QtWidgets
-    from PySide6 import QtCore
-    from .main import Main
+
     from .app import skin
+    from .main import Main
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyle('Fusion')

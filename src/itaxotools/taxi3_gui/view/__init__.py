@@ -16,8 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from .common import ObjectView, TaskView, Card
-from .sequence import SequenceView
 from .bulk_sequences import BulkSequencesView
-from .dereplicate import DereplicateView
+from .common import Card, ObjectView, TaskView
 from .decontaminate import DecontaminateView
+from .dereplicate import DereplicateView
+from .sequence import SequenceView

@@ -19,11 +19,11 @@
 from PySide6 import QtCore
 
 import multiprocessing as mp
-import traceback
 import sys
+import traceback
 
-from itaxotools.common.utility import override
 from itaxotools.common.io import PipeIO
+from itaxotools.common.utility import override
 
 
 class ResultDone:

@@ -18,21 +18,18 @@
 
 from PySide6 import QtCore
 
-from tempfile import TemporaryDirectory
+import itertools
 from datetime import datetime
 from pathlib import Path
-
-import itertools
-
-from ..threading import Worker
-from ..tasks import dereplicate
-from ..types import AlignmentType
-
-from .common import Property, Task, NotificationType
-from .sequence import SequenceModel
-from .bulk_sequences import BulkSequencesModel
+from tempfile import TemporaryDirectory
 
 from .. import app
+from ..tasks import dereplicate
+from ..threading import Worker
+from ..types import AlignmentType
+from .bulk_sequences import BulkSequencesModel
+from .common import NotificationType, Property, Task
+from .sequence import SequenceModel
 
 
 class DereplicateModel(Task):

@@ -18,25 +18,20 @@
 
 """Main dialog window"""
 
-from PySide6 import QtCore
-from PySide6 import QtWidgets
-from PySide6 import QtGui
-
-from pathlib import Path
+from PySide6 import QtCore, QtGui, QtWidgets
 
 import shutil
+from pathlib import Path
 
-from itaxotools.common.widgets import ToolDialog
 from itaxotools.common.utility import AttrDict
-
-from ..model import SequenceModel, BulkSequencesModel
-
-from .header import Header
-from .body import Body
-from .footer import Footer
-from .sidebar import SideBar
+from itaxotools.common.widgets import ToolDialog
 
 from .. import app
+from ..model import BulkSequencesModel, SequenceModel
+from .body import Body
+from .footer import Footer
+from .header import Header
+from .sidebar import SideBar
 
 
 class Main(ToolDialog):

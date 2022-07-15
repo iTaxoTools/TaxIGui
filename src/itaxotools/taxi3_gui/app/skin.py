@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6.QtGui import QGuiApplication, QPalette, QColor
-from itaxotools.common.widgets import VectorIcon
+from PySide6.QtGui import QColor, QGuiApplication, QPalette
 
+from itaxotools.common.widgets import VectorIcon
 
 # Color definitions
 

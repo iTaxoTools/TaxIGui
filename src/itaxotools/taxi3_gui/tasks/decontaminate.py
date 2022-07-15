@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from typing import Tuple, List, Dict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 from ..types import AlignmentType, SequenceReader
 
@@ -52,9 +52,9 @@ def decontaminate(
 ) -> Dict[Path, Tuple[Path, Path]]:
 
     from itaxotools.taxi3.library.datatypes import (
-        CompleteData, SequenceData, ValidFilePath, Metric,
-        TabfileReader, XlsxReader, FastaReader, GenbankReader)
-    from itaxotools.taxi3.library.task import Decontaminate, Alignment
+        CompleteData, FastaReader, GenbankReader, Metric, SequenceData,
+        TabfileReader, ValidFilePath, XlsxReader)
+    from itaxotools.taxi3.library.task import Alignment, Decontaminate
 
     readers = {
         SequenceReader.TabfileReader: TabfileReader,
@@ -124,9 +124,9 @@ def decontaminate2(
 ) -> Dict[Path, Tuple[Path, Path]]:
 
     from itaxotools.taxi3.library.datatypes import (
-        CompleteData, SequenceData, ValidFilePath, Metric,
-        TabfileReader, XlsxReader, FastaReader, GenbankReader)
-    from itaxotools.taxi3.library.task import Decontaminate, Alignment
+        CompleteData, FastaReader, GenbankReader, Metric, SequenceData,
+        TabfileReader, ValidFilePath, XlsxReader)
+    from itaxotools.taxi3.library.task import Alignment, Decontaminate
 
     readers = {
         SequenceReader.TabfileReader: TabfileReader,

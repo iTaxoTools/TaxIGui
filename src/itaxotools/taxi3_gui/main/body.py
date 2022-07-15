@@ -16,28 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore
-from PySide6 import QtWidgets
-
-from ..model import (
-    Item,
-    Task,
-    SequenceModel,
-    BulkSequencesModel,
-    DereplicateModel,
-    DecontaminateModel,
-)
-from ..view import (
-    TaskView,
-    SequenceView,
-    BulkSequencesView,
-    DereplicateView,
-    DecontaminateView,
-)
-
-from .dashboard import Dashboard
+from PySide6 import QtCore, QtWidgets
 
 from .. import app
+from ..model import (
+    BulkSequencesModel, DecontaminateModel, DereplicateModel, Item,
+    SequenceModel, Task)
+from ..view import (
+    BulkSequencesView, DecontaminateView, DereplicateView, SequenceView,
+    TaskView)
+from .dashboard import Dashboard
 
 
 class ScrollArea(QtWidgets.QScrollArea):

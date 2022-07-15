@@ -18,22 +18,19 @@
 
 from PySide6 import QtCore
 
-from tempfile import TemporaryDirectory
-from datetime import datetime
-from pathlib import Path
-from enum import Enum
-
 import itertools
-
-from ..threading import Worker
-from ..tasks import decontaminate
-from ..types import AlignmentType
-
-from .common import Property, Task, NotificationType
-from .sequence import SequenceModel
-from .bulk_sequences import BulkSequencesModel
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from .. import app
+from ..tasks import decontaminate
+from ..threading import Worker
+from ..types import AlignmentType
+from .bulk_sequences import BulkSequencesModel
+from .common import NotificationType, Property, Task
+from .sequence import SequenceModel
 
 
 class DecontaminateMode(Enum):

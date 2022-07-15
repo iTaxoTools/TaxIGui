@@ -4,6 +4,7 @@
 """Launch the Taxi3 GUI"""
 
 import multiprocessing
+
 from itaxotools.taxi3_gui import run
 
 if __name__ == '__main__':
