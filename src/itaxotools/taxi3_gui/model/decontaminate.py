@@ -26,7 +26,7 @@ from tempfile import TemporaryDirectory
 from .. import app
 from ..tasks import decontaminate
 from ..threading import Worker
-from ..types import AlignmentType, DecontaminateMode, NotificationType
+from ..types import ComparisonMode, DecontaminateMode, NotificationType
 from .bulk_sequences import BulkSequencesModel
 from .common import Property, Task
 from .sequence import SequenceModel
@@ -35,7 +35,7 @@ from .sequence import SequenceModel
 class DecontaminateModel(Task):
     changed = QtCore.Signal(object)
     notification = QtCore.Signal(NotificationType, str, str)
-    alignment_type = Property(AlignmentType)
+    comparison_mode = Property(ComparisonMode)
     similarity_threshold = Property(float)
     mode = Property(DecontaminateMode)
     input_item = Property(object)
@@ -49,7 +49,7 @@ class DecontaminateModel(Task):
     def __init__(self, name=None):
         super().__init__()
         self.name = name or self.get_next_name()
-        self.alignment_type = AlignmentType.AlignmentFree
+        self.comparison_mode = ComparisonMode.AlignmentFree()
         self.similarity_threshold = 0.07
         self.mode = DecontaminateMode.DECONT
         self.input_item = None
@@ -119,7 +119,7 @@ class DecontaminateModel(Task):
                 decontaminate.decontaminate, work_dir,
                 input_paths, input.reader,
                 reference.path, reference.reader,
-                self.alignment_type,
+                self.comparison_mode,
                 self.similarity_threshold,
             )
 
@@ -133,7 +133,7 @@ class DecontaminateModel(Task):
                 input_paths, input.reader,
                 reference_outgroup.path, reference_outgroup.reader,
                 reference_ingroup.path, reference_ingroup.reader,
-                self.alignment_type,
+                self.comparison_mode,
             )
 
     def cancel(self):

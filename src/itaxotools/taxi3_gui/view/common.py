@@ -22,7 +22,7 @@ from itaxotools.common.utility import override
 
 from .. import app
 from ..model import Item, ItemModel, Object
-from ..types import AlignmentType
+from ..types import ComparisonMode
 from ..utility import bind, unbind
 
 
@@ -151,12 +151,14 @@ class SequenceSelector(Card):
         self.combo.setCurrentIndex(row)
 
 
-class AlignmentTypeSelector(Card):
+class ComparisonModeSelector(Card):
 
-    toggled = QtCore.Signal(AlignmentType)
+    toggled = QtCore.Signal(ComparisonMode)
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.mode = ComparisonMode()
 
         label = QtWidgets.QLabel('Sequence comparison mode')
         label.setStyleSheet("""font-size: 16px;""")
@@ -174,9 +176,9 @@ class AlignmentTypeSelector(Card):
         layout.setSpacing(8)
 
         self.radio_buttons = list()
-        for type in AlignmentType:
-            button = QtWidgets.QRadioButton(str(type))
-            button.alignment_type = type
+        for Mode in ComparisonMode:
+            button = QtWidgets.QRadioButton(Mode.label)
+            button.comparisonMode = Mode
             button.toggled.connect(self.handleToggle)
             self.radio_buttons.append(button)
             layout.addWidget(button)
@@ -188,11 +190,13 @@ class AlignmentTypeSelector(Card):
             return
         for button in self.radio_buttons:
             if button.isChecked():
-                self.toggled.emit(button.alignment_type)
+                self.mode = button.comparisonMode()
+                self.toggled.emit(self.mode)
 
-    def setAlignmentType(self, type):
+    def setComparisonMode(self, mode):
+        self.mode = mode
         for button in self.radio_buttons:
-            button.setChecked(button.alignment_type == type)
+            button.setChecked(isinstance(mode, button.comparisonMode))
 
 
 class NoWheelSpinBox(QtWidgets.QSpinBox):

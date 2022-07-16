@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from ..types import AlignmentType, SequenceReader
+from ..types import ComparisonMode, SequenceReader
 
 
 @dataclass
@@ -47,7 +47,7 @@ def decontaminate(
     input_reader_type: SequenceReader,
     reference_path: Path,
     reference_reader_type: SequenceReader,
-    alignment_type: AlignmentType,
+    comparison_mode: ComparisonMode,
     similarity_threshold: float,
 ) -> Dict[Path, Tuple[Path, Path]]:
 
@@ -66,10 +66,10 @@ def decontaminate(
     reference_reader = readers[reference_reader_type]
 
     alignment = {
-        AlignmentType.AlignmentFree: Alignment.AlignmentFree,
-        AlignmentType.PairwiseAlignment: Alignment.Pairwise,
-        AlignmentType.AlreadyAligned: Alignment.AlreadyAligned,
-    }[alignment_type]
+        ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
+        ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
+        ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
+    }[type(comparison_mode)]
 
     reference = SequenceData.from_path(ValidFilePath(reference_path), reference_reader)
 
@@ -120,7 +120,7 @@ def decontaminate2(
     reference_outgroup_reader_type: SequenceReader,
     reference_ingroup_path: Path,
     reference_ingroup_reader_type: SequenceReader,
-    alignment_type: AlignmentType,
+    comparison_mode: ComparisonMode,
 ) -> Dict[Path, Tuple[Path, Path]]:
 
     from itaxotools.taxi3.library.datatypes import (
@@ -139,10 +139,10 @@ def decontaminate2(
     reference_ingroup_reader = readers[reference_ingroup_reader_type]
 
     alignment = {
-        AlignmentType.AlignmentFree: Alignment.AlignmentFree,
-        AlignmentType.PairwiseAlignment: Alignment.Pairwise,
-        AlignmentType.AlreadyAligned: Alignment.AlreadyAligned,
-    }[alignment_type]
+        ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
+        ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
+        ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
+    }[type(comparison_mode)]
 
     reference_outgroup = SequenceData.from_path(ValidFilePath(reference_outgroup_path), reference_outgroup_reader)
     reference_ingroup = SequenceData.from_path(ValidFilePath(reference_ingroup_path), reference_ingroup_reader)

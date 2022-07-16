@@ -19,13 +19,50 @@
 from enum import Enum, auto
 
 
-class AlignmentType(Enum):
-    AlignmentFree = 'Alignment-Free'
-    PairwiseAlignment = 'Pairwise Alignment'
-    AlreadyAligned = 'Already Aligned'
+class TypeMeta(type):
+    _inheritors = dict()
 
-    def __str__(self):
-        return self.value
+    def __new__(cls, name, bases, attrs):
+        obj = super().__new__(cls, name, bases, attrs)
+        cls._inheritors[obj] = dict()
+        for base in bases:
+            if issubclass(base, Type):
+                cls._inheritors[base][name] = obj
+        return obj
+
+    def __dir__(self):
+        return super().__dir__() + [x for x in self._inheritors[self].keys()]
+
+    def __getattr__(self, attr):
+        if attr in self._inheritors[self]:
+            return self._inheritors[self][attr]
+        raise AttributeError(f'{repr(self.__name__)} has no subtype {repr(attr)}')
+
+    def __iter__(self):
+        return iter(self._inheritors[self].values())
+
+
+class Type(metaclass=TypeMeta):
+    """All subclasses are added as class attributes"""
+
+
+class ComparisonMode(Type):
+    label: str
+
+
+class AlignmentFree(ComparisonMode):
+    label = 'Alignment-Free'
+
+
+class AlreadyAligned(ComparisonMode):
+    label = 'Already Aligned'
+
+
+class PairwiseAlignment(ComparisonMode):
+    label = 'Pairwise Alignment'
+
+    def __init__(self, config=None):
+        self.config = config
 
 
 class SequenceReader(Enum):

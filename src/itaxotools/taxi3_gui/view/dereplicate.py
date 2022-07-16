@@ -22,7 +22,7 @@ from itaxotools.common.utility import AttrDict
 
 from ..types import NotificationType
 from .common import (
-    AlignmentTypeSelector, Card, NoWheelSpinBox, ObjectView, SequenceSelector)
+    Card, ComparisonModeSelector, NoWheelSpinBox, ObjectView, SequenceSelector)
 
 
 class DereplicateView(ObjectView):
@@ -111,8 +111,8 @@ class DereplicateView(ObjectView):
         return card
 
     def draw_distance_card(self):
-        card = AlignmentTypeSelector(self)
-        self.controls.alignmentTypeSelector = card
+        card = ComparisonModeSelector(self)
+        self.controls.comparisonModeSelector = card
         return card
 
     def draw_similarity_card(self):
@@ -202,8 +202,8 @@ class DereplicateView(ObjectView):
         self.bind(object.properties.length_threshold, self.controls.lengthThreshold.setText, lambda x: str(x))
         self.bind(self.controls.lengthThreshold.textChanged, object.properties.length_threshold, lambda x: int(x))
 
-        self.bind(object.properties.alignment_type, self.controls.alignmentTypeSelector.setAlignmentType)
-        self.bind(self.controls.alignmentTypeSelector.toggled, object.properties.alignment_type)
+        self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
+        self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
 
         self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
         self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)

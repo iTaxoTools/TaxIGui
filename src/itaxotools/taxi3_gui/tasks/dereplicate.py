@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from ..types import AlignmentType, SequenceReader
+from ..types import ComparisonMode, SequenceReader
 
 
 @dataclass
@@ -38,7 +38,7 @@ def dereplicate(
     work_dir: Path,
     inputs: List[Path],
     reader_type: SequenceReader,
-    alignment_type: AlignmentType,
+    comparison_mode: ComparisonMode,
     similarity_threshold: float,
     length_threshold: Optional[int],
 ) -> Dict[Path, Tuple[Path, Path]]:
@@ -56,10 +56,10 @@ def dereplicate(
     }[reader_type]
 
     alignment = {
-        AlignmentType.AlignmentFree: Alignment.AlignmentFree,
-        AlignmentType.PairwiseAlignment: Alignment.Pairwise,
-        AlignmentType.AlreadyAligned: Alignment.AlreadyAligned,
-    }[alignment_type]
+        ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
+        ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
+        ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
+    }[type(comparison_mode)]
 
     excluded_dir = work_dir / 'excluded'
     excluded_dir.mkdir()

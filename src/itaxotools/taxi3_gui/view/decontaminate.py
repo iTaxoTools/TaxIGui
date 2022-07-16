@@ -22,7 +22,7 @@ from itaxotools.common.utility import AttrDict
 
 from ..types import DecontaminateMode, NotificationType
 from .common import (
-    AlignmentTypeSelector, Card, NoWheelSpinBox, ObjectView, SequenceSelector)
+    Card, ComparisonModeSelector, NoWheelSpinBox, ObjectView, SequenceSelector)
 
 
 class DecontaminateModeSelector(Card):
@@ -170,8 +170,8 @@ class DecontaminateView(ObjectView):
         return card
 
     def draw_distance_card(self):
-        card = AlignmentTypeSelector(self)
-        self.controls.alignmentTypeSelector = card
+        card = ComparisonModeSelector(self)
+        self.controls.comparisonModeSelector = card
         return card
 
     def draw_similarity_card(self):
@@ -264,8 +264,8 @@ class DecontaminateView(ObjectView):
         self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setValue, lambda x: round(x * 100))
         self.bind(self.controls.similarityThreshold.valueChanged, object.properties.similarity_threshold, lambda x: x / 100)
 
-        self.bind(object.properties.alignment_type, self.controls.alignmentTypeSelector.setAlignmentType)
-        self.bind(self.controls.alignmentTypeSelector.toggled, object.properties.alignment_type)
+        self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
+        self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
 
         self.bind(object.properties.mode, self.controls.mode.setDecontaminateMode)
         self.bind(self.controls.mode.toggled, object.properties.mode)

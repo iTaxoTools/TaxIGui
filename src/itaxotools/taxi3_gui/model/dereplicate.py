@@ -26,7 +26,7 @@ from tempfile import TemporaryDirectory
 from .. import app
 from ..tasks import dereplicate
 from ..threading import Worker
-from ..types import AlignmentType, NotificationType
+from ..types import ComparisonMode, NotificationType
 from .bulk_sequences import BulkSequencesModel
 from .common import Property, Task
 from .sequence import SequenceModel
@@ -34,7 +34,7 @@ from .sequence import SequenceModel
 
 class DereplicateModel(Task):
     notification = QtCore.Signal(NotificationType, str, str)
-    alignment_type = Property(AlignmentType)
+    comparison_mode = Property(ComparisonMode)
     similarity_threshold = Property(float)
     length_threshold = Property(int)
     input_item = Property(object)
@@ -46,7 +46,7 @@ class DereplicateModel(Task):
     def __init__(self, name=None):
         super().__init__()
         self.name = name or self.get_next_name()
-        self.alignment_type = AlignmentType.AlignmentFree
+        self.comparison_mode = ComparisonMode.AlignmentFree()
         self.similarity_threshold = 0.07
         self.length_threshold = 0
         self.input_item = None
@@ -92,7 +92,7 @@ class DereplicateModel(Task):
         self.worker.exec(
             dereplicate.dereplicate, work_dir,
             input_paths, input.reader,
-            self.alignment_type,
+            self.comparison_mode,
             self.similarity_threshold,
             self.length_threshold or None,
         )
