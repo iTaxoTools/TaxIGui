@@ -93,9 +93,12 @@ class DecontaminateModel(Task):
                 return False
             if not isinstance(self.reference_item_2.object, SequenceModel):
                 return False
+        if self.comparison_mode.type is ComparisonMode.PairwiseAlignment:
+            if not self.comparison_mode.config.is_valid():
+                return False
         return True
 
-    def updateReady(self):
+    def updateReady(self, *args):
         self.ready = self.isReady()
 
     def start(self):

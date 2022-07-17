@@ -30,6 +30,7 @@ class DereplicateResults:
 
 
 def initialize():
+    from itaxotools.taxi3.library import config  # noqa
     from itaxotools.taxi3.library import datatypes  # noqa
     from itaxotools.taxi3.library import task  # noqa
 
@@ -43,6 +44,7 @@ def dereplicate(
     length_threshold: Optional[int],
 ) -> Dict[Path, Tuple[Path, Path]]:
 
+    from itaxotools.taxi3.library.config import AlignmentScores, Config
     from itaxotools.taxi3.library.datatypes import (
         CompleteData, FastaReader, GenbankReader, Metric, TabfileReader,
         ValidFilePath, XlsxReader)
@@ -59,7 +61,12 @@ def dereplicate(
         ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
         ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
         ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
-    }[type(comparison_mode)]
+    }[comparison_mode.type]
+
+    config = None
+    if comparison_mode.type is ComparisonMode.PairwiseAlignment:
+        scores = AlignmentScores._from_scores_dict(comparison_mode.config)
+        config = Config(scores)
 
     excluded_dir = work_dir / 'excluded'
     excluded_dir.mkdir()
@@ -81,6 +88,7 @@ def dereplicate(
         task = Dereplicate(warn=print)
         task.similarity = similarity_threshold
         task.length_threshold = length_threshold
+        task._calculate_distances.config = config
         task._calculate_distances.alignment = alignment
         task._calculate_distances.metrics = [Metric.Uncorrected]
         task.data = sequence

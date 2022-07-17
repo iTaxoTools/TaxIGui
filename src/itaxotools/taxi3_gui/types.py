@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from collections import namedtuple
 from enum import Enum, auto
 
 
@@ -45,6 +46,10 @@ class TypeMeta(type):
 class Type(metaclass=TypeMeta):
     """All subclasses are added as class attributes"""
 
+    @property
+    def type(self):
+        return type(self)
+
 
 class ComparisonMode(Type):
     label: str
@@ -62,7 +67,30 @@ class PairwiseAlignment(ComparisonMode):
     label = 'Pairwise Alignment'
 
     def __init__(self, config=None):
-        self.config = config
+        self.config = config or PairwiseComparisonConfig()
+
+
+class PairwiseComparisonConfig(dict):
+    Score = namedtuple('Score', ['label', 'default'])
+    scores = {
+        'gap penalty': Score('Gap Penalty', -8),
+        'gap extend penalty': Score('Gap Extend Penalty', -1),
+        'end gap penalty': Score('End Gap Penalty', -1),
+        'end gap extend penalty': Score('End Gap Extend Penalty', -1),
+        'match score': Score('Match Score', 1),
+        'mismatch score': Score('Mismatch Score', -1),
+    }
+
+    def __init__(self):
+        for key, score in self.scores.items():
+            self[key] = score.default
+
+    @classmethod
+    def label(cls, key):
+        return cls.scores[key].label
+
+    def is_valid(self):
+        return all(isinstance(x, int) for x in self.values())
 
 
 class SequenceReader(Enum):

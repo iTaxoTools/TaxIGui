@@ -204,6 +204,7 @@ class DereplicateView(ObjectView):
 
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
+        self.bind(self.controls.comparisonModeSelector.edited, object.updateReady)
 
         self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
         self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)

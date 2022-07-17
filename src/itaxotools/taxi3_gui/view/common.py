@@ -22,7 +22,7 @@ from itaxotools.common.utility import override
 
 from .. import app
 from ..model import Item, ItemModel, Object
-from ..types import ComparisonMode
+from ..types import ComparisonMode, PairwiseComparisonConfig
 from ..utility import bind, unbind
 
 
@@ -68,7 +68,7 @@ class Card(QtWidgets.QFrame):
         self.setStyleSheet("""Card{background: Palette(Midlight);}""")
 
         layout = QtWidgets.QVBoxLayout()
-        layout.setSpacing(16)
+        layout.setSpacing(24)
         self.setLayout(layout)
 
     def addWidget(self, widget):
@@ -154,11 +154,10 @@ class SequenceSelector(Card):
 class ComparisonModeSelector(Card):
 
     toggled = QtCore.Signal(ComparisonMode)
+    edited = QtCore.Signal(str, int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-
-        self.mode = ComparisonMode()
 
         label = QtWidgets.QLabel('Sequence comparison mode')
         label.setStyleSheet("""font-size: 16px;""")
@@ -182,8 +181,43 @@ class ComparisonModeSelector(Card):
             button.toggled.connect(self.handleToggle)
             self.radio_buttons.append(button)
             layout.addWidget(button)
-
         self.addLayout(layout)
+
+        self.pairwise_config_panel = QtWidgets.QWidget()
+
+        self.score_fields = dict()
+        scores = QtWidgets.QGridLayout()
+        validator = QtGui.QIntValidator()
+        for i, (key, score) in enumerate(PairwiseComparisonConfig.scores.items()):
+            label = QtWidgets.QLabel(f'{score.label}:')
+            field = QtWidgets.QLineEdit()
+            field.textEdited.connect(self.handleEdit)
+            field.setFixedWidth(80)
+            field.setValidator(validator)
+            scores.addWidget(label, i // 2, (i % 2) * 4)
+            scores.addWidget(field, i // 2, (i % 2) * 4 + 2)
+            self.score_fields[key] = field
+            field.scoreKey = key
+        scores.setColumnMinimumWidth(1, 16)
+        scores.setColumnMinimumWidth(5, 16)
+        scores.setColumnStretch(3, 1)
+        scores.setContentsMargins(0, 0, 0, 0)
+        scores.setSpacing(8)
+
+        layout = QtWidgets.QVBoxLayout()
+        label = QtWidgets.QLabel('You may configure the pairwise comparison scores below.')
+        reset = QtWidgets.QPushButton('Reset to default scores')
+        reset.clicked.connect(self.handlePairwiseReset)
+        layout.addWidget(label)
+        layout.addLayout(scores)
+        layout.addWidget(reset)
+        layout.setSpacing(16)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.pairwise_config_panel.setLayout(layout)
+        self.addWidget(self.pairwise_config_panel)
+
+        self.mode = ComparisonMode()
 
     def handleToggle(self, checked):
         if not checked:
@@ -193,10 +227,40 @@ class ComparisonModeSelector(Card):
                 self.mode = button.comparisonMode()
                 self.toggled.emit(self.mode)
 
+    def handleEdit(self, text):
+        if self.mode.type is not ComparisonMode.PairwiseAlignment:
+            return
+        key = self.sender().scoreKey
+        try:
+            value = int(text)
+        except ValueError:
+            value = None
+        self.mode.config[key] = value
+        self.edited.emit(key, value)
+
+    def handlePairwiseReset(self):
+        mode = ComparisonMode.PairwiseAlignment()
+        self.setComparisonMode(mode)
+
     def setComparisonMode(self, mode):
         self.mode = mode
         for button in self.radio_buttons:
-            button.setChecked(isinstance(mode, button.comparisonMode))
+            button.setChecked(mode.type is button.comparisonMode)
+        if mode.type is ComparisonMode.PairwiseAlignment:
+            for key, field in self.score_fields.items():
+                value = mode.config[key]
+                text = str(value) if value is not None else ''
+                field.setText(text)
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode):
+        self._mode = mode
+        is_pairwise = mode.type is ComparisonMode.PairwiseAlignment
+        self.pairwise_config_panel.setVisible(is_pairwise)
 
 
 class NoWheelSpinBox(QtWidgets.QSpinBox):

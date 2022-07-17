@@ -266,6 +266,7 @@ class DecontaminateView(ObjectView):
 
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
+        self.bind(self.controls.comparisonModeSelector.edited, object.updateReady)
 
         self.bind(object.properties.mode, self.controls.mode.setDecontaminateMode)
         self.bind(self.controls.mode.toggled, object.properties.mode)

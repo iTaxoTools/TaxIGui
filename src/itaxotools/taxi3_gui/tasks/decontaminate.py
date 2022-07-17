@@ -37,6 +37,7 @@ class Decontaminate2Results:
 
 
 def initialize():
+    from itaxotools.taxi3.library import config  # noqa
     from itaxotools.taxi3.library import datatypes  # noqa
     from itaxotools.taxi3.library import task  # noqa
 
@@ -51,6 +52,7 @@ def decontaminate(
     similarity_threshold: float,
 ) -> Dict[Path, Tuple[Path, Path]]:
 
+    from itaxotools.taxi3.library.config import AlignmentScores, Config
     from itaxotools.taxi3.library.datatypes import (
         CompleteData, FastaReader, GenbankReader, Metric, SequenceData,
         TabfileReader, ValidFilePath, XlsxReader)
@@ -69,7 +71,12 @@ def decontaminate(
         ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
         ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
         ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
-    }[type(comparison_mode)]
+    }[comparison_mode.type]
+
+    config = None
+    if comparison_mode.type is ComparisonMode.PairwiseAlignment:
+        scores = AlignmentScores._from_scores_dict(comparison_mode.config)
+        config = Config(scores)
 
     reference = SequenceData.from_path(ValidFilePath(reference_path), reference_reader)
 
@@ -96,6 +103,7 @@ def decontaminate(
         task = Decontaminate(warn=print)
         task.similarity = similarity_threshold
         task.alignment = alignment
+        task._calculate_distances.config = config
         task._calculate_distances.metrics = [Metric.Uncorrected]
         task.data = sequence
         task.reference = reference
@@ -123,6 +131,7 @@ def decontaminate2(
     comparison_mode: ComparisonMode,
 ) -> Dict[Path, Tuple[Path, Path]]:
 
+    from itaxotools.taxi3.library.config import AlignmentScores, Config
     from itaxotools.taxi3.library.datatypes import (
         CompleteData, FastaReader, GenbankReader, Metric, SequenceData,
         TabfileReader, ValidFilePath, XlsxReader)
@@ -143,6 +152,11 @@ def decontaminate2(
         ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
         ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
     }[type(comparison_mode)]
+
+    config = None
+    if comparison_mode.type is ComparisonMode.PairwiseAlignment:
+        scores = AlignmentScores._from_scores_dict(comparison_mode.config)
+        config = Config(scores)
 
     reference_outgroup = SequenceData.from_path(ValidFilePath(reference_outgroup_path), reference_outgroup_reader)
     reference_ingroup = SequenceData.from_path(ValidFilePath(reference_ingroup_path), reference_ingroup_reader)
@@ -166,6 +180,7 @@ def decontaminate2(
         print(f'Decontaminating {input.name}')
         task = Decontaminate(warn=print)
         task.alignment = alignment
+        task._calculate_distances.config = config
         task._calculate_distances.metrics = [Metric.Uncorrected]
         task.data = sequence
         task.reference = reference_outgroup

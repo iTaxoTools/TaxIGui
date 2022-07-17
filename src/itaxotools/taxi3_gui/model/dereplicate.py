@@ -61,7 +61,7 @@ class DereplicateModel(Task):
         self.temporary_directory = TemporaryDirectory(prefix='dereplicate_')
         self.temporary_path = Path(self.temporary_directory.name)
 
-        self.properties.input_item.notify.connect(self.checkReady)
+        self.properties.input_item.notify.connect(self.updateReady)
 
     def __str__(self):
         return f'Dereplicate({repr(self.name)})'
@@ -73,8 +73,16 @@ class DereplicateModel(Task):
     def get_next_name(cls):
         return f'Dereplicate #{next(cls.count)}'
 
-    def checkReady(self, value):
-        self.ready = bool(value is not None)
+    def isReady(self):
+        if self.input_item is None:
+            return False
+        if self.comparison_mode.type is ComparisonMode.PairwiseAlignment:
+            if not self.comparison_mode.config.is_valid():
+                return False
+        return True
+
+    def updateReady(self, *args):
+        self.ready = self.isReady()
 
     def start(self):
         self.busy = True
