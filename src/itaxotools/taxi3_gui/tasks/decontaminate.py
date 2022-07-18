@@ -30,12 +30,6 @@ class DecontaminateResults:
     summary: Path
 
 
-@dataclass
-class Decontaminate2Results:
-    decontaminated: Path
-    contaminants: Path
-
-
 def initialize():
     from itaxotools.taxi3.library import config  # noqa
     from itaxotools.taxi3.library import datatypes  # noqa
@@ -96,6 +90,7 @@ def decontaminate(
 
         decontaminated.unlink(missing_ok=True)
         contaminants.unlink(missing_ok=True)
+        summary.unlink(missing_ok=True)
 
         sequence = CompleteData.from_path(ValidFilePath(input), input_reader)
 
@@ -107,7 +102,6 @@ def decontaminate(
         task._calculate_distances.metrics = [Metric.Uncorrected]
         task.data = sequence
         task.reference = reference
-        task.reference2 = None
         task.start()
 
         for output in task.result:
@@ -135,7 +129,7 @@ def decontaminate2(
     from itaxotools.taxi3.library.datatypes import (
         CompleteData, FastaReader, GenbankReader, Metric, SequenceData,
         TabfileReader, ValidFilePath, XlsxReader)
-    from itaxotools.taxi3.library.task import Alignment, Decontaminate
+    from itaxotools.taxi3.library.task import Alignment, Decontaminate2
 
     readers = {
         SequenceReader.TabfileReader: TabfileReader,
@@ -165,32 +159,37 @@ def decontaminate2(
     decontaminated_dir.mkdir()
     contaminants_dir = work_dir / 'contaminants'
     contaminants_dir.mkdir()
+    summary_dir = work_dir / 'summary'
+    summary_dir.mkdir()
 
     results = dict()
 
     for input in inputs:
         decontaminated = decontaminated_dir / f'{input.stem}.decontaminated.tsv'
         contaminants = contaminants_dir / f'{input.stem}.contaminants.tsv'
+        summary = summary_dir / f'{input.stem}.summary.txt'
 
         decontaminated.unlink(missing_ok=True)
         contaminants.unlink(missing_ok=True)
+        summary.unlink(missing_ok=True)
 
         sequence = CompleteData.from_path(ValidFilePath(input), input_reader)
 
         print(f'Decontaminating {input.name}')
-        task = Decontaminate(warn=print)
+        task = Decontaminate2(warn=print)
         task.alignment = alignment
         task._calculate_distances.config = config
         task._calculate_distances.metrics = [Metric.Uncorrected]
         task.data = sequence
-        task.reference = reference_outgroup
-        task.reference2 = reference_ingroup
+        task.outgroup = reference_outgroup
+        task.ingroup = reference_ingroup
         task.start()
 
         for output in task.result:
             output.decontaminated.append_to_file(decontaminated)
             output.contaminates.append_to_file(contaminants)
+            output.summary.append_to_file(summary)
 
-        results[input] = Decontaminate2Results(decontaminated, contaminants)
+        results[input] = DecontaminateResults(decontaminated, contaminants, summary)
 
     return results

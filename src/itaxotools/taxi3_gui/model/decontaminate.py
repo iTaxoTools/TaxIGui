@@ -153,20 +153,17 @@ class DecontaminateModel(Task):
         for input, result in results.items():
             decontaminated_bulk.append(result.decontaminated)
             contaminants_bulk.append(result.contaminants)
-            if isinstance(results, decontaminate.DecontaminateResults):
-                summary_bulk.append(result.summary)
+            summary_bulk.append(result.summary)
 
         if len(results) == 1:
             app.model.items.add_sequence(SequenceModel(result.decontaminated))
             app.model.items.add_sequence(SequenceModel(result.contaminants))
-            if isinstance(results, decontaminate.DecontaminateResults):
-                app.model.items.add_sequence(SequenceModel(result.summary))
+            app.model.items.add_sequence(SequenceModel(result.summary))
         else:
             basename = self.input_item.object.name
             app.model.items.add_sequence(BulkSequencesModel(decontaminated_bulk, name=f'{basename} decontaminated'))
             app.model.items.add_sequence(BulkSequencesModel(contaminants_bulk, name=f'{basename} contaminants'))
-            if isinstance(results, decontaminate.DecontaminateResults):
-                app.model.items.add_sequence(BulkSequencesModel(summary_bulk, name=f'{basename} summary'))
+            app.model.items.add_sequence(BulkSequencesModel(summary_bulk, name=f'{basename} summary'))
 
         self.notification.emit(NotificationType.Info, f'{self.name} completed successfully!', '')
         self.onFinished()
