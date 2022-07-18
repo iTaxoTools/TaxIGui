@@ -119,7 +119,7 @@ class SequenceSelector(Card):
         label = QtWidgets.QLabel(text)
         label.setStyleSheet("""font-size: 16px;""")
 
-        combo = QtWidgets.QComboBox()
+        combo = NoWheelComboBox()
         combo.setFixedWidth(180)
         combo.setModel(model)
         combo.setRootModelIndex(model.sequences_index)
@@ -158,7 +158,11 @@ class ComparisonModeSelector(Card):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.addLayout(self.draw_main_selector())
+        self.addWidget(self.draw_pairwise_config())
+        self.mode = ComparisonMode()
 
+    def draw_main_selector(self):
         label = QtWidgets.QLabel('Sequence comparison mode')
         label.setStyleSheet("""font-size: 16px;""")
 
@@ -181,8 +185,9 @@ class ComparisonModeSelector(Card):
             button.toggled.connect(self.handleToggle)
             self.radio_buttons.append(button)
             layout.addWidget(button)
-        self.addLayout(layout)
+        return layout
 
+    def draw_pairwise_config(self):
         self.pairwise_config_panel = QtWidgets.QWidget()
 
         self.score_fields = dict()
@@ -215,9 +220,7 @@ class ComparisonModeSelector(Card):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.pairwise_config_panel.setLayout(layout)
-        self.addWidget(self.pairwise_config_panel)
-
-        self.mode = ComparisonMode()
+        return self.pairwise_config_panel
 
     def handleToggle(self, checked):
         if not checked:
@@ -241,6 +244,7 @@ class ComparisonModeSelector(Card):
     def handlePairwiseReset(self):
         mode = ComparisonMode.PairwiseAlignment()
         self.setComparisonMode(mode)
+        self.toggled.emit(mode)
 
     def setComparisonMode(self, mode):
         self.mode = mode
@@ -264,5 +268,10 @@ class ComparisonModeSelector(Card):
 
 
 class NoWheelSpinBox(QtWidgets.QSpinBox):
+    def wheelEvent(self, event):
+        event.ignore()
+
+
+class NoWheelComboBox(QtWidgets.QComboBox):
     def wheelEvent(self, event):
         event.ignore()

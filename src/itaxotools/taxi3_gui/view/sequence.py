@@ -21,7 +21,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from itaxotools.common.utility import AttrDict
 
 from ..types import SequenceReader
-from .common import Card, ObjectView
+from .common import Card, NoWheelComboBox, ObjectView
 
 
 class SequenceReaderSelector(Card):
@@ -34,7 +34,7 @@ class SequenceReaderSelector(Card):
         label = QtWidgets.QLabel('File Format')
         label.setStyleSheet("""font-size: 16px;""")
 
-        combo = QtWidgets.QComboBox()
+        combo = NoWheelComboBox()
         combo.setFixedWidth(160)
         for reader in SequenceReader:
             combo.addItem(str(reader), reader)
