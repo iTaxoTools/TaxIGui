@@ -32,20 +32,30 @@ class DecontaminateModeSelector(Card):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        label = QtWidgets.QLabel('Decontaminate Mode')
+        label = QtWidgets.QLabel('Decontamination Mode')
         label.setStyleSheet("""font-size: 16px;""")
 
-        description = QtWidgets.QLabel("For DECONT2 mode, `reference 1` is outgroup (sequences closer to it are contaminates) and `reference 2` is ingroup (sequences closer to it are not contaminates)")
+        description = QtWidgets.QLabel(
+            'Decontamination is performed either against a single or a double reference. '
+            'The first reference defines the outgroup: sequences closest to this are considered contaminants. '
+            'If a second reference is given, it defines the ingroup: sequences closer to this are preserved.'
+        )
         description.setWordWrap(True)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(label)
         layout.addWidget(description)
+        layout.addSpacing(4)
         layout.setSpacing(8)
+
+        texts = {
+            DecontaminateMode.DECONT: '(outgroup only)',
+            DecontaminateMode.DECONT2: '(outgroup && ingroup)',
+        }
 
         self.radio_buttons = list()
         for mode in DecontaminateMode:
-            button = QtWidgets.QRadioButton(str(mode))
+            button = QtWidgets.QRadioButton(f'{str(mode)}\t\t{texts[mode]}')
             button.decontaminate_mode = mode
             button.toggled.connect(self.handleToggle)
             self.radio_buttons.append(button)
@@ -77,8 +87,8 @@ class DecontaminateView(ObjectView):
         self.cards.title = self.draw_title_card()
         self.cards.input = self.draw_input_card()
         self.cards.mode = self.draw_mode_card()
-        self.cards.ref1 = self.draw_ref1_card()
-        self.cards.ref2 = self.draw_ref2_card()
+        self.cards.ref1 = self.draw_outgroup_card()
+        self.cards.ref2 = self.draw_ingroup_card()
         self.cards.distance = self.draw_distance_card()
         self.cards.similarity = self.draw_similarity_card()
         layout = QtWidgets.QVBoxLayout()
@@ -150,7 +160,7 @@ class DecontaminateView(ObjectView):
         return card
 
     def draw_input_card(self):
-        card = SequenceSelector('Input SequenceModel(s):', self)
+        card = SequenceSelector('Input Sequence(s):', self)
         self.controls.inputItem = card
         return card
 
@@ -159,14 +169,14 @@ class DecontaminateView(ObjectView):
         self.controls.mode = card
         return card
 
-    def draw_ref1_card(self):
-        card = SequenceSelector('Reference 1 (outgroup):', self)
-        self.controls.referenceItem1 = card
+    def draw_outgroup_card(self):
+        card = SequenceSelector('Outgroup Reference:', self)
+        self.controls.outgroupItem = card
         return card
 
-    def draw_ref2_card(self):
-        card = SequenceSelector('Reference 2 (ingroup):', self)
-        self.controls.referenceItem2 = card
+    def draw_ingroup_card(self):
+        card = SequenceSelector('Ingroup Reference:', self)
+        self.controls.ingroupItem = card
         return card
 
     def draw_distance_card(self):
@@ -275,11 +285,11 @@ class DecontaminateView(ObjectView):
         self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
         self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
 
-        self.bind(object.properties.reference_item_1, self.controls.referenceItem1.setSequenceItem)
-        self.bind(self.controls.referenceItem1.sequenceChanged, object.properties.reference_item_1)
+        self.bind(object.properties.outgroup_item, self.controls.outgroupItem.setSequenceItem)
+        self.bind(self.controls.outgroupItem.sequenceChanged, object.properties.outgroup_item)
 
-        self.bind(object.properties.reference_item_2, self.controls.referenceItem2.setSequenceItem)
-        self.bind(self.controls.referenceItem2.sequenceChanged, object.properties.reference_item_2)
+        self.bind(object.properties.ingroup_item, self.controls.ingroupItem.setSequenceItem)
+        self.bind(self.controls.ingroupItem.sequenceChanged, object.properties.ingroup_item)
 
     def handleRun(self):
         self.object.start()

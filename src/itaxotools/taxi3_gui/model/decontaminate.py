@@ -39,8 +39,8 @@ class DecontaminateModel(Task):
     similarity_threshold = Property(float)
     mode = Property(DecontaminateMode)
     input_item = Property(object)
-    reference_item_1 = Property(object)
-    reference_item_2 = Property(object)
+    outgroup_item = Property(object)
+    ingroup_item = Property(object)
     ready = Property(bool)
     busy = Property(bool)
 
@@ -53,8 +53,8 @@ class DecontaminateModel(Task):
         self.similarity_threshold = 0.07
         self.mode = DecontaminateMode.DECONT
         self.input_item = None
-        self.reference_item_1 = None
-        self.reference_item_2 = None
+        self.outgroup_item = None
+        self.ingroup_item = None
         self.ready = False
         self.busy = False
 
@@ -68,8 +68,8 @@ class DecontaminateModel(Task):
 
         self.properties.mode.notify.connect(self.updateReady)
         self.properties.input_item.notify.connect(self.updateReady)
-        self.properties.reference_item_1.notify.connect(self.updateReady)
-        self.properties.reference_item_2.notify.connect(self.updateReady)
+        self.properties.outgroup_item.notify.connect(self.updateReady)
+        self.properties.ingroup_item.notify.connect(self.updateReady)
 
     def __str__(self):
         return f'Decontaminate({repr(self.name)})'
@@ -84,14 +84,14 @@ class DecontaminateModel(Task):
     def isReady(self):
         if self.input_item is None:
             return False
-        if self.reference_item_1 is None:
+        if self.outgroup_item is None:
             return False
-        if not isinstance(self.reference_item_1.object, SequenceModel):
+        if not isinstance(self.outgroup_item.object, SequenceModel):
             return False
         if self.mode == DecontaminateMode.DECONT2:
-            if self.reference_item_2 is None:
+            if self.ingroup_item is None:
                 return False
-            if not isinstance(self.reference_item_2.object, SequenceModel):
+            if not isinstance(self.ingroup_item.object, SequenceModel):
                 return False
         if self.comparison_mode.type is ComparisonMode.PairwiseAlignment:
             if not self.comparison_mode.config.is_valid():
@@ -116,7 +116,7 @@ class DecontaminateModel(Task):
 
         if self.mode == DecontaminateMode.DECONT:
 
-            reference = self.reference_item_1.object
+            reference = self.outgroup_item.object
 
             self.worker.exec(
                 decontaminate.decontaminate, work_dir,
@@ -128,8 +128,8 @@ class DecontaminateModel(Task):
 
         elif self.mode == DecontaminateMode.DECONT2:
 
-            reference_outgroup = self.reference_item_1.object
-            reference_ingroup = self.reference_item_2.object
+            reference_outgroup = self.outgroup_item.object
+            reference_ingroup = self.ingroup_item.object
 
             self.worker.exec(
                 decontaminate.decontaminate2, work_dir,

@@ -106,7 +106,7 @@ class DereplicateView(ObjectView):
         return card
 
     def draw_input_card(self):
-        card = SequenceSelector('Input SequenceModel:', self)
+        card = SequenceSelector('Input Sequence(s):', self)
         self.controls.inputItem = card
         return card
 

@@ -104,8 +104,8 @@ class SequenceReader(Enum):
 
 
 class DecontaminateMode(Enum):
-    DECONT = 'DECONT'
-    DECONT2 = 'DECONT2'
+    DECONT = 'Single Reference'
+    DECONT2 = 'Double Reference'
 
     def __str__(self):
         return self.value
