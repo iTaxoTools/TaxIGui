@@ -75,6 +75,34 @@ class DecontaminateModeSelector(Card):
             button.setChecked(button.decontaminate_mode == mode)
 
 
+class DecontaminateReferenceWeights(Card):
+
+    toggled = QtCore.Signal(float, float)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        label = QtWidgets.QLabel('Reference Weights')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        description = QtWidgets.QLabel(
+            'In order to determine whether a sequence is a contaminant or not, '
+            'its distance from the outgroup and ingroup reference databases are compared. '
+            'Each distance is first multiplied by a weight. '
+            'If the outgroup distance is shortest, the sequence is treated as a contaminant.'
+        )
+        description.setWordWrap(True)
+
+
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(description)
+        layout.setSpacing(8)
+
+        self.addLayout(layout)
+
+
 class DecontaminateView(ObjectView):
 
     def __init__(self, parent=None):
@@ -91,6 +119,7 @@ class DecontaminateView(ObjectView):
         self.cards.ref2 = self.draw_ingroup_card()
         self.cards.distance = self.draw_distance_card()
         self.cards.similarity = self.draw_similarity_card()
+        self.cards.weights = self.draw_weights_card()
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.cards.title)
         layout.addWidget(self.cards.input)
@@ -98,6 +127,7 @@ class DecontaminateView(ObjectView):
         layout.addWidget(self.cards.ref1)
         layout.addWidget(self.cards.ref2)
         layout.addWidget(self.cards.similarity)
+        layout.addWidget(self.cards.weights)
         layout.addWidget(self.cards.distance)
         layout.addStretch(1)
         layout.setSpacing(8)
@@ -212,6 +242,11 @@ class DecontaminateView(ObjectView):
         card.addLayout(layout)
 
         self.controls.similarityThreshold = threshold
+        return card
+
+    def draw_weights_card(self):
+        card = DecontaminateReferenceWeights(self)
+        self.controls.weights = card
         return card
 
     def draw_length_card(self):
