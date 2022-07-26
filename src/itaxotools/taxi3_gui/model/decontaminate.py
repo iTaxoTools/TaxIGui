@@ -58,7 +58,7 @@ class DecontaminateModel(Task):
         self.ready = False
         self.busy = False
 
-        self.worker = Worker(eager=True, init=decontaminate.initialize)
+        self.worker = Worker(name=self.name, eager=True, init=decontaminate.initialize)
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
         self.worker.error.connect(self.onError)

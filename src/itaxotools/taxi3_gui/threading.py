@@ -38,11 +38,12 @@ class ResultFail:
         self.trace = trace
 
 
+class InitDone:
+    pass
+
+
 def _work(initializer, commands, results, pipeIn, pipeOut, pipeErr):
     """Wait for commands, send back results"""
-
-    if initializer:
-        initializer()
 
     inp = PipeIO(pipeIn, 'r')
     out = PipeIO(pipeOut, 'w')
@@ -53,21 +54,18 @@ def _work(initializer, commands, results, pipeIn, pipeOut, pipeErr):
     sys.stdout = out
     sys.stderr = err
 
-    try:
-        while True:
-            function, args, kwargs = commands.recv()
-            try:
-                result = function(*args, **kwargs)
-                result = ResultDone(result)
-            except Exception as exception:
-                result = ResultFail(exception)
-            results.send(result)
-    finally:
-        pipeIn.close()
-        pipeOut.close()
-        pipeErr.close()
-        commands.close()
-        results.close()
+    if initializer:
+        initializer()
+    results.send(InitDone())
+
+    while True:
+        function, args, kwargs = commands.recv()
+        try:
+            result = function(*args, **kwargs)
+            result = ResultDone(result)
+        except Exception as exception:
+            result = ResultFail(exception)
+        results.send(result)
 
 
 class Worker(QtCore.QThread):
@@ -76,11 +74,12 @@ class Worker(QtCore.QThread):
     fail = QtCore.Signal(object, str)
     error = QtCore.Signal(int)
 
-    def __init__(self, eager=True, init=None, stream=None):
+    def __init__(self, name='Worker', eager=True, init=None, stream=None):
         """Immediately starts thread execution"""
         super().__init__()
         self.eager = eager
         self.initializer = init
+        self.name = name
 
         self.ready = mp.Semaphore(0)
         self.pipeIn = None
@@ -90,6 +89,7 @@ class Worker(QtCore.QThread):
         self.results = None
         self.process = None
         self.stream = None
+        self.initialized = False
         self.resetting = False
         self.quitting = False
 
@@ -145,6 +145,9 @@ class Worker(QtCore.QThread):
 
         if self.process and self.process.exitcode != 0:
             if not self.resetting and not self.quitting:
+                if not self.initialized:
+                    # If process failed during init, don't run it again
+                    self.eager = False
                 self.error.emit(self.process.exitcode)
 
         self.pipeIn.close()
@@ -159,6 +162,8 @@ class Worker(QtCore.QThread):
 
     def handleResults(self, result):
         """Internal. Emit results."""
+        if isinstance(result, InitDone):
+            self.initialized = True
         if isinstance(result, ResultDone):
             self.done.emit(result.result)
         elif isinstance(result, ResultFail):
@@ -166,6 +171,7 @@ class Worker(QtCore.QThread):
 
     def init(self):
         """Internal. Initialize process and pipes"""
+        self.initialized = False
         self.resetting = False
         pipeIn, self.pipeIn = mp.Pipe(duplex=False)
         self.pipeOut, pipeOut = mp.Pipe(duplex=False)
@@ -173,7 +179,7 @@ class Worker(QtCore.QThread):
         commands, self.commands = mp.Pipe(duplex=False)
         self.results, results = mp.Pipe(duplex=False)
         self.process = mp.Process(
-            target=_work, daemon=True,
+            target=_work, daemon=True, name=self.name,
             args=(self.initializer, commands, results, pipeIn, pipeOut, pipeErr))
         self.process.start()
         self.ready.release()

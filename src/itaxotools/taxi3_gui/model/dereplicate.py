@@ -53,7 +53,7 @@ class DereplicateModel(Task):
         self.ready = True
         self.busy = False
 
-        self.worker = Worker(eager=True, init=dereplicate.initialize)
+        self.worker = Worker(name=self.name, eager=True, init=dereplicate.initialize)
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
         self.worker.error.connect(self.onError)
