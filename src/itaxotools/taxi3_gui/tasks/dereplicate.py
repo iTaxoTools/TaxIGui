@@ -29,7 +29,19 @@ class DereplicateResults:
     excluded: Path
 
 
+def progress_handler(progress):
+    import itaxotools
+    itaxotools.progress_handler(
+        text=progress.operation,
+        value=progress.current_step,
+        maximum=progress.total_steps,
+    )
+
+
 def initialize():
+    import itaxotools
+    itaxotools.progress_handler('Initializing')
+
     from itaxotools.taxi3.library import config  # noqa
     from itaxotools.taxi3.library import datatypes  # noqa
     from itaxotools.taxi3.library import task  # noqa
@@ -43,6 +55,9 @@ def dereplicate(
     similarity_threshold: float,
     length_threshold: Optional[int],
 ) -> Dict[Path, Tuple[Path, Path]]:
+
+    import itaxotools
+    itaxotools.progress_handler('Dereplicating')
 
     from itaxotools.taxi3.library.config import AlignmentScores, Config
     from itaxotools.taxi3.library.datatypes import (
@@ -86,6 +101,7 @@ def dereplicate(
 
         print(f'Dereplicating {input.name}')
         task = Dereplicate(warn=print)
+        task.progress_handler = progress_handler
         task.similarity = similarity_threshold
         task.length_threshold = length_threshold
         task._calculate_distances.config = config

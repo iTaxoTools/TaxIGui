@@ -188,7 +188,9 @@ class DereplicateView(ObjectView):
 
         if self.object:
             self.object.notification.disconnect(self.showNotification)
+            self.object.progress_report.disconnect(self.showProgress)
         object.notification.connect(self.showNotification)
+        object.progress_report.connect(self.showProgress)
 
         self.object = object
 
@@ -232,3 +234,9 @@ class DereplicateView(ObjectView):
         msgBox.setDetailedText(info)
         msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msgBox.exec()
+
+    def showProgress(self, report):
+        progress = self.controls.progress
+        progress.setMaximum(report.maximum)
+        progress.setMinimum(report.minimum)
+        progress.setValue(report.value)

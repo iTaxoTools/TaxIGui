@@ -25,7 +25,7 @@ from tempfile import TemporaryDirectory
 
 from .. import app
 from ..tasks import dereplicate
-from ..threading import Worker
+from ..threading import Worker, ProgressReport
 from ..types import ComparisonMode, NotificationType
 from .bulk_sequences import BulkSequencesModel
 from .common import Property, Task
@@ -34,6 +34,7 @@ from .sequence import SequenceModel
 
 class DereplicateModel(Task):
     notification = QtCore.Signal(NotificationType, str, str)
+    progress_report = QtCore.Signal(ProgressReport)
     comparison_mode = Property(ComparisonMode)
     similarity_threshold = Property(float)
     length_threshold = Property(int)
@@ -57,6 +58,7 @@ class DereplicateModel(Task):
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
         self.worker.error.connect(self.onError)
+        self.worker.update.connect(self.onUpdate)
 
         self.temporary_directory = TemporaryDirectory(prefix='dereplicate_')
         self.temporary_path = Path(self.temporary_directory.name)
@@ -111,6 +113,9 @@ class DereplicateModel(Task):
         self.worker.reset()
         self.notification.emit(NotificationType.Warn, 'Cancelled by user.', '')
         self.onFinished()
+
+    def onUpdate(self, report):
+        self.progress_report.emit(report)
 
     def onDone(self, results):
         dereplicated_bulk = list()

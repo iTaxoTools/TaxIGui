@@ -22,6 +22,8 @@ import multiprocessing as mp
 import sys
 import traceback
 
+from dataclasses import dataclass
+
 from itaxotools.common.io import PipeIO
 from itaxotools.common.utility import override
 
@@ -42,7 +44,15 @@ class InitDone:
     pass
 
 
-def _work(initializer, commands, results, pipeIn, pipeOut, pipeErr):
+@dataclass
+class ProgressReport:
+    text: str
+    value: int = 0
+    minimum: int = 0
+    maximum: int = 0
+
+
+def _work(initializer, commands, results, progress, pipeIn, pipeOut, pipeErr):
     """Wait for commands, send back results"""
 
     inp = PipeIO(pipeIn, 'r')
@@ -53,6 +63,13 @@ def _work(initializer, commands, results, pipeIn, pipeOut, pipeErr):
     sys.stdin = inp
     sys.stdout = out
     sys.stderr = err
+
+    def _progress_handler(*args, **kwargs):
+        report = ProgressReport(*args, **kwargs)
+        progress.send(report)
+
+    import itaxotools
+    itaxotools.progress_handler = _progress_handler
 
     if initializer:
         initializer()
@@ -73,6 +90,7 @@ class Worker(QtCore.QThread):
     done = QtCore.Signal(object)
     fail = QtCore.Signal(object, str)
     error = QtCore.Signal(int)
+    update = QtCore.Signal(ProgressReport)
 
     def __init__(self, name='Worker', eager=True, init=None, stream=None):
         """Immediately starts thread execution"""
@@ -124,6 +142,7 @@ class Worker(QtCore.QThread):
         waitList = {
             sentinel: None,
             self.results: self.handleResults,
+            self.progress: self.handleProgress,
             self.pipeOut: self.handleOut,
             self.pipeErr: self.handleErr,
         }
@@ -155,6 +174,7 @@ class Worker(QtCore.QThread):
         self.pipeErr.close()
         self.commands.close()
         self.results.close()
+        self.progress.close()
         self.process = None
 
         if self.eager and not self.quitting:
@@ -169,6 +189,10 @@ class Worker(QtCore.QThread):
         elif isinstance(result, ResultFail):
             self.fail.emit(result.exception, result.trace)
 
+    def handleProgress(self, progress):
+        """Internal. Emit progress."""
+        self.update.emit(progress)
+
     def init(self):
         """Internal. Initialize process and pipes"""
         self.initialized = False
@@ -178,9 +202,10 @@ class Worker(QtCore.QThread):
         self.pipeErr, pipeErr = mp.Pipe(duplex=False)
         commands, self.commands = mp.Pipe(duplex=False)
         self.results, results = mp.Pipe(duplex=False)
+        self.progress, progress = mp.Pipe(duplex=False)
         self.process = mp.Process(
             target=_work, daemon=True, name=self.name,
-            args=(self.initializer, commands, results, pipeIn, pipeOut, pipeErr))
+            args=(self.initializer, commands, results, progress, pipeIn, pipeOut, pipeErr))
         self.process.start()
         self.ready.release()
 
