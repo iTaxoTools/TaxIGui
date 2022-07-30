@@ -122,6 +122,7 @@ def decontaminate2(
     reference_outgroup_reader_type: SequenceReader,
     reference_ingroup_path: Path,
     reference_ingroup_reader_type: SequenceReader,
+    outgroup_weight: float,
     comparison_mode: ComparisonMode,
 ) -> Dict[Path, Tuple[Path, Path]]:
 
@@ -178,6 +179,7 @@ def decontaminate2(
         print(f'Decontaminating {input.name}')
         task = Decontaminate2(warn=print)
         task.alignment = alignment
+        task.outgroup_weight = outgroup_weight
         task._calculate_distances.config = config
         task._calculate_distances.metrics = [Metric.Uncorrected]
         task.data = sequence

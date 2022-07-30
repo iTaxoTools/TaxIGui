@@ -37,6 +37,8 @@ class DecontaminateModel(Task):
     notification = QtCore.Signal(NotificationType, str, str)
     comparison_mode = Property(ComparisonMode)
     similarity_threshold = Property(float)
+    outgroup_weight = Property(float)
+    ingroup_weight = Property(float)
     mode = Property(DecontaminateMode)
     input_item = Property(object)
     outgroup_item = Property(object)
@@ -51,6 +53,8 @@ class DecontaminateModel(Task):
         self.name = name or self.get_next_name()
         self.comparison_mode = ComparisonMode.AlignmentFree()
         self.similarity_threshold = 0.07
+        self.outgroup_weight = 1.00
+        self.ingroup_weight = 1.00
         self.mode = DecontaminateMode.DECONT
         self.input_item = None
         self.outgroup_item = None
@@ -130,12 +134,14 @@ class DecontaminateModel(Task):
 
             reference_outgroup = self.outgroup_item.object
             reference_ingroup = self.ingroup_item.object
+            outgroup_weight = self.outgroup_weight / self.ingroup_weight
 
             self.worker.exec(
                 decontaminate.decontaminate2, work_dir,
                 input_paths, input.reader,
                 reference_outgroup.path, reference_outgroup.reader,
                 reference_ingroup.path, reference_ingroup.reader,
+                outgroup_weight,
                 self.comparison_mode,
             )
 

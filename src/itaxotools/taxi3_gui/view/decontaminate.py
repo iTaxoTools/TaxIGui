@@ -77,7 +77,8 @@ class DecontaminateModeSelector(Card):
 
 class DecontaminateReferenceWeights(Card):
 
-    toggled = QtCore.Signal(float, float)
+    edited_outgroup = QtCore.Signal(float)
+    edited_ingroup = QtCore.Signal(float)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -89,18 +90,73 @@ class DecontaminateReferenceWeights(Card):
             'In order to determine whether a sequence is a contaminant or not, '
             'its distance from the outgroup and ingroup reference databases are compared. '
             'Each distance is first multiplied by a weight. '
-            'If the outgroup distance is shortest, the sequence is treated as a contaminant.'
+            'If the outgroup distance is the shortest of the two, '
+            'the sequence is treated as a contaminant.'
         )
         description.setWordWrap(True)
 
-
+        fields = self.draw_fields()
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(label)
         layout.addWidget(description)
+        layout.addLayout(fields)
         layout.setSpacing(8)
 
         self.addLayout(layout)
+
+    def draw_fields(self):
+        label_outgroup = QtWidgets.QLabel('Outgroup weight:')
+        label_ingroup = QtWidgets.QLabel('Ingroup weight:')
+        field_outgroup = QtWidgets.QLineEdit('')
+        field_ingroup = QtWidgets.QLineEdit('')
+
+        field_outgroup.setFixedWidth(80)
+        field_ingroup.setFixedWidth(80)
+
+        field_outgroup.textEdited.connect(self.handleOutgroupEdit)
+        field_ingroup.textEdited.connect(self.handleIngroupEdit)
+
+        validator = QtGui.QDoubleValidator(self)
+        locale = QtCore.QLocale.c()
+        locale.setNumberOptions(QtCore.QLocale.RejectGroupSeparator)
+        validator.setLocale(locale)
+        validator.setBottom(0)
+        validator.setDecimals(2)
+        field_outgroup.setValidator(validator)
+        field_ingroup.setValidator(validator)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label_outgroup, 0, 0)
+        layout.addWidget(label_ingroup, 1, 0)
+        layout.addWidget(field_outgroup, 0, 1)
+        layout.addWidget(field_ingroup, 1, 1)
+        layout.setColumnStretch(2, 1)
+
+        self.outgroup = field_outgroup
+        self.ingroup = field_ingroup
+        self.locale = locale
+        return layout
+
+    def handleOutgroupEdit(self, text):
+        weight = self.toFloat(text)[0]
+        self.edited_outgroup.emit(weight)
+
+    def handleIngroupEdit(self, text):
+        weight = self.toFloat(text)[0]
+        self.edited_ingroup.emit(weight)
+
+    def setOutgroupWeight(self, weight):
+        self.outgroup.setText(self.toString(weight))
+
+    def setIngroupWeight(self, weight):
+        self.ingroup.setText(self.toString(weight))
+
+    def toFloat(self, text):
+        return self.locale.toFloat(text)
+
+    def toString(self, number):
+        return self.locale.toString(number, 'f', 2)
 
 
 class DecontaminateView(ObjectView):
@@ -115,8 +171,8 @@ class DecontaminateView(ObjectView):
         self.cards.title = self.draw_title_card()
         self.cards.input = self.draw_input_card()
         self.cards.mode = self.draw_mode_card()
-        self.cards.ref1 = self.draw_outgroup_card()
-        self.cards.ref2 = self.draw_ingroup_card()
+        self.cards.outgroup = self.draw_outgroup_card()
+        self.cards.ingroup = self.draw_ingroup_card()
         self.cards.distance = self.draw_distance_card()
         self.cards.similarity = self.draw_similarity_card()
         self.cards.weights = self.draw_weights_card()
@@ -124,8 +180,8 @@ class DecontaminateView(ObjectView):
         layout.addWidget(self.cards.title)
         layout.addWidget(self.cards.input)
         layout.addWidget(self.cards.mode)
-        layout.addWidget(self.cards.ref1)
-        layout.addWidget(self.cards.ref2)
+        layout.addWidget(self.cards.outgroup)
+        layout.addWidget(self.cards.ingroup)
         layout.addWidget(self.cards.similarity)
         layout.addWidget(self.cards.weights)
         layout.addWidget(self.cards.distance)
@@ -246,7 +302,7 @@ class DecontaminateView(ObjectView):
 
     def draw_weights_card(self):
         card = DecontaminateReferenceWeights(self)
-        self.controls.weights = card
+        self.controls.weightSelector = card
         return card
 
     def draw_length_card(self):
@@ -283,14 +339,15 @@ class DecontaminateView(ObjectView):
         self.controls.run.setVisible(not busy)
         self.cards.input.setEnabled(not busy)
         self.cards.mode.setEnabled(not busy)
-        self.cards.ref1.setEnabled(not busy)
-        self.cards.ref2.setEnabled(not busy)
+        self.cards.outgroup.setEnabled(not busy)
+        self.cards.ingroup.setEnabled(not busy)
         self.cards.distance.setEnabled(not busy)
         self.cards.similarity.setEnabled(not busy)
 
     def handleMode(self, mode):
         self.cards.similarity.setVisible(mode == DecontaminateMode.DECONT)
-        self.cards.ref2.setVisible(mode == DecontaminateMode.DECONT2)
+        self.cards.ingroup.setVisible(mode == DecontaminateMode.DECONT2)
+        self.cards.weights.setVisible(mode == DecontaminateMode.DECONT2)
 
     def setObject(self, object):
 
@@ -312,6 +369,11 @@ class DecontaminateView(ObjectView):
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
         self.bind(self.controls.comparisonModeSelector.edited, object.updateReady)
+
+        self.bind(object.properties.outgroup_weight, self.controls.weightSelector.setOutgroupWeight)
+        self.bind(object.properties.ingroup_weight, self.controls.weightSelector.setIngroupWeight)
+        self.bind(self.controls.weightSelector.edited_outgroup, object.properties.outgroup_weight)
+        self.bind(self.controls.weightSelector.edited_ingroup, object.properties.ingroup_weight)
 
         self.bind(object.properties.mode, self.controls.mode.setDecontaminateMode)
         self.bind(self.controls.mode.toggled, object.properties.mode)
