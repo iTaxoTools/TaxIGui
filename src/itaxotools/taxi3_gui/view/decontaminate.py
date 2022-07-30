@@ -22,7 +22,8 @@ from itaxotools.common.utility import AttrDict
 
 from ..types import DecontaminateMode, NotificationType
 from .common import (
-    Card, ComparisonModeSelector, NoWheelSpinBox, ObjectView, SequenceSelector)
+    Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
+    SequenceSelector)
 
 
 class DecontaminateModeSelector(Card):
@@ -75,7 +76,7 @@ class DecontaminateModeSelector(Card):
             button.setChecked(button.decontaminate_mode == mode)
 
 
-class DecontaminateReferenceWeights(Card):
+class ReferenceWeightSelector(Card):
 
     edited_outgroup = QtCore.Signal(float)
     edited_ingroup = QtCore.Signal(float)
@@ -108,14 +109,14 @@ class DecontaminateReferenceWeights(Card):
     def draw_fields(self):
         label_outgroup = QtWidgets.QLabel('Outgroup weight:')
         label_ingroup = QtWidgets.QLabel('Ingroup weight:')
-        field_outgroup = QtWidgets.QLineEdit('')
-        field_ingroup = QtWidgets.QLineEdit('')
+        field_outgroup = GLineEdit('')
+        field_ingroup = GLineEdit('')
 
         field_outgroup.setFixedWidth(80)
         field_ingroup.setFixedWidth(80)
 
-        field_outgroup.textEdited.connect(self.handleOutgroupEdit)
-        field_ingroup.textEdited.connect(self.handleIngroupEdit)
+        field_outgroup.textEditedSafe.connect(self.handleOutgroupEdit)
+        field_ingroup.textEditedSafe.connect(self.handleIngroupEdit)
 
         validator = QtGui.QDoubleValidator(self)
         locale = QtCore.QLocale.c()
@@ -173,7 +174,7 @@ class DecontaminateView(ObjectView):
         self.cards.mode = self.draw_mode_card()
         self.cards.outgroup = self.draw_outgroup_card()
         self.cards.ingroup = self.draw_ingroup_card()
-        self.cards.distance = self.draw_distance_card()
+        self.cards.comparison = self.draw_comparison_card()
         self.cards.similarity = self.draw_similarity_card()
         self.cards.weights = self.draw_weights_card()
         layout = QtWidgets.QVBoxLayout()
@@ -184,7 +185,7 @@ class DecontaminateView(ObjectView):
         layout.addWidget(self.cards.ingroup)
         layout.addWidget(self.cards.similarity)
         layout.addWidget(self.cards.weights)
-        layout.addWidget(self.cards.distance)
+        layout.addWidget(self.cards.comparison)
         layout.addStretch(1)
         layout.setSpacing(8)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -265,7 +266,7 @@ class DecontaminateView(ObjectView):
         self.controls.ingroupItem = card
         return card
 
-    def draw_distance_card(self):
+    def draw_comparison_card(self):
         card = ComparisonModeSelector(self)
         self.controls.comparisonModeSelector = card
         return card
@@ -276,10 +277,11 @@ class DecontaminateView(ObjectView):
         label = QtWidgets.QLabel('Similarity Threshold (%)')
         label.setStyleSheet("""font-size: 16px;""")
 
-        threshold = NoWheelSpinBox()
+        threshold = GSpinBox()
         threshold.setMinimum(0)
         threshold.setMaximum(100)
         threshold.setSingleStep(1)
+        threshold.setSuffix('%')
         threshold.setValue(7)
         threshold.setFixedWidth(80)
 
@@ -301,36 +303,8 @@ class DecontaminateView(ObjectView):
         return card
 
     def draw_weights_card(self):
-        card = DecontaminateReferenceWeights(self)
+        card = ReferenceWeightSelector(self)
         self.controls.weightSelector = card
-        return card
-
-    def draw_length_card(self):
-        card = Card(self)
-
-        label = QtWidgets.QLabel('Length Threshold')
-        label.setStyleSheet("""font-size: 16px;""")
-
-        threshold = QtWidgets.QLineEdit('0')
-        threshold.setFixedWidth(80)
-
-        validator = QtGui.QIntValidator(threshold)
-        validator.setBottom(0)
-        threshold.setValidator(validator)
-
-        description = QtWidgets.QLabel('Sequences with length below this threshold will be ignored.')
-        description.setWordWrap(True)
-
-        layout = QtWidgets.QGridLayout()
-        layout.addWidget(label, 0, 0)
-        layout.addWidget(threshold, 0, 1)
-        layout.addWidget(description, 1, 0)
-        layout.setColumnStretch(0, 1)
-        layout.setHorizontalSpacing(20)
-        layout.setSpacing(8)
-        card.addLayout(layout)
-
-        self.controls.lengthThreshold = threshold
         return card
 
     def handleBusy(self, busy):
@@ -341,7 +315,7 @@ class DecontaminateView(ObjectView):
         self.cards.mode.setEnabled(not busy)
         self.cards.outgroup.setEnabled(not busy)
         self.cards.ingroup.setEnabled(not busy)
-        self.cards.distance.setEnabled(not busy)
+        self.cards.comparison.setEnabled(not busy)
         self.cards.similarity.setEnabled(not busy)
 
     def handleMode(self, mode):
@@ -364,7 +338,7 @@ class DecontaminateView(ObjectView):
         self.bind(object.properties.busy, self.handleBusy)
 
         self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setValue, lambda x: round(x * 100))
-        self.bind(self.controls.similarityThreshold.valueChanged, object.properties.similarity_threshold, lambda x: x / 100)
+        self.bind(self.controls.similarityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: x / 100)
 
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)

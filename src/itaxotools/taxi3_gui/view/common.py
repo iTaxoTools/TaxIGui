@@ -23,7 +23,7 @@ from itaxotools.common.utility import override
 from .. import app
 from ..model import Item, ItemModel, Object
 from ..types import ComparisonMode, PairwiseComparisonConfig
-from ..utility import bind, unbind
+from ..utility import Guard, bind, unbind
 
 
 class ObjectView(QtWidgets.QFrame):
@@ -267,11 +267,50 @@ class ComparisonModeSelector(Card):
         self.pairwise_config_panel.setVisible(is_pairwise)
 
 
-class NoWheelSpinBox(QtWidgets.QSpinBox):
+class NoWheelComboBox(QtWidgets.QComboBox):
     def wheelEvent(self, event):
         event.ignore()
 
 
-class NoWheelComboBox(QtWidgets.QComboBox):
+class GLineEdit(QtWidgets.QLineEdit):
+
+    textEditedSafe = QtCore.Signal(str)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.textEdited.connect(self._handleEdit)
+        self._guard = Guard()
+
+    def _handleEdit(self, text):
+        with self._guard:
+            self.textEditedSafe.emit(text)
+
+    @override
+    def setText(self, text):
+        if self._guard:
+            return
+        super().setText(text)
+
+
+class GSpinBox(QtWidgets.QSpinBox):
+
+    valueChangedSafe = QtCore.Signal(int)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.valueChanged.connect(self._handleEdit)
+        self._guard = Guard()
+
+    def _handleEdit(self, value):
+        with self._guard:
+            self.valueChangedSafe.emit(value)
+
+    @override
+    def setValue(self, value):
+        if self._guard:
+            return
+        super().setValue(value)
+
+    @override
     def wheelEvent(self, event):
         event.ignore()

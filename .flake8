@@ -1,5 +1,8 @@
 [flake8]
 ignore = E501, W503, W504
+exclude =
+    build
+    dist
 per-file-ignores =
     src/itaxotools/taxi3_gui/app/resources.py:E251
     src/itaxotools/taxi3_gui/app/skin.py:E241

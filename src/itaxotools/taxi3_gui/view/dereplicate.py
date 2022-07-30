@@ -22,7 +22,8 @@ from itaxotools.common.utility import AttrDict
 
 from ..types import NotificationType
 from .common import (
-    Card, ComparisonModeSelector, NoWheelSpinBox, ObjectView, SequenceSelector)
+    Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
+    SequenceSelector)
 
 
 class DereplicateView(ObjectView):
@@ -36,13 +37,13 @@ class DereplicateView(ObjectView):
         self.cards = AttrDict()
         self.cards.title = self.draw_title_card()
         self.cards.input = self.draw_input_card()
-        self.cards.distance = self.draw_distance_card()
+        self.cards.comparison = self.draw_comparison_card()
         self.cards.similarity = self.draw_similarity_card()
         self.cards.length = self.draw_length_card()
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.cards.title)
         layout.addWidget(self.cards.input)
-        layout.addWidget(self.cards.distance)
+        layout.addWidget(self.cards.comparison)
         layout.addWidget(self.cards.similarity)
         layout.addWidget(self.cards.length)
         layout.addStretch(1)
@@ -110,7 +111,7 @@ class DereplicateView(ObjectView):
         self.controls.inputItem = card
         return card
 
-    def draw_distance_card(self):
+    def draw_comparison_card(self):
         card = ComparisonModeSelector(self)
         self.controls.comparisonModeSelector = card
         return card
@@ -121,15 +122,16 @@ class DereplicateView(ObjectView):
         label = QtWidgets.QLabel('Similarity Threshold (%)')
         label.setStyleSheet("""font-size: 16px;""")
 
-        threshold = NoWheelSpinBox()
+        threshold = GSpinBox()
         threshold.setMinimum(0)
         threshold.setMaximum(100)
         threshold.setSingleStep(1)
+        threshold.setSuffix('%')
         threshold.setValue(7)
         threshold.setFixedWidth(80)
 
         description = QtWidgets.QLabel(
-            'SequenceModel pairs for which the uncorrected distance is below '
+            'Sequence pairs for which the uncorrected distance is below '
             'this threshold will be considered similar and will be truncated.')
         description.setWordWrap(True)
 
@@ -151,7 +153,7 @@ class DereplicateView(ObjectView):
         label = QtWidgets.QLabel('Length Threshold')
         label.setStyleSheet("""font-size: 16px;""")
 
-        threshold = QtWidgets.QLineEdit('0')
+        threshold = GLineEdit('0')
         threshold.setFixedWidth(80)
 
         validator = QtGui.QIntValidator(threshold)
@@ -178,7 +180,7 @@ class DereplicateView(ObjectView):
         self.controls.progress.setVisible(busy)
         self.controls.run.setVisible(not busy)
         self.cards.input.setEnabled(not busy)
-        self.cards.distance.setEnabled(not busy)
+        self.cards.comparison.setEnabled(not busy)
         self.cards.similarity.setEnabled(not busy)
         self.cards.length.setEnabled(not busy)
 
@@ -197,10 +199,10 @@ class DereplicateView(ObjectView):
         self.bind(object.properties.busy, self.handleBusy)
 
         self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setValue, lambda x: round(x * 100))
-        self.bind(self.controls.similarityThreshold.valueChanged, object.properties.similarity_threshold, lambda x: x / 100)
+        self.bind(self.controls.similarityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: x / 100)
 
         self.bind(object.properties.length_threshold, self.controls.lengthThreshold.setText, lambda x: str(x))
-        self.bind(self.controls.lengthThreshold.textChanged, object.properties.length_threshold, lambda x: int(x))
+        self.bind(self.controls.lengthThreshold.textEditedSafe, object.properties.length_threshold, lambda x: int(x) if x else 0)
 
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)

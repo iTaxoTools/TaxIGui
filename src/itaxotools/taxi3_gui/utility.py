@@ -217,3 +217,17 @@ def unbind(
         slot = destination
 
     return Binding._unbind(signal, slot)
+
+
+class Guard:
+    def __init__(self):
+        self.locked = False
+
+    def __enter__(self):
+        self.locked = True
+
+    def __exit__(self, type, value, trace):
+        self.locked = False
+
+    def __bool__(self):
+        return self.locked
