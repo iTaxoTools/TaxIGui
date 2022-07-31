@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-from random import choices, randint
-
 import sys
+from random import choices, randint
 
 
 def fetch(list, index, default):
@@ -19,7 +18,7 @@ def sequence(low=10, high=10):
 def main():
     sample_count = int(fetch(sys.argv, 1, randint(10, 20)))
     sample_length_min = int(fetch(sys.argv, 2, randint(10, 20)))
-    sample_length_max = int(fetch(sys.argv, 3, randint(sample_length_min, sample_length_min+10)))
+    sample_length_max = int(fetch(sys.argv, 3, randint(sample_length_min, sample_length_min + 10)))
     sample_prefix = fetch(sys.argv, 4, 'sample')
 
     print('seqid\tspecimen_voucher\torganism\tsequence', end='')

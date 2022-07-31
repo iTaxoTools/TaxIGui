@@ -25,7 +25,7 @@ from tempfile import TemporaryDirectory
 
 from .. import app
 from ..tasks import dereplicate
-from ..threading import Worker, ProgressReport
+from ..threading import ProgressReport, Worker
 from ..types import ComparisonMode, NotificationType
 from .bulk_sequences import BulkSequencesModel
 from .common import Property, Task

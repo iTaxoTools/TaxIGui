@@ -20,69 +20,11 @@ from PySide6 import QtCore
 
 import multiprocessing as mp
 import sys
-import traceback
 
-from dataclasses import dataclass
-
-from itaxotools.common.io import PipeIO
 from itaxotools.common.utility import override
 
-
-class ResultDone:
-    def __init__(self, result):
-        self.result = result
-
-
-class ResultFail:
-    def __init__(self, exception):
-        trace = traceback.format_exc()
-        self.exception = exception
-        self.trace = trace
-
-
-class InitDone:
-    pass
-
-
-@dataclass
-class ProgressReport:
-    text: str
-    value: int = 0
-    minimum: int = 0
-    maximum: int = 0
-
-
-def _work(initializer, commands, results, progress, pipeIn, pipeOut, pipeErr):
-    """Wait for commands, send back results"""
-
-    inp = PipeIO(pipeIn, 'r')
-    out = PipeIO(pipeOut, 'w')
-    err = PipeIO(pipeErr, 'w')
-
-    import sys
-    sys.stdin = inp
-    sys.stdout = out
-    sys.stderr = err
-
-    def _progress_handler(*args, **kwargs):
-        report = ProgressReport(*args, **kwargs)
-        progress.send(report)
-
-    import itaxotools
-    itaxotools.progress_handler = _progress_handler
-
-    if initializer:
-        initializer()
-    results.send(InitDone())
-
-    while True:
-        function, args, kwargs = commands.recv()
-        try:
-            result = function(*args, **kwargs)
-            result = ResultDone(result)
-        except Exception as exception:
-            result = ResultFail(exception)
-        results.send(result)
+from .threading_loop import (
+    InitDone, ProgressReport, ResultDone, ResultFail, loop)
 
 
 class Worker(QtCore.QThread):
@@ -204,7 +146,7 @@ class Worker(QtCore.QThread):
         self.results, results = mp.Pipe(duplex=False)
         self.progress, progress = mp.Pipe(duplex=False)
         self.process = mp.Process(
-            target=_work, daemon=True, name=self.name,
+            target=loop, daemon=True, name=self.name,
             args=(self.initializer, commands, results, progress, pipeIn, pipeOut, pipeErr))
         self.process.start()
         self.ready.release()
