@@ -19,8 +19,8 @@
 from PySide6 import QtCore
 
 import itertools
-from typing import Callable, List
 from collections import defaultdict
+from typing import Callable, List
 
 from itaxotools.common.utility import override
 

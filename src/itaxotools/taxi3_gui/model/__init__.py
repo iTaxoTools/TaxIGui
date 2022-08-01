@@ -22,3 +22,4 @@ from .common import Group, Item, ItemModel, Object, Task
 from .decontaminate import DecontaminateModel
 from .dereplicate import DereplicateModel
 from .sequence import SequenceModel
+from .versus_all import VersusAllModel

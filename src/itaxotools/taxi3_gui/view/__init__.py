@@ -21,3 +21,4 @@ from .common import Card, ObjectView, TaskView
 from .decontaminate import DecontaminateView
 from .dereplicate import DereplicateView
 from .sequence import SequenceView
+from .versus_all import VersusAllView

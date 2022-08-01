@@ -21,10 +21,10 @@ from PySide6 import QtCore, QtWidgets
 from .. import app
 from ..model import (
     BulkSequencesModel, DecontaminateModel, DereplicateModel, Item,
-    SequenceModel, Task)
+    SequenceModel, Task, VersusAllModel)
 from ..view import (
     BulkSequencesView, DecontaminateView, DereplicateView, SequenceView,
-    TaskView)
+    TaskView, VersusAllView)
 from .dashboard import Dashboard
 
 
@@ -52,6 +52,7 @@ class Body(QtWidgets.QStackedWidget):
         self.addView(BulkSequencesModel, BulkSequencesView)
         self.addView(DereplicateModel, DereplicateView)
         self.addView(DecontaminateModel, DecontaminateView)
+        self.addView(VersusAllModel, VersusAllView)
 
     def addView(self, object_type, view_type, *args, **kwargs):
         view = view_type(parent=self, *args, **kwargs)

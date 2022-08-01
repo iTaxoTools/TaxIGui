@@ -39,7 +39,8 @@ def run():
     files = [file for file in sys.argv[1:]]
     main = Main(files=files)
     main.setWindowFlags(QtCore.Qt.Window)
-    main.setModal(True)
+    # Modality was causing mission control issues on Mac
+    # main.setModal(True)
     main.show()
 
     sys.exit(app.exec())
