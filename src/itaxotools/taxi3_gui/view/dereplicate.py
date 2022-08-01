@@ -20,7 +20,7 @@ from PySide6 import QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
-from ..types import NotificationType
+from ..types import Notification
 from .common import (
     Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
     SequenceSelector)
@@ -188,9 +188,9 @@ class DereplicateView(ObjectView):
 
         if self.object:
             self.object.notification.disconnect(self.showNotification)
-            self.object.progress_report.disconnect(self.showProgress)
+            self.object.progression.disconnect(self.showProgress)
         object.notification.connect(self.showNotification)
-        object.progress_report.connect(self.showProgress)
+        object.progression.connect(self.showProgress)
 
         self.object = object
 
@@ -208,7 +208,7 @@ class DereplicateView(ObjectView):
 
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
-        self.bind(self.controls.comparisonModeSelector.edited, object.updateReady)
+        self.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
 
         self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
         self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
@@ -217,21 +217,20 @@ class DereplicateView(ObjectView):
         self.object.start()
 
     def handleCancel(self):
-        self.object.cancel()
+        self.object.stop()
 
-    def showNotification(self, type, text, info):
-
+    def showNotification(self, notification):
         icon = {
-            NotificationType.Info: QtWidgets.QMessageBox.Information,
-            NotificationType.Warn: QtWidgets.QMessageBox.Warning,
-            NotificationType.Fail: QtWidgets.QMessageBox.Critical,
-        }[type]
+            Notification.Info: QtWidgets.QMessageBox.Information,
+            Notification.Warn: QtWidgets.QMessageBox.Warning,
+            Notification.Fail: QtWidgets.QMessageBox.Critical,
+        }[notification.type]
 
         msgBox = QtWidgets.QMessageBox(self.window())
         msgBox.setWindowTitle(self.window().title)
         msgBox.setIcon(icon)
-        msgBox.setText(text)
-        msgBox.setDetailedText(info)
+        msgBox.setText(notification.text)
+        msgBox.setDetailedText(notification.info)
         msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msgBox.exec()
 

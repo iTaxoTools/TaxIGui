@@ -18,9 +18,15 @@
 
 from PySide6 import QtCore
 
+import itertools
+from typing import Callable, List
+from collections import defaultdict
+
 from itaxotools.common.utility import override
 
-from ..utility import Property, PropertyMeta
+from ..threading import ProgressReport, Worker
+from ..types import Notification
+from ..utility import Property, PropertyMeta, PropertyRef
 
 
 class Object(QtCore.QObject, metaclass=PropertyMeta):
@@ -37,7 +43,94 @@ class Group(Object):
 
 
 class Task(Object):
-    pass
+    task_name = 'Task'
+
+    notification = QtCore.Signal(Notification)
+    progression = QtCore.Signal(ProgressReport)
+
+    ready = Property(bool)
+    busy = Property(bool)
+
+    counters = defaultdict(lambda: itertools.count(1, 1))
+
+    def __init__(self, name=None, init=None):
+        super().__init__(name or self._get_next_name())
+        self.ready = False
+        self.busy = False
+
+        self.worker = Worker(name=self.name, eager=True, init=init)
+        self.worker.done.connect(self.onDone)
+        self.worker.fail.connect(self.onFail)
+        self.worker.error.connect(self.onError)
+        self.worker.progress.connect(self.onProgress)
+
+        for property in self.readyTriggers():
+            property.notify.connect(self.checkIfReady)
+
+    @classmethod
+    def _get_next_name(cls):
+        return f'{cls.task_name} #{next(cls.counters[cls.task_name])}'
+
+    def __str__(self):
+        return f'{self.task_name}({repr(self.name)})'
+
+    def __repr__(self):
+        return str(self)
+
+    def onProgress(self, report: ProgressReport):
+        self.progression.emit(report)
+
+    def onFail(self, exception: Exception, traceback: str):
+        print(str(exception))
+        print(traceback)
+        self.notification.emit(Notification.Fail(str(exception), traceback))
+        self.busy = False
+
+    def onError(self, exitcode: int):
+        self.notification.emit(Notification.Fail(f'Process failed with exit code: {exitcode}'))
+        self.busy = False
+
+    def onDone(self, results):
+        """Overload this to handle results. Must call done()."""
+        self.done()
+
+    def done(self):
+        """Call this at the bottom of onDone()"""
+        self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
+        self.busy = False
+
+    def start(self):
+        """Slot for starting the task"""
+        self.busy = True
+        self.run()
+
+    def stop(self):
+        """Slot for interrupting the task"""
+        if self.worker is None:
+            return
+        self.worker.reset()
+        self.notification.emit(Notification.Warn('Cancelled by user.'))
+        self.busy = False
+
+    def readyTriggers(self) -> List[PropertyRef]:
+        """Overload this to set properties as ready triggers"""
+        return []
+
+    def checkIfReady(self, *args):
+        """Slot to check if ready"""
+        self.ready = self.isReady()
+
+    def isReady(self) -> bool:
+        """Overload this to check if ready"""
+        return False
+
+    def run(self):
+        """Called by start(). Overload this with calls to exec()"""
+        self.exec(lambda *args: None)
+
+    def exec(self, task: Callable, *args, **kwargs):
+        """Call this from run() to execute tasks"""
+        self.worker.exec(task, *args, **kwargs)
 
 
 class Item:

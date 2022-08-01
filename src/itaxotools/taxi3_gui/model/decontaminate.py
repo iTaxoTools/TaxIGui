@@ -16,25 +16,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore
-
-import itertools
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from .. import app
 from ..tasks import decontaminate
-from ..threading import Worker
-from ..types import ComparisonMode, DecontaminateMode, NotificationType
+from ..types import ComparisonMode, DecontaminateMode
 from .bulk_sequences import BulkSequencesModel
 from .common import Property, Task
 from .sequence import SequenceModel
 
 
 class DecontaminateModel(Task):
-    changed = QtCore.Signal(object)
-    notification = QtCore.Signal(NotificationType, str, str)
+    task_name = 'Decontaminate'
+
     comparison_mode = Property(ComparisonMode)
     similarity_threshold = Property(float)
     outgroup_weight = Property(float)
@@ -43,14 +39,9 @@ class DecontaminateModel(Task):
     input_item = Property(object)
     outgroup_item = Property(object)
     ingroup_item = Property(object)
-    ready = Property(bool)
-    busy = Property(bool)
-
-    count = itertools.count(1, 1)
 
     def __init__(self, name=None):
-        super().__init__()
-        self.name = name or self.get_next_name()
+        super().__init__(name, init=decontaminate.initialize)
         self.comparison_mode = ComparisonMode.AlignmentFree()
         self.similarity_threshold = 0.07
         self.outgroup_weight = 1.00
@@ -59,31 +50,18 @@ class DecontaminateModel(Task):
         self.input_item = None
         self.outgroup_item = None
         self.ingroup_item = None
-        self.ready = False
-        self.busy = False
 
-        self.worker = Worker(name=self.name, eager=True, init=decontaminate.initialize)
-        self.worker.done.connect(self.onDone)
-        self.worker.fail.connect(self.onFail)
-        self.worker.error.connect(self.onError)
-
-        self.temporary_directory = TemporaryDirectory(prefix='decontaminate_')
+        self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)
 
-        self.properties.mode.notify.connect(self.updateReady)
-        self.properties.input_item.notify.connect(self.updateReady)
-        self.properties.outgroup_item.notify.connect(self.updateReady)
-        self.properties.ingroup_item.notify.connect(self.updateReady)
-
-    def __str__(self):
-        return f'Decontaminate({repr(self.name)})'
-
-    def __repr__(self):
-        return str(self)
-
-    @classmethod
-    def get_next_name(cls):
-        return f'Decontaminate #{next(cls.count)}'
+    def readyTriggers(self):
+        return [
+            self.properties.mode,
+            self.properties.input_item,
+            self.properties.outgroup_item,
+            self.properties.ingroup_item,
+            self.properties.comparison_mode,
+        ]
 
     def isReady(self):
         if self.input_item is None:
@@ -97,17 +75,11 @@ class DecontaminateModel(Task):
                 return False
             if not isinstance(self.ingroup_item.object, SequenceModel):
                 return False
-        if self.comparison_mode.type is ComparisonMode.PairwiseAlignment:
-            if not self.comparison_mode.config.is_valid():
-                return False
+        if not self.comparison_mode.is_valid():
+            return False
         return True
 
-    def updateReady(self, *args):
-        self.ready = self.isReady()
-
-    def start(self):
-        self.busy = True
-
+    def run(self):
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         work_dir = self.temporary_path / timestamp
         work_dir.mkdir()
@@ -122,7 +94,7 @@ class DecontaminateModel(Task):
 
             reference = self.outgroup_item.object
 
-            self.worker.exec(
+            self.exec(
                 decontaminate.decontaminate, work_dir,
                 input_paths, input.reader,
                 reference.path, reference.reader,
@@ -136,7 +108,7 @@ class DecontaminateModel(Task):
             reference_ingroup = self.ingroup_item.object
             outgroup_weight = self.outgroup_weight / self.ingroup_weight
 
-            self.worker.exec(
+            self.exec(
                 decontaminate.decontaminate2, work_dir,
                 input_paths, input.reader,
                 reference_outgroup.path, reference_outgroup.reader,
@@ -144,13 +116,6 @@ class DecontaminateModel(Task):
                 outgroup_weight,
                 self.comparison_mode,
             )
-
-    def cancel(self):
-        if self.worker is None:
-            return
-        self.worker.reset()
-        self.notification.emit(NotificationType.Warn, 'Cancelled by user.', '')
-        self.onFinished()
 
     def onDone(self, results):
         decontaminated_bulk = list()
@@ -171,18 +136,4 @@ class DecontaminateModel(Task):
             app.model.items.add_sequence(BulkSequencesModel(contaminants_bulk, name=f'{basename} contaminants'))
             app.model.items.add_sequence(BulkSequencesModel(summary_bulk, name=f'{basename} summary'))
 
-        self.notification.emit(NotificationType.Info, f'{self.name} completed successfully!', '')
-        self.onFinished()
-
-    def onFail(self, exception, traceback):
-        print(str(exception))
-        print(traceback)
-        self.notification.emit(NotificationType.Fail, str(exception), traceback)
-        self.onFinished()
-
-    def onError(self, exitcode):
-        self.notification.emit(NotificationType.Fail, f'Process failed with exit code: {exitcode}', '')
-        self.onFinished()
-
-    def onFinished(self):
-        self.busy = False
+        self.done()

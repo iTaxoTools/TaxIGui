@@ -40,7 +40,7 @@ def progress_handler(progress):
 
 def initialize():
     import itaxotools
-    itaxotools.progress_handler('Initializing')
+    itaxotools.progress_handler('Initializing...')
 
     from itaxotools.taxi3.library import config  # noqa
     from itaxotools.taxi3.library import datatypes  # noqa
@@ -57,7 +57,7 @@ def dereplicate(
 ) -> Dict[Path, Tuple[Path, Path]]:
 
     import itaxotools
-    itaxotools.progress_handler('Dereplicating')
+    itaxotools.progress_handler('Dereplicating...')
 
     from itaxotools.taxi3.library.config import AlignmentScores, Config
     from itaxotools.taxi3.library.datatypes import (

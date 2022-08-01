@@ -17,7 +17,7 @@
 # -----------------------------------------------------------------------------
 
 from collections import namedtuple
-from enum import Enum, auto
+from enum import Enum
 
 
 class TypeMeta(type):
@@ -54,6 +54,9 @@ class Type(metaclass=TypeMeta):
 class ComparisonMode(Type):
     label: str
 
+    def is_valid(self):
+        return True
+
 
 class AlignmentFree(ComparisonMode):
     label = 'Alignment-Free'
@@ -68,6 +71,27 @@ class PairwiseAlignment(ComparisonMode):
 
     def __init__(self, config=None):
         self.config = config or PairwiseComparisonConfig()
+
+    def is_valid(self):
+        return self.config.is_valid()
+
+
+class Notification(Type):
+    def __init__(self, text: str, info: str = ''):
+        self.text = text
+        self.info = info
+
+
+class Info(Notification):
+    pass
+
+
+class Warn(Notification):
+    pass
+
+
+class Fail(Notification):
+    pass
 
 
 class PairwiseComparisonConfig(dict):
@@ -109,9 +133,3 @@ class DecontaminateMode(Enum):
 
     def __str__(self):
         return self.value
-
-
-class NotificationType(Enum):
-    Info = auto()
-    Warn = auto()
-    Fail = auto()

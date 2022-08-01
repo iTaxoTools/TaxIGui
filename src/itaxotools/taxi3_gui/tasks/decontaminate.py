@@ -30,7 +30,19 @@ class DecontaminateResults:
     summary: Path
 
 
+def progress_handler(progress):
+    import itaxotools
+    itaxotools.progress_handler(
+        text=progress.operation,
+        value=progress.current_step,
+        maximum=progress.total_steps,
+    )
+
+
 def initialize():
+    import itaxotools
+    itaxotools.progress_handler('Initializing...')
+
     from itaxotools.taxi3.library import config  # noqa
     from itaxotools.taxi3.library import datatypes  # noqa
     from itaxotools.taxi3.library import task  # noqa
@@ -45,6 +57,9 @@ def decontaminate(
     comparison_mode: ComparisonMode,
     similarity_threshold: float,
 ) -> Dict[Path, Tuple[Path, Path]]:
+
+    import itaxotools
+    itaxotools.progress_handler('Decontaminating...')
 
     from itaxotools.taxi3.library.config import AlignmentScores, Config
     from itaxotools.taxi3.library.datatypes import (
@@ -96,6 +111,7 @@ def decontaminate(
 
         print(f'Decontaminating {input.name}')
         task = Decontaminate(warn=print)
+        task.progress_handler = progress_handler
         task.similarity = similarity_threshold
         task.alignment = alignment
         task._calculate_distances.config = config
@@ -125,6 +141,9 @@ def decontaminate2(
     outgroup_weight: float,
     comparison_mode: ComparisonMode,
 ) -> Dict[Path, Tuple[Path, Path]]:
+
+    import itaxotools
+    itaxotools.progress_handler('Decontaminating...')
 
     from itaxotools.taxi3.library.config import AlignmentScores, Config
     from itaxotools.taxi3.library.datatypes import (
@@ -178,6 +197,7 @@ def decontaminate2(
 
         print(f'Decontaminating {input.name}')
         task = Decontaminate2(warn=print)
+        task.progress_handler = progress_handler
         task.alignment = alignment
         task.outgroup_weight = outgroup_weight
         task._calculate_distances.config = config

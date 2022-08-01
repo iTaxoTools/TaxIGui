@@ -32,7 +32,7 @@ class Worker(QtCore.QThread):
     done = QtCore.Signal(object)
     fail = QtCore.Signal(object, str)
     error = QtCore.Signal(int)
-    update = QtCore.Signal(ProgressReport)
+    progress = QtCore.Signal(ProgressReport)
 
     def __init__(self, name='Worker', eager=True, init=None, stream=None):
         """Immediately starts thread execution"""
@@ -47,6 +47,7 @@ class Worker(QtCore.QThread):
         self.pipeErr = None
         self.commands = None
         self.results = None
+        self.reports = None
         self.process = None
         self.stream = None
         self.initialized = False
@@ -84,7 +85,7 @@ class Worker(QtCore.QThread):
         waitList = {
             sentinel: None,
             self.results: self.handleResults,
-            self.progress: self.handleProgress,
+            self.reports: self.handleReports,
             self.pipeOut: self.handleOut,
             self.pipeErr: self.handleErr,
         }
@@ -116,7 +117,7 @@ class Worker(QtCore.QThread):
         self.pipeErr.close()
         self.commands.close()
         self.results.close()
-        self.progress.close()
+        self.reports.close()
         self.process = None
 
         if self.eager and not self.quitting:
@@ -131,9 +132,9 @@ class Worker(QtCore.QThread):
         elif isinstance(result, ResultFail):
             self.fail.emit(result.exception, result.trace)
 
-    def handleProgress(self, progress):
-        """Internal. Emit progress."""
-        self.update.emit(progress)
+    def handleReports(self, report):
+        """Internal. Emit progress report."""
+        self.progress.emit(report)
 
     def init(self):
         """Internal. Initialize process and pipes"""
@@ -144,10 +145,10 @@ class Worker(QtCore.QThread):
         self.pipeErr, pipeErr = mp.Pipe(duplex=False)
         commands, self.commands = mp.Pipe(duplex=False)
         self.results, results = mp.Pipe(duplex=False)
-        self.progress, progress = mp.Pipe(duplex=False)
+        self.reports, reports = mp.Pipe(duplex=False)
         self.process = mp.Process(
             target=loop, daemon=True, name=self.name,
-            args=(self.initializer, commands, results, progress, pipeIn, pipeOut, pipeErr))
+            args=(self.initializer, commands, results, reports, pipeIn, pipeOut, pipeErr))
         self.process.start()
         self.ready.release()
 

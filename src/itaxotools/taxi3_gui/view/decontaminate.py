@@ -20,7 +20,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
-from ..types import DecontaminateMode, NotificationType
+from ..types import DecontaminateMode, Notification
 from .common import (
     Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
     SequenceSelector)
@@ -317,6 +317,7 @@ class DecontaminateView(ObjectView):
         self.cards.ingroup.setEnabled(not busy)
         self.cards.comparison.setEnabled(not busy)
         self.cards.similarity.setEnabled(not busy)
+        self.cards.weights.setEnabled(not busy)
 
     def handleMode(self, mode):
         self.cards.similarity.setVisible(mode == DecontaminateMode.DECONT)
@@ -327,7 +328,9 @@ class DecontaminateView(ObjectView):
 
         if self.object:
             self.object.notification.disconnect(self.showNotification)
+            self.object.progression.disconnect(self.showProgress)
         object.notification.connect(self.showNotification)
+        object.progression.connect(self.showProgress)
 
         self.object = object
 
@@ -342,7 +345,7 @@ class DecontaminateView(ObjectView):
 
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
-        self.bind(self.controls.comparisonModeSelector.edited, object.updateReady)
+        self.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
 
         self.bind(object.properties.outgroup_weight, self.controls.weightSelector.setOutgroupWeight)
         self.bind(object.properties.ingroup_weight, self.controls.weightSelector.setIngroupWeight)
@@ -366,20 +369,25 @@ class DecontaminateView(ObjectView):
         self.object.start()
 
     def handleCancel(self):
-        self.object.cancel()
+        self.object.stop()
 
-    def showNotification(self, type, text, info):
-
+    def showNotification(self, notification):
         icon = {
-            NotificationType.Info: QtWidgets.QMessageBox.Information,
-            NotificationType.Warn: QtWidgets.QMessageBox.Warning,
-            NotificationType.Fail: QtWidgets.QMessageBox.Critical,
-        }[type]
+            Notification.Info: QtWidgets.QMessageBox.Information,
+            Notification.Warn: QtWidgets.QMessageBox.Warning,
+            Notification.Fail: QtWidgets.QMessageBox.Critical,
+        }[notification.type]
 
         msgBox = QtWidgets.QMessageBox(self.window())
         msgBox.setWindowTitle(self.window().title)
         msgBox.setIcon(icon)
-        msgBox.setText(text)
-        msgBox.setDetailedText(info)
+        msgBox.setText(notification.text)
+        msgBox.setDetailedText(notification.info)
         msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msgBox.exec()
+
+    def showProgress(self, report):
+        progress = self.controls.progress
+        progress.setMaximum(report.maximum)
+        progress.setMinimum(report.minimum)
+        progress.setValue(report.value)

@@ -16,79 +16,50 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore
-
-import itertools
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from .. import app
 from ..tasks import dereplicate
-from ..threading import ProgressReport, Worker
-from ..types import ComparisonMode, NotificationType
+from ..types import ComparisonMode
 from .bulk_sequences import BulkSequencesModel
 from .common import Property, Task
 from .sequence import SequenceModel
 
 
 class DereplicateModel(Task):
-    notification = QtCore.Signal(NotificationType, str, str)
-    progress_report = QtCore.Signal(ProgressReport)
+    task_name = 'Dereplicate'
+
     comparison_mode = Property(ComparisonMode)
     similarity_threshold = Property(float)
     length_threshold = Property(int)
     input_item = Property(object)
-    ready = Property(bool)
-    busy = Property(bool)
-
-    count = itertools.count(1, 1)
 
     def __init__(self, name=None):
-        super().__init__()
-        self.name = name or self.get_next_name()
+        super().__init__(name, init=dereplicate.initialize)
         self.comparison_mode = ComparisonMode.AlignmentFree()
         self.similarity_threshold = 0.07
         self.length_threshold = 0
         self.input_item = None
-        self.ready = True
-        self.busy = False
 
-        self.worker = Worker(name=self.name, eager=True, init=dereplicate.initialize)
-        self.worker.done.connect(self.onDone)
-        self.worker.fail.connect(self.onFail)
-        self.worker.error.connect(self.onError)
-        self.worker.update.connect(self.onUpdate)
-
-        self.temporary_directory = TemporaryDirectory(prefix='dereplicate_')
+        self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)
 
-        self.properties.input_item.notify.connect(self.updateReady)
-
-    def __str__(self):
-        return f'Dereplicate({repr(self.name)})'
-
-    def __repr__(self):
-        return str(self)
-
-    @classmethod
-    def get_next_name(cls):
-        return f'Dereplicate #{next(cls.count)}'
+    def readyTriggers(self):
+        return [
+            self.properties.input_item,
+            self.properties.comparison_mode,
+        ]
 
     def isReady(self):
         if self.input_item is None:
             return False
-        if self.comparison_mode.type is ComparisonMode.PairwiseAlignment:
-            if not self.comparison_mode.config.is_valid():
-                return False
+        if not self.comparison_mode.is_valid():
+            return False
         return True
 
-    def updateReady(self, *args):
-        self.ready = self.isReady()
-
-    def start(self):
-        self.busy = True
-
+    def run(self):
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         work_dir = self.temporary_path / timestamp
         work_dir.mkdir()
@@ -99,23 +70,13 @@ class DereplicateModel(Task):
         elif isinstance(input, BulkSequencesModel):
             input_paths = [sequence.path for sequence in input.sequences]
 
-        self.worker.exec(
+        self.exec(
             dereplicate.dereplicate, work_dir,
             input_paths, input.reader,
             self.comparison_mode,
             self.similarity_threshold,
             self.length_threshold or None,
         )
-
-    def cancel(self):
-        if self.worker is None:
-            return
-        self.worker.reset()
-        self.notification.emit(NotificationType.Warn, 'Cancelled by user.', '')
-        self.onFinished()
-
-    def onUpdate(self, report):
-        self.progress_report.emit(report)
 
     def onDone(self, results):
         dereplicated_bulk = list()
@@ -132,18 +93,4 @@ class DereplicateModel(Task):
             app.model.items.add_sequence(BulkSequencesModel(dereplicated_bulk, name=f'{basename} dereplicated'))
             app.model.items.add_sequence(BulkSequencesModel(excluded_bulk, name=f'{basename} excluded'))
 
-        self.notification.emit(NotificationType.Info, f'{self.name} completed successfully!', '')
-        self.onFinished()
-
-    def onFail(self, exception, traceback):
-        print(str(exception))
-        print(traceback)
-        self.notification.emit(NotificationType.Fail, str(exception), traceback)
-        self.onFinished()
-
-    def onError(self, exitcode):
-        self.notification.emit(NotificationType.Fail, f'Process failed with exit code: {exitcode}', '')
-        self.onFinished()
-
-    def onFinished(self):
-        self.busy = False
+        self.done()

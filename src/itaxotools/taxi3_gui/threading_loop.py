@@ -49,7 +49,7 @@ class ProgressReport:
     maximum: int = 0
 
 
-def loop(initializer, commands, results, progress, pipeIn, pipeOut, pipeErr):
+def loop(initializer, commands, results, reports, pipeIn, pipeOut, pipeErr):
     """Wait for commands, send back results"""
 
     inp = PipeIO(pipeIn, 'r')
@@ -62,7 +62,7 @@ def loop(initializer, commands, results, progress, pipeIn, pipeOut, pipeErr):
 
     def _progress_handler(*args, **kwargs):
         report = ProgressReport(*args, **kwargs)
-        progress.send(report)
+        reports.send(report)
 
     itaxotools.progress_handler = _progress_handler
 
