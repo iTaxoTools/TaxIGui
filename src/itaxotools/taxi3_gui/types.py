@@ -59,7 +59,7 @@ class ComparisonMode(Type):
 
 
 class AlignmentFree(ComparisonMode):
-    label = 'Alignment-Free'
+    label = 'Alignment-Free (BBC)'
 
 
 class AlreadyAligned(ComparisonMode):

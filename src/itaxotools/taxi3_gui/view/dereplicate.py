@@ -16,11 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
-from ..types import Notification
+from ..types import ComparisonMode, Notification
 from .common import (
     Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
     SequenceSelector)
@@ -39,12 +39,14 @@ class DereplicateView(ObjectView):
         self.cards.input = self.draw_input_card()
         self.cards.comparison = self.draw_comparison_card()
         self.cards.similarity = self.draw_similarity_card()
+        self.cards.identity = self.draw_identity_card()
         self.cards.length = self.draw_length_card()
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.cards.title)
         layout.addWidget(self.cards.input)
         layout.addWidget(self.cards.comparison)
         layout.addWidget(self.cards.similarity)
+        layout.addWidget(self.cards.identity)
         layout.addWidget(self.cards.length)
         layout.addStretch(1)
         layout.setSpacing(8)
@@ -119,19 +121,23 @@ class DereplicateView(ObjectView):
     def draw_similarity_card(self):
         card = Card(self)
 
-        label = QtWidgets.QLabel('Similarity Threshold (%)')
+        label = QtWidgets.QLabel('Similarity Threshold')
         label.setStyleSheet("""font-size: 16px;""")
 
-        threshold = GSpinBox()
-        threshold.setMinimum(0)
-        threshold.setMaximum(100)
-        threshold.setSingleStep(1)
-        threshold.setSuffix('%')
-        threshold.setValue(7)
+        threshold = GLineEdit()
         threshold.setFixedWidth(80)
 
+        validator = QtGui.QDoubleValidator(threshold)
+        locale = QtCore.QLocale.c()
+        locale.setNumberOptions(QtCore.QLocale.RejectGroupSeparator)
+        validator.setLocale(locale)
+        validator.setBottom(0)
+        validator.setTop(1)
+        validator.setDecimals(2)
+        threshold.setValidator(validator)
+
         description = QtWidgets.QLabel(
-            'Sequence pairs for which the uncorrected distance is below '
+            'Sequence pairs for which the computed distance is below '
             'this threshold will be considered similar and will be truncated.')
         description.setWordWrap(True)
 
@@ -145,6 +151,37 @@ class DereplicateView(ObjectView):
         card.addLayout(layout)
 
         self.controls.similarityThreshold = threshold
+        return card
+
+    def draw_identity_card(self):
+        card = Card(self)
+
+        label = QtWidgets.QLabel('Identity Threshold')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        threshold = GSpinBox()
+        threshold.setMinimum(0)
+        threshold.setMaximum(100)
+        threshold.setSingleStep(1)
+        threshold.setSuffix('%')
+        threshold.setValue(97)
+        threshold.setFixedWidth(80)
+
+        description = QtWidgets.QLabel(
+            'Sequence pairs with an identity above '
+            'this threshold will be considered similar and will be truncated.')
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(threshold, 0, 1)
+        layout.addWidget(description, 1, 0)
+        layout.setColumnStretch(0, 1)
+        layout.setHorizontalSpacing(20)
+        layout.setSpacing(8)
+        card.addLayout(layout)
+
+        self.controls.identityThreshold = threshold
         return card
 
     def draw_length_card(self):
@@ -182,7 +219,12 @@ class DereplicateView(ObjectView):
         self.cards.input.setEnabled(not busy)
         self.cards.comparison.setEnabled(not busy)
         self.cards.similarity.setEnabled(not busy)
+        self.cards.identity.setEnabled(not busy)
         self.cards.length.setEnabled(not busy)
+
+    def handleMode(self, mode):
+        self.cards.similarity.setVisible(mode.type is ComparisonMode.AlignmentFree)
+        self.cards.identity.setVisible(mode.type is not ComparisonMode.AlignmentFree)
 
     def setObject(self, object):
 
@@ -200,18 +242,29 @@ class DereplicateView(ObjectView):
         self.bind(object.properties.ready, self.controls.run.setEnabled)
         self.bind(object.properties.busy, self.handleBusy)
 
-        self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setValue, lambda x: round(x * 100))
-        self.bind(self.controls.similarityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: x / 100)
+        self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setText, lambda x: f'{x:.2f}')
+        self.bind(self.controls.similarityThreshold.textEditedSafe, object.properties.similarity_threshold, lambda x: float(x))
+
+        self.bind(object.properties.similarity_threshold, self.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
+        self.bind(self.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
 
         self.bind(object.properties.length_threshold, self.controls.lengthThreshold.setText, lambda x: str(x))
         self.bind(self.controls.lengthThreshold.textEditedSafe, object.properties.length_threshold, lambda x: int(x) if x else 0)
 
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
+        self.bind(object.properties.comparison_mode, self.handleMode)
+        self.bind(self.controls.comparisonModeSelector.toggled, self.resetSimilarityThreshold)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
         self.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
 
         self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
         self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
+
+    def resetSimilarityThreshold(self, mode):
+        if mode.type is ComparisonMode.AlignmentFree:
+            self.object.similarity_threshold = 0.07
+        else:
+            self.object.similarity_threshold = 0.03
 
     def handleRun(self):
         self.object.start()

@@ -20,7 +20,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
-from ..types import DecontaminateMode, Notification
+from ..types import ComparisonMode, DecontaminateMode, Notification
 from .common import (
     Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
     SequenceSelector)
@@ -176,6 +176,7 @@ class DecontaminateView(ObjectView):
         self.cards.ingroup = self.draw_ingroup_card()
         self.cards.comparison = self.draw_comparison_card()
         self.cards.similarity = self.draw_similarity_card()
+        self.cards.identity = self.draw_identity_card()
         self.cards.weights = self.draw_weights_card()
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.cards.title)
@@ -184,6 +185,7 @@ class DecontaminateView(ObjectView):
         layout.addWidget(self.cards.outgroup)
         layout.addWidget(self.cards.ingroup)
         layout.addWidget(self.cards.similarity)
+        layout.addWidget(self.cards.identity)
         layout.addWidget(self.cards.weights)
         layout.addWidget(self.cards.comparison)
         layout.addStretch(1)
@@ -274,19 +276,23 @@ class DecontaminateView(ObjectView):
     def draw_similarity_card(self):
         card = Card(self)
 
-        label = QtWidgets.QLabel('Similarity Threshold (%)')
+        label = QtWidgets.QLabel('Similarity Threshold')
         label.setStyleSheet("""font-size: 16px;""")
 
-        threshold = GSpinBox()
-        threshold.setMinimum(0)
-        threshold.setMaximum(100)
-        threshold.setSingleStep(1)
-        threshold.setSuffix('%')
-        threshold.setValue(7)
+        threshold = GLineEdit()
         threshold.setFixedWidth(80)
 
+        validator = QtGui.QDoubleValidator(threshold)
+        locale = QtCore.QLocale.c()
+        locale.setNumberOptions(QtCore.QLocale.RejectGroupSeparator)
+        validator.setLocale(locale)
+        validator.setBottom(0)
+        validator.setTop(1)
+        validator.setDecimals(2)
+        threshold.setValidator(validator)
+
         description = QtWidgets.QLabel(
-            'Input sequences for which the uncorrected distance to any member of the reference database is within this threshold ' +
+            'Input sequences for which the calculated distance to any member of the reference database is below this threshold '
             'will be considered contaminants and will be removed from the decontaminated output file.')
         description.setWordWrap(True)
 
@@ -300,6 +306,37 @@ class DecontaminateView(ObjectView):
         card.addLayout(layout)
 
         self.controls.similarityThreshold = threshold
+        return card
+
+    def draw_identity_card(self):
+        card = Card(self)
+
+        label = QtWidgets.QLabel('Identity Threshold')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        threshold = GSpinBox()
+        threshold.setMinimum(0)
+        threshold.setMaximum(100)
+        threshold.setSingleStep(1)
+        threshold.setSuffix('%')
+        threshold.setValue(97)
+        threshold.setFixedWidth(80)
+
+        description = QtWidgets.QLabel(
+            'Input sequences for which the identity to any member of the reference database is above this threshold '
+            'will be considered contaminants and will be removed from the decontaminated output file.')
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(threshold, 0, 1)
+        layout.addWidget(description, 1, 0)
+        layout.setColumnStretch(0, 1)
+        layout.setHorizontalSpacing(20)
+        layout.setSpacing(8)
+        card.addLayout(layout)
+
+        self.controls.identityThreshold = threshold
         return card
 
     def draw_weights_card(self):
@@ -317,12 +354,16 @@ class DecontaminateView(ObjectView):
         self.cards.ingroup.setEnabled(not busy)
         self.cards.comparison.setEnabled(not busy)
         self.cards.similarity.setEnabled(not busy)
+        self.cards.identity.setEnabled(not busy)
         self.cards.weights.setEnabled(not busy)
 
-    def handleMode(self, mode):
-        self.cards.similarity.setVisible(mode == DecontaminateMode.DECONT)
-        self.cards.ingroup.setVisible(mode == DecontaminateMode.DECONT2)
-        self.cards.weights.setVisible(mode == DecontaminateMode.DECONT2)
+    def handleMode(self, *args):
+        single_reference = bool(self.object.mode == DecontaminateMode.DECONT)
+        similarity_over_identity = bool(self.object.comparison_mode.type is ComparisonMode.AlignmentFree)
+        self.cards.similarity.setVisible(single_reference and similarity_over_identity)
+        self.cards.identity.setVisible(single_reference and not similarity_over_identity)
+        self.cards.ingroup.setVisible(not single_reference)
+        self.cards.weights.setVisible(not single_reference)
 
     def setObject(self, object):
 
@@ -340,10 +381,15 @@ class DecontaminateView(ObjectView):
         self.bind(object.properties.ready, self.controls.run.setEnabled)
         self.bind(object.properties.busy, self.handleBusy)
 
-        self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setValue, lambda x: round(x * 100))
-        self.bind(self.controls.similarityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: x / 100)
+        self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setText, lambda x: f'{x:.2f}')
+        self.bind(self.controls.similarityThreshold.textEditedSafe, object.properties.similarity_threshold, lambda x: float(x))
+
+        self.bind(object.properties.similarity_threshold, self.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
+        self.bind(self.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
 
         self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
+        self.bind(object.properties.comparison_mode, self.handleMode)
+        self.bind(self.controls.comparisonModeSelector.toggled, self.resetSimilarityThreshold)
         self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
         self.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
 
@@ -364,6 +410,12 @@ class DecontaminateView(ObjectView):
 
         self.bind(object.properties.ingroup_item, self.controls.ingroupItem.setSequenceItem)
         self.bind(self.controls.ingroupItem.sequenceChanged, object.properties.ingroup_item)
+
+    def resetSimilarityThreshold(self, mode):
+        if mode.type is ComparisonMode.AlignmentFree:
+            self.object.similarity_threshold = 0.07
+        else:
+            self.object.similarity_threshold = 0.03
 
     def handleRun(self):
         self.object.start()
