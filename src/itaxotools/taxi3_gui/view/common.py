@@ -18,10 +18,12 @@
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from pathlib import Path
+
 from itaxotools.common.utility import override
 
 from .. import app
-from ..model import Item, ItemModel, Object
+from ..model import BulkSequencesModel, Item, ItemModel, Object, SequenceModel
 from ..types import ComparisonMode, PairwiseComparisonConfig
 from ..utility import Guard, bind, unbind
 
@@ -126,7 +128,7 @@ class SequenceSelector(Card):
         combo.currentIndexChanged.connect(self.handleIndexChanged)
 
         browse = QtWidgets.QPushButton('Import')
-        browse.setEnabled(False)
+        browse.clicked.connect(self.handleImport)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(label, 1)
@@ -149,6 +151,20 @@ class SequenceSelector(Card):
     def setSequenceItem(self, item):
         row = item.row if item else -1
         self.combo.setCurrentIndex(row)
+
+    def handleImport(self, *args):
+        filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
+            self.window(), f'{app.title} - Import Sequence(s)')
+        if not filenames:
+            return
+        if len(filenames) == 1:
+            path = Path(filenames[0])
+            index = app.model.items.add_sequence(SequenceModel(path), focus=False)
+        else:
+            paths = [Path(filename) for filename in filenames]
+            index = app.model.items.add_sequence(BulkSequencesModel(paths), focus=False)
+        item = index.data(ItemModel.ItemRole)
+        self.setSequenceItem(item)
 
 
 class ComparisonModeSelector(Card):

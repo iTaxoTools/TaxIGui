@@ -19,3 +19,5 @@
 """Program globals"""
 
 from . import model, resources, skin
+
+title = 'TaxI3'

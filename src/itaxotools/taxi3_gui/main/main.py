@@ -40,10 +40,9 @@ class Main(ToolDialog):
     def __init__(self, parent=None, files=[]):
         super(Main, self).__init__(parent)
 
-        self.title = 'Taxi3'
-
+        self.setWindowFlags(QtCore.Qt.Window)
         self.setWindowIcon(app.resources.icons.app)
-        self.setWindowTitle(self.title)
+        self.setWindowTitle(app.title)
         self.resize(800, 500)
 
         self.draw()
@@ -99,31 +98,31 @@ class Main(ToolDialog):
 
     def handleOpen(self):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
-            self, f'{self.title} - Open File')
+            self, f'{app.title} - Open File')
         if not filenames:
             return
         if len(filenames) == 1:
             path = Path(filenames[0])
-            app.model.items.add_sequence(SequenceModel(path))
+            app.model.items.add_sequence(SequenceModel(path), focus=True)
         else:
             paths = [Path(filename) for filename in filenames]
-            app.model.items.add_sequence(BulkSequencesModel(paths))
+            app.model.items.add_sequence(BulkSequencesModel(paths), focus=True)
 
     def handleSave(self):
         try:
             self._handleSave()
         except Exception as exception:
-            QtWidgets.QMessageBox.critical(self, self.title, str(exception))
+            QtWidgets.QMessageBox.critical(self, app.title, str(exception))
 
     def _handleSave(self):
         item = self.widgets.body.activeItem
         if not item:
-            QtWidgets.QMessageBox.information(self, self.title, 'Please select a sequence and try again.')
+            QtWidgets.QMessageBox.information(self, app.title, 'Please select a sequence and try again.')
             return
         if isinstance(item.object, SequenceModel):
             source = item.object.path
             filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-                self, f'{self.title} - Save File',
+                self, f'{app.title} - Save File',
                 QtCore.QDir.currentPath() + '/' + source.name)
             if not filename:
                 return
@@ -132,7 +131,7 @@ class Main(ToolDialog):
             return
         if isinstance(item.object, BulkSequencesModel):
             filename = QtWidgets.QFileDialog.getExistingDirectory(
-                self, f'{self.title} - Save Bulk Files',
+                self, f'{app.title} - Save Bulk Files',
                 QtCore.QDir.currentPath())
             if not filename:
                 return
@@ -142,4 +141,4 @@ class Main(ToolDialog):
                 destination = directory / source.name
                 shutil.copy(source, destination)
             return
-        QtWidgets.QMessageBox.information(self, self.title, 'Please select a sequence and try again.')
+        QtWidgets.QMessageBox.information(self, app.title, 'Please select a sequence and try again.')

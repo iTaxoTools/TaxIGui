@@ -155,7 +155,7 @@ class Item:
 class ItemModel(QtCore.QAbstractItemModel):
     """The main model that holds all Items"""
 
-    addedEntry = QtCore.Signal(QtCore.QModelIndex)
+    focused = QtCore.Signal(QtCore.QModelIndex)
     ItemRole = QtCore.Qt.UserRole
 
     def __init__(self, parent=None):
@@ -174,7 +174,7 @@ class ItemModel(QtCore.QAbstractItemModel):
         group = self.sequences
         return self.createIndex(group.row, 0, group)
 
-    def _add_entry(self, group, child):
+    def _add_entry(self, group, child, focus=False):
         parent = self.createIndex(group.row, 0, group)
         row = len(group.children)
         self.beginInsertRows(parent, row, row)
@@ -187,13 +187,18 @@ class ItemModel(QtCore.QAbstractItemModel):
         child.properties.name.notify.connect(entryChanged)
         self.endInsertRows()
         index = self.index(row, 0, parent)
-        self.addedEntry.emit(index)
+        if focus:
+            self.focus(index)
+        return index
 
-    def add_task(self, task):
-        self._add_entry(self.tasks, task)
+    def add_task(self, task, focus=False):
+        return self._add_entry(self.tasks, task, focus)
 
-    def add_sequence(self, sequence):
-        self._add_entry(self.sequences, sequence)
+    def add_sequence(self, sequence, focus=False):
+        return self._add_entry(self.sequences, sequence, focus)
+
+    def focus(self, index):
+        self.focused.emit(index)
 
     def remove_index(self, index):
         parent = index.parent()

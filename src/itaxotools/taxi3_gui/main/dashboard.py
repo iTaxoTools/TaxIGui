@@ -94,13 +94,13 @@ class Dashboard(QtWidgets.QFrame):
         self.setLayout(layout)
 
     def handleDereplicate(self):
-        app.model.items.add_task(DereplicateModel())
+        app.model.items.add_task(DereplicateModel(), focus=True)
 
     def handleDecontaminate(self):
-        app.model.items.add_task(DecontaminateModel())
+        app.model.items.add_task(DecontaminateModel(), focus=True)
 
     def handleVersusAll(self):
-        app.model.items.add_task(VersusAllModel())
+        app.model.items.add_task(VersusAllModel(), focus=True)
 
     def handleVersusReference(self):
-        app.model.items.add_task(Task('VREF'))
+        app.model.items.add_task(Task('VREF'), focus=True)

@@ -20,6 +20,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
+from .. import app
 from ..types import ComparisonMode, Notification
 from .common import (
     Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
@@ -280,7 +281,7 @@ class DereplicateView(ObjectView):
         }[notification.type]
 
         msgBox = QtWidgets.QMessageBox(self.window())
-        msgBox.setWindowTitle(self.window().title)
+        msgBox.setWindowTitle(app.title)
         msgBox.setIcon(icon)
         msgBox.setText(notification.text)
         msgBox.setDetailedText(notification.info)

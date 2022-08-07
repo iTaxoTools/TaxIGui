@@ -20,6 +20,7 @@ from PySide6 import QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
+from .. import app
 from ..types import Notification
 from .common import Card, ComparisonModeSelector, ObjectView, SequenceSelector
 
@@ -153,7 +154,7 @@ class VersusAllView(ObjectView):
         }[notification.type]
 
         msgBox = QtWidgets.QMessageBox(self.window())
-        msgBox.setWindowTitle(self.window().title)
+        msgBox.setWindowTitle(app.title)
         msgBox.setIcon(icon)
         msgBox.setText(notification.text)
         msgBox.setDetailedText(notification.info)
