@@ -25,11 +25,15 @@ setup(
     python_requires='>=3.8.6, <4',
     install_requires=[
         'pyside6>=6.1.1',
-        'taxi3==0.1.0',
+        'taxi3==0.2.0',
         'itaxotools-common==0.2.dev3',
     ],
     extras_require={
-        'dev': ['pyinstaller>=4.5.1', 'flake8>=4.0.0', 'isort>=5.9.0'],
+        'dev': [
+            'pyinstaller>=4.5.1',
+            'flake8>=4.0.0',
+            'isort>=5.9.0'
+        ],
     },
     entry_points={
         'console_scripts': [
@@ -37,7 +41,7 @@ setup(
         ]
     },
     classifiers=[
-        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',  # noqa
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
