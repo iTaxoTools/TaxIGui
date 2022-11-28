@@ -76,6 +76,43 @@ class PairwiseAlignment(ComparisonMode):
         return self.config.is_valid()
 
 
+class AlignmentMode(Type):
+    label: str
+
+    def is_valid(self):
+        return True
+
+
+class NoAlignment(AlignmentMode):
+    label = 'No alignment'
+    description = 'for already aligned sequences or alignment-free metrics'
+
+
+class PairwiseAlignment(AlignmentMode):
+    label = 'Pairwise Alignment'
+    description = 'align each pair of sequences just before calculating distances'
+
+    def __init__(self, config=None):
+        self.config = config or PairwiseComparisonConfig()
+
+    def is_valid(self):
+        return self.config.is_valid()
+
+
+class MSA(AlignmentMode):
+    label = 'Multiple Sequence Alignment'
+    description = 'uses MAFFT to align all sequences in advance'
+
+
+class StatisticsOption(Enum):
+    All = 'For all sequences'
+    Species = 'Per species'
+    Genera = 'Per genus'
+
+    def __str__(self):
+        return self.value
+
+
 class Notification(Type):
     def __init__(self, text: str, info: str = ''):
         self.text = text
@@ -97,12 +134,12 @@ class Fail(Notification):
 class PairwiseComparisonConfig(dict):
     Score = namedtuple('Score', ['label', 'default'])
     scores = {
+        'match score': Score('Match Score', 1),
+        'mismatch score': Score('Mismatch Score', -1),
         'gap penalty': Score('Gap Penalty', -8),
         'gap extend penalty': Score('Gap Extend Penalty', -1),
         'end gap penalty': Score('End Gap Penalty', -1),
         'end gap extend penalty': Score('End Gap Extend Penalty', -1),
-        'match score': Score('Match Score', 1),
-        'mismatch score': Score('Mismatch Score', -1),
     }
 
     def __init__(self):
