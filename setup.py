@@ -25,8 +25,8 @@ setup(
     python_requires='>=3.8.6, <4',
     install_requires=[
         'pyside6>=6.1.1',
-        'taxi3==0.2.0',
-        'itaxotools-common==0.2.dev3',
+        'taxi3==0.2.dev0',
+        'itaxotools-common==0.2.dev4',
     ],
     extras_require={
         'dev': [
