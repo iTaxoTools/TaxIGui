@@ -18,9 +18,12 @@
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
+from pathlib import Path
+
 from itaxotools.common.utility import AttrDict
 
 from .. import app
+from ..model import Item, ItemModel, Object, SequenceModel
 from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsOption
 from .common import Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
@@ -79,6 +82,8 @@ class RichRadioButton(QtWidgets.QRadioButton):
 
 
 class TitleCard(Card):
+    run = QtCore.Signal()
+    cancel = QtCore.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -91,8 +96,12 @@ class TitleCard(Card):
         description.setWordWrap(True)
 
         run = QtWidgets.QPushButton('Run')
-        remove = QtWidgets.QPushButton('Remove')
+        run.clicked.connect(self.handleRun)
 
+        cancel = QtWidgets.QPushButton('Cancel')
+        cancel.clicked.connect(self.handleCancel)
+
+        remove = QtWidgets.QPushButton('Remove')
         remove.setEnabled(False)
 
         contents = QtWidgets.QVBoxLayout()
@@ -103,6 +112,7 @@ class TitleCard(Card):
 
         buttons = QtWidgets.QVBoxLayout()
         buttons.addWidget(run)
+        buttons.addWidget(cancel)
         buttons.addWidget(remove)
         buttons.addStretch(1)
         buttons.setSpacing(8)
@@ -112,21 +122,50 @@ class TitleCard(Card):
         layout.addLayout(buttons, 0)
         self.addLayout(layout)
 
+        self.controls = AttrDict()
+        self.controls.run = run
+        self.controls.cancel = cancel
+        self.controls.title = title
+
+    def handleRun(self):
+        self.run.emit()
+
+    def handleCancel(self):
+        self.cancel.emit()
+
+    def setTitle(self, text):
+        self.controls.title.setText(text)
+
+    def setReady(self, ready: bool):
+        self.controls.run.setEnabled(ready)
+
+    def setBusy(self, busy: bool):
+        self.controls.run.setVisible(not busy)
+        self.controls.cancel.setVisible(busy)
+
+    def setEnabled(self, enabled: bool):
+        pass
+
 
 class InputSelector(Card):
+    itemChanged = QtCore.Signal(Item)
 
     def __init__(self, text, parent=None, model=app.model.items):
         super().__init__(parent)
-        self.draw_main(text)
+        self.draw_main(text, model)
         self.draw_config()
 
-    def draw_main(self, text):
+    def draw_main(self, text, model):
         label = QtWidgets.QLabel(text + ':')
         label.setStyleSheet("""font-size: 16px;""")
 
         combo = NoWheelComboBox()
+        combo.setModel(model)
+        combo.setRootModelIndex(model.sequences_index)
+        combo.currentIndexChanged.connect(self.handleIndexChanged)
 
         browse = QtWidgets.QPushButton('Import')
+        browse.clicked.connect(self.handleBrowse)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(label)
@@ -135,14 +174,40 @@ class InputSelector(Card):
         layout.addWidget(browse)
         self.addLayout(layout)
 
+        self.controls = AttrDict()
+        self.controls.combo = combo
+
     def draw_config(self):
         pass
+
+    def handleIndexChanged(self, row):
+        if row < 0:
+            item = None
+        else:
+            model = self.controls.combo.model()
+            parent = model.sequences_index
+            index = model.index(row, 0, parent)
+            item = index.data(ItemModel.ItemRole)
+        self.itemChanged.emit(item)
+
+    def handleBrowse(self, *args):
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self.window(), f'{app.title} - Import Sequence File')
+        if not filename:
+            return
+        path = Path(filename)
+        index = app.model.items.add_sequence(SequenceModel(path), focus=False)
+        item = index.data(ItemModel.ItemRole)
+        self.setItem(item)
+
+    def setItem(self, item):
+        row = item.row if item else -1
+        self.controls.combo.setCurrentIndex(row)
 
 
 class SequenceSelector(InputSelector):
 
     def draw_config(self):
-
         layout = QtWidgets.QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
@@ -203,7 +268,15 @@ class SequenceSelector(InputSelector):
         layout.addWidget(view, 0, column)
         column += 1
 
-        self.addLayout(layout)
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+        self.addWidget(widget)
+
+        self.controls.config = widget
+
+    def setItem(self, item):
+        super().setItem(item)
+        self.controls.config.setVisible(bool(item))
 
 
 class PartitionSelector(InputSelector):
@@ -274,12 +347,14 @@ class PartitionSelector(InputSelector):
 
 
 class OptionalCategory(Card):
+    toggled = QtCore.Signal(bool)
 
     def __init__(self, text, description, parent=None):
         super().__init__(parent)
 
         title = QtWidgets.QCheckBox(text)
         title.setStyleSheet("""font-size: 16px;""")
+        title.stateChanged.connect(self.handleStateChanged)
 
         description = QtWidgets.QLabel(description)
         description.setWordWrap(True)
@@ -294,6 +369,16 @@ class OptionalCategory(Card):
         layout.addLayout(contents, 1)
         layout.addSpacing(80)
         self.addLayout(layout)
+
+        self.controls = AttrDict()
+        self.controls.title = title
+
+    def handleStateChanged(self, state):
+        self.toggled.emit(bool(state))
+
+
+    def setChecked(self, checked: bool):
+        self.controls.title.setChecked(checked)
 
 
 class AlignmentModeSelector(Card):
@@ -553,6 +638,28 @@ class VersusAllView(ObjectView):
     def setObject(self, object):
         self.object = object
         self.unbind_all()
+
+        self.bind(self.cards.title.run, object.start)
+        self.bind(self.cards.title.cancel, object.stop)
+        self.bind(object.properties.name, self.cards.title.setTitle)
+        self.bind(object.properties.ready, self.cards.title.setReady)
+        self.bind(object.properties.busy, self.cards.title.setBusy)
+        self.bind(object.properties.busy, self.setBusy)
+
+        self.bind(self.cards.input_sequences.itemChanged, object.properties.input_sequences_item)
+        self.bind(object.properties.input_sequences_item, self.cards.input_sequences.setItem)
+
+        self.bind(self.cards.perform_species.toggled, object.properties.perform_species)
+        self.bind(object.properties.perform_species, self.cards.perform_species.setChecked)
+        self.bind(object.properties.perform_species, self.cards.input_species.setVisible)
+
+        self.bind(self.cards.perform_genera.toggled, object.properties.perform_genera)
+        self.bind(object.properties.perform_genera, self.cards.perform_genera.setChecked)
+        self.bind(object.properties.perform_genera, self.cards.input_genera.setVisible)
+
+    def setBusy(self, busy: bool):
+        for card in self.cards:
+            card.setEnabled(not busy)
 
 
 class VersusAllViewLegacy(ObjectView):

@@ -26,32 +26,41 @@ from .common import Property, Task
 from .sequence import SequenceModel
 
 
+def dummy_process(**kwargs):
+    for k, v in kwargs.items():
+        print(k, v)
+    import time
+    print('...')
+    time.sleep(2)
+    print('Done!~')
+    return 42
+
+
 class VersusAllModel(Task):
     task_name = 'Versus All'
 
-    comparison_mode = Property(ComparisonMode)
-    input_item = Property(object)
+    input_sequences_item = Property(object)
+    perform_species = Property(bool)
+    perform_genera = Property(bool)
 
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
-        self.comparison_mode = ComparisonMode.AlignmentFree()
-        self.input_item = None
+        self.input_sequences_item = None
+        self.perform_species = True
+        self.perform_genera = False
 
         self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)
 
     def readyTriggers(self):
         return [
-            self.properties.input_item,
-            self.properties.comparison_mode,
+            self.properties.input_sequences_item,
         ]
 
     def isReady(self):
-        if self.input_item is None:
+        if self.input_sequences_item is None:
             return False
-        if not isinstance(self.input_item.object, SequenceModel):
-            return False
-        if not self.comparison_mode.is_valid():
+        if not isinstance(self.input_sequences_item.object, SequenceModel):
             return False
         return True
 
@@ -60,11 +69,12 @@ class VersusAllModel(Task):
         work_dir = self.temporary_path / timestamp
         work_dir.mkdir()
 
-        input = self.input_item.object.path
-
         self.exec(
-            versus_all.versus_all, work_dir,
-            input, self.comparison_mode,
+            dummy_process,
+            work_dir=work_dir,
+            input_sequences=self.input_sequences_item.object.path,
+            perform_species=self.perform_species,
+            perform_genera=self.perform_genera,
         )
 
     def onDone(self, results):
