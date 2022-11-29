@@ -39,6 +39,13 @@ class RichRadioButton(QtWidgets.QRadioButton):
         font.setLetterSpacing(QtGui.QFont.PercentageSpacing, 0)
         self.small_font = font
 
+    def event(self, event):
+        if isinstance(event, QtGui.QWheelEvent):
+            # Fix scrolling when hovering disabled button
+            event.ignore()
+            return False
+        return super().event(event)
+
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QtGui.QPainter()
