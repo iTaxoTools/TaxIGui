@@ -19,36 +19,7 @@
 from collections import namedtuple
 from enum import Enum
 
-
-class TypeMeta(type):
-    _inheritors = dict()
-
-    def __new__(cls, name, bases, attrs):
-        obj = super().__new__(cls, name, bases, attrs)
-        cls._inheritors[obj] = dict()
-        for base in bases:
-            if issubclass(base, Type):
-                cls._inheritors[base][name] = obj
-        return obj
-
-    def __dir__(self):
-        return super().__dir__() + [x for x in self._inheritors[self].keys()]
-
-    def __getattr__(self, attr):
-        if attr in self._inheritors[self]:
-            return self._inheritors[self][attr]
-        raise AttributeError(f'{repr(self.__name__)} has no subtype {repr(attr)}')
-
-    def __iter__(self):
-        return iter(self._inheritors[self].values())
-
-
-class Type(metaclass=TypeMeta):
-    """All subclasses are added as class attributes"""
-
-    @property
-    def type(self):
-        return type(self)
+from ._type import Type
 
 
 class ComparisonMode(Type):
@@ -74,43 +45,6 @@ class PairwiseAlignment(ComparisonMode):
 
     def is_valid(self):
         return self.config.is_valid()
-
-
-class AlignmentMode(Type):
-    label: str
-
-    def is_valid(self):
-        return True
-
-
-class NoAlignment(AlignmentMode):
-    label = 'No alignment'
-    description = 'for already aligned sequences or alignment-free metrics'
-
-
-class PairwiseAlignment(AlignmentMode):
-    label = 'Pairwise Alignment'
-    description = 'align each pair of sequences just before calculating distances'
-
-    def __init__(self, config=None):
-        self.config = config or PairwiseComparisonConfig()
-
-    def is_valid(self):
-        return self.config.is_valid()
-
-
-class MSA(AlignmentMode):
-    label = 'Multiple Sequence Alignment'
-    description = 'uses MAFFT to align all sequences in advance'
-
-
-class StatisticsOption(Enum):
-    All = 'For all sequences'
-    Species = 'Per species'
-    Genera = 'Per genus'
-
-    def __str__(self):
-        return self.value
 
 
 class Notification(Type):
