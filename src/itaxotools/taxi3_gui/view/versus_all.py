@@ -353,7 +353,7 @@ class OptionalCategory(Card):
 
         title = QtWidgets.QCheckBox(text)
         title.setStyleSheet("""font-size: 16px;""")
-        title.stateChanged.connect(self.handleStateChanged)
+        title.toggled.connect(self.toggled)
 
         description = QtWidgets.QLabel(description)
         description.setWordWrap(True)
@@ -370,10 +370,6 @@ class OptionalCategory(Card):
         self.addLayout(layout)
 
         self.controls.title = title
-
-    def handleStateChanged(self, state):
-        self.toggled.emit(bool(state))
-
 
     def setChecked(self, checked: bool):
         self.controls.title.setChecked(checked)
@@ -416,7 +412,8 @@ class AlignmentModeSelector(Card):
         self.addLayout(layout)
 
     def draw_pairwise_config(self):
-        widget = QtWidgets.QWidget()
+        write_pairs = QtWidgets.QCheckBox('Write file with all aligned sequence pairs')
+        self.controls.write_pairs = write_pairs
 
         self.controls.score_fields = dict()
         scores = QtWidgets.QGridLayout()
@@ -440,15 +437,17 @@ class AlignmentModeSelector(Card):
         scores.setSpacing(8)
 
         layout = QtWidgets.QVBoxLayout()
-        label = QtWidgets.QLabel('You may configure the pairwise comparison scores below.')
+        label = QtWidgets.QLabel('You may configure the pairwise comparison scores below:')
         reset = QtWidgets.QPushButton('Reset to default scores')
         reset.clicked.connect(self.resetScores)
+        layout.addWidget(write_pairs)
         layout.addWidget(label)
         layout.addLayout(scores)
         layout.addWidget(reset)
         layout.setSpacing(16)
         layout.setContentsMargins(0, 0, 0, 0)
 
+        widget = QtWidgets.QWidget()
         widget.setLayout(layout)
         self.addWidget(widget)
 
@@ -540,13 +539,15 @@ class DistanceMetricSelector(Card):
         self.addLayout(layout)
 
     def draw_file_type(self):
+        write_linear = QtWidgets.QCheckBox('Write distances in linear format (all metrics in the same file)')
+        write_matricial = QtWidgets.QCheckBox('Write distances in matricial format (one metric per matrix file)')
 
-        linear_check = QtWidgets.QCheckBox('Write distances in linear format (all metrics in the same file)')
-        matrix_check = QtWidgets.QCheckBox('Write distances in matricial format (one metric per matrix file)')
+        self.controls.write_linear = write_linear
+        self.controls.write_matricial = write_matricial
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(linear_check)
-        layout.addWidget(matrix_check)
+        layout.addWidget(write_linear)
+        layout.addWidget(write_matricial)
         layout.setSpacing(8)
         self.addLayout(layout)
 
@@ -573,11 +574,14 @@ class DistanceMetricSelector(Card):
 
         layout.setColumnMinimumWidth(3, 16)
 
-        precision_field = GLineEdit('4')
-        missing_field = GLineEdit('NA')
+        precision = GLineEdit('4')
+        missing = GLineEdit('NA')
 
-        layout.addWidget(precision_field, 0, 4)
-        layout.addWidget(missing_field, 1, 4)
+        self.controls.precision = precision
+        self.controls.missing = missing
+
+        layout.addWidget(precision, 0, 4)
+        layout.addWidget(missing, 1, 4)
         layout.setColumnStretch(4, 2)
 
         self.addLayout(layout)
@@ -669,6 +673,8 @@ class VersusAllView(ObjectView):
 
         self.bind(self.cards.alignment_mode.toggled, object.properties.alignment_mode)
         self.bind(object.properties.alignment_mode, self.cards.alignment_mode.setMode)
+        self.bind(self.cards.alignment_mode.controls.write_pairs.toggled, object.properties.alignment_write_pairs)
+        self.bind(object.properties.alignment_write_pairs, self.cards.alignment_mode.controls.write_pairs.setChecked)
         self.bind(self.cards.alignment_mode.resetScores, object.pairwise_scores.reset)
         for score in PairwiseScore:
             self.bind(
@@ -679,6 +685,15 @@ class VersusAllView(ObjectView):
                 object.pairwise_scores.properties[score.key],
                 self.cards.alignment_mode.controls.score_fields[score.key].setText,
                 lambda x: str(x) if x is not None else '')
+
+        self.bind(self.cards.distance_metrics.controls.write_linear.toggled, object.properties.distance_linear)
+        self.bind(object.properties.distance_linear, self.cards.distance_metrics.controls.write_linear.setChecked)
+        self.bind(self.cards.distance_metrics.controls.write_matricial.toggled, object.properties.distance_matricial)
+        self.bind(object.properties.distance_matricial, self.cards.distance_metrics.controls.write_matricial.setChecked)
+        self.bind(self.cards.distance_metrics.controls.precision.textEditedSafe, object.properties.distance_precision, lambda x: type_convert(x, int, None))
+        self.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
+        self.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
+        self.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
 
     def setBusy(self, busy: bool):
         for card in self.cards:

@@ -56,6 +56,12 @@ class VersusAllModel(Task):
     # todo: genera item
 
     alignment_mode = Property(AlignmentMode)
+    alignment_write_pairs = Property(bool)
+
+    distance_linear = Property(bool)
+    distance_matricial = Property(bool)
+    distance_precision = Property(int)
+    distance_missing = Property(str)
 
     pairwise_scores: PairwiseScores
 
@@ -71,12 +77,18 @@ class VersusAllModel(Task):
         self.perform_genera = False
 
         self.alignment_mode = AlignmentMode.NoAlignment
+        self.alignment_write_pairs = True
+
+        self.distance_linear = True
+        self.distance_matricial = True
+        self.distance_precision = 4
+        self.distance_missing = 'NA'
 
         self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)
 
     def _readyTriggers(self):
-        # must do this after self.pairwise_scores has been initialized
+        # refactor readyTriggers: this must be done after self.pairwise_scores has been initialized
         return [
             self.properties.input_sequences_item,
             self.properties.alignment_mode,
@@ -91,6 +103,8 @@ class VersusAllModel(Task):
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
                 return False
+        if self.distance_precision is None:
+            return False
         return True
 
     def run(self):
@@ -105,7 +119,12 @@ class VersusAllModel(Task):
             perform_species=self.perform_species,
             perform_genera=self.perform_genera,
             alignment_mode=self.alignment_mode,
-            **{f'alignment_pairwise_{score.key}': getattr(self.pairwise_scores, score.key) for score in PairwiseScore}
+            alignment_write_pairs=self.alignment_write_pairs,
+            **{f'alignment_pairwise_{score.key}': getattr(self.pairwise_scores, score.key) for score in PairwiseScore},
+            distance_linear=self.distance_linear,
+            distance_matricial=self.distance_matricial,
+            distance_precision=self.distance_precision,
+            distance_missing=self.distance_missing,
         )
 
     def onDone(self, results):
