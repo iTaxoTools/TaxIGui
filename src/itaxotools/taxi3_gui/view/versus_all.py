@@ -23,8 +23,9 @@ from pathlib import Path
 from itaxotools.common.utility import AttrDict
 
 from .. import app
+from ..utility import type_convert
 from ..model import Item, ItemModel, Object, SequenceModel
-from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsOption
+from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsOption, AlignmentMode, PairwiseScore
 from .common import Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
 
@@ -379,12 +380,13 @@ class OptionalCategory(Card):
 
 
 class AlignmentModeSelector(Card):
+    toggled = QtCore.Signal(AlignmentMode)
+    resetScores = QtCore.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.draw_main()
         self.draw_pairwise_config()
-        # self.mode = AlignmentMode()
 
     def draw_main(self):
         label = QtWidgets.QLabel('Sequence alignment')
@@ -401,34 +403,32 @@ class AlignmentModeSelector(Card):
 
         radios = QtWidgets.QVBoxLayout()
         radios.setSpacing(8)
-        self.radio_buttons = list()
+        self.controls.radio_buttons = list()
         for mode in AlignmentMode:
             button = RichRadioButton(f'{mode.label}:', mode.description, self)
             button.alignmentMode = mode
             button.setEnabled(mode != AlignmentMode.MSA)
-            # button.toggled.connect(self.handleToggle)
-            self.radio_buttons.append(button)
+            button.toggled.connect(self.handleToggle)
+            self.controls.radio_buttons.append(button)
             radios.addWidget(button)
 
         layout.addLayout(radios)
         self.addLayout(layout)
 
     def draw_pairwise_config(self):
-        self.pairwise_config_panel = QtWidgets.QWidget()
+        widget = QtWidgets.QWidget()
 
-        self.score_fields = dict()
+        self.controls.score_fields = dict()
         scores = QtWidgets.QGridLayout()
         validator = QtGui.QIntValidator()
-        for i, (key, score) in enumerate(PairwiseComparisonConfig.scores.items()):
+        for i, score in enumerate(PairwiseScore):
             label = QtWidgets.QLabel(f'{score.label}:')
             field = GLineEdit()
-            # field.textEdited.connect(self.handleEdit)
-            # field.setFixedWidth(80)
             field.setValidator(validator)
+            field.scoreKey = score.key
             scores.addWidget(label, i // 2, (i % 2) * 4)
             scores.addWidget(field, i // 2, (i % 2) * 4 + 2)
-            self.score_fields[key] = field
-            field.scoreKey = key
+            self.controls.score_fields[score.key] = field
         scores.setColumnMinimumWidth(1, 16)
         scores.setColumnMinimumWidth(2, 80)
         scores.setColumnMinimumWidth(5, 16)
@@ -442,15 +442,29 @@ class AlignmentModeSelector(Card):
         layout = QtWidgets.QVBoxLayout()
         label = QtWidgets.QLabel('You may configure the pairwise comparison scores below.')
         reset = QtWidgets.QPushButton('Reset to default scores')
-        # reset.clicked.connect(self.handlePairwiseReset)
+        reset.clicked.connect(self.resetScores)
         layout.addWidget(label)
         layout.addLayout(scores)
         layout.addWidget(reset)
         layout.setSpacing(16)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.pairwise_config_panel.setLayout(layout)
-        self.addWidget(self.pairwise_config_panel)
+        widget.setLayout(layout)
+        self.addWidget(widget)
+
+        self.controls.pairwise_config = widget
+
+    def handleToggle(self, checked):
+        if not checked:
+            return
+        for button in self.controls.radio_buttons:
+            if button.isChecked():
+                self.toggled.emit(button.alignmentMode)
+
+    def setMode(self, mode):
+        for button in self.controls.radio_buttons:
+            button.setChecked(mode == button.alignmentMode)
+        self.controls.pairwise_config.setVisible(mode == AlignmentMode.PairwiseAlignment)
 
 
 class DistanceMetricSelector(Card):
@@ -652,6 +666,19 @@ class VersusAllView(ObjectView):
         self.bind(self.cards.perform_genera.toggled, object.properties.perform_genera)
         self.bind(object.properties.perform_genera, self.cards.perform_genera.setChecked)
         self.bind(object.properties.perform_genera, self.cards.input_genera.setVisible)
+
+        self.bind(self.cards.alignment_mode.toggled, object.properties.alignment_mode)
+        self.bind(object.properties.alignment_mode, self.cards.alignment_mode.setMode)
+        self.bind(self.cards.alignment_mode.resetScores, object.pairwise_scores.reset)
+        for score in PairwiseScore:
+            self.bind(
+                self.cards.alignment_mode.controls.score_fields[score.key].textEditedSafe,
+                object.pairwise_scores.properties[score.key],
+                lambda x: type_convert(x, int, None))
+            self.bind(
+                object.pairwise_scores.properties[score.key],
+                self.cards.alignment_mode.controls.score_fields[score.key].setText,
+                lambda x: str(x) if x is not None else '')
 
     def setBusy(self, busy: bool):
         for card in self.cards:

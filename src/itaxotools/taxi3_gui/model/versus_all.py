@@ -21,7 +21,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from ..tasks import versus_all
-from ..types import PairwiseScore
+from ..types import PairwiseScore, AlignmentMode
 from ..utility import EnumObject
 from .common import Property, Task
 from .sequence import SequenceModel
@@ -40,29 +40,47 @@ def dummy_process(**kwargs):
 class PairwiseScores(EnumObject):
     enum = PairwiseScore
 
+    def is_valid(self):
+        return not any(
+            not isinstance(self.properties[score.key].value, int)
+            for score in self.enum)
+
 
 class VersusAllModel(Task):
     task_name = 'Versus All'
 
     input_sequences_item = Property(object)
     perform_species = Property(bool)
+    # todo: species item
     perform_genera = Property(bool)
+    # todo: genera item
+
+    alignment_mode = Property(AlignmentMode)
 
     pairwise_scores: PairwiseScores
 
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
         self.pairwise_scores = PairwiseScores()
+
+        for property in self._readyTriggers():
+            property.notify.connect(self.checkIfReady)
+
         self.input_sequences_item = None
         self.perform_species = True
         self.perform_genera = False
 
+        self.alignment_mode = AlignmentMode.NoAlignment
+
         self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)
 
-    def readyTriggers(self):
+    def _readyTriggers(self):
+        # must do this after self.pairwise_scores has been initialized
         return [
             self.properties.input_sequences_item,
+            self.properties.alignment_mode,
+            *(self.pairwise_scores.properties[score.key] for score in PairwiseScore)
         ]
 
     def isReady(self):
@@ -70,6 +88,9 @@ class VersusAllModel(Task):
             return False
         if not isinstance(self.input_sequences_item.object, SequenceModel):
             return False
+        if self.alignment_mode == AlignmentMode.PairwiseAlignment:
+            if not self.pairwise_scores.is_valid():
+                return False
         return True
 
     def run(self):
@@ -83,6 +104,8 @@ class VersusAllModel(Task):
             input_sequences=self.input_sequences_item.object.path,
             perform_species=self.perform_species,
             perform_genera=self.perform_genera,
+            alignment_mode=self.alignment_mode,
+            **{f'alignment_pairwise_{score.key}': getattr(self.pairwise_scores, score.key) for score in PairwiseScore}
         )
 
     def onDone(self, results):

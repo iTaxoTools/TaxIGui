@@ -89,6 +89,9 @@ class PropertiesRef:
         if attr in self._list():
             return PropertyRef(self._parent, attr)
 
+    def __getitem__(self, key):
+        return self.__getattr__(key)
+
     def __dir__(self):
         return super().__dir__() + self._list()
 
@@ -173,6 +176,9 @@ class EnumObject(QtCore.QObject, metaclass=EnumObjectMeta):
         super().__init__(*args, **kwargs)
         if not 'enum' in dir(self):
             return
+        self.reset()
+
+    def reset(self):
         get_key = getattr(self, 'get_key', lambda x: x.key)
         get_default = getattr(self, 'get_default', lambda x: x.default)
         for field in self.enum:
@@ -258,3 +264,10 @@ class Guard:
 
     def __bool__(self):
         return self.locked
+
+
+def type_convert(value, type, default):
+    try:
+        return type(value)
+    except ValueError:
+        return default

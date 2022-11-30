@@ -40,35 +40,17 @@ class PairwiseScore(Enum):
         self.label = label
         self.key = key
         self.default = default
-        self.type = int
+        self.type = object  # PySide cannot parse: int | None
 
 
-class AlignmentMode(Type):
-    label: str
+class AlignmentMode(Enum):
+    NoAlignment = ('No alignment', 'for already aligned sequences or alignment-free metrics')
+    PairwiseAlignment = ('Pairwise Alignment', 'align each pair of sequences just before calculating distances')
+    MSA = ('Multiple Sequence Alignment', 'uses MAFFT to align all sequences in advance')
 
-    def is_valid(self):
-        return True
-
-
-class NoAlignment(AlignmentMode):
-    label = 'No alignment'
-    description = 'for already aligned sequences or alignment-free metrics'
-
-
-class PairwiseAlignment(AlignmentMode):
-    label = 'Pairwise Alignment'
-    description = 'align each pair of sequences just before calculating distances'
-
-    def __init__(self, config=None):
-        self.config = config or PairwiseComparisonConfig()
-
-    def is_valid(self):
-        return self.config.is_valid()
-
-
-class MSA(AlignmentMode):
-    label = 'Multiple Sequence Alignment'
-    description = 'uses MAFFT to align all sequences in advance'
+    def __init__(self, label, description):
+        self.label = label
+        self.description = description
 
 
 class StatisticsOption(Enum):
