@@ -17,8 +17,30 @@
 # -----------------------------------------------------------------------------
 
 from enum import Enum
+from typing import NamedTuple
 
 from ._type import Type
+
+
+class Score(NamedTuple):
+    label: str
+    key: str
+    default: int
+
+
+class PairwiseScore(Enum):
+    Match = Score('Match', 'match_score', 1)
+    Mismatch = Score('Mismatch', 'mismatch_score', -1)
+    InternalOpenGap = Score('Open inner gap', 'internal_open_gap_score', -8)
+    InternalExtendGap = Score('Extend inner gap', 'internal_extend_gap_score', -1)
+    EndOpenGap = Score('Open outer gap', 'end_open_gap_score', -1)
+    EndExtendGap = Score('Extend outer gap', 'end_extend_gap_score', -1)
+
+    def __init__(self, label, key, default):
+        self.label = label
+        self.key = key
+        self.default = default
+        self.type = int
 
 
 class AlignmentMode(Type):

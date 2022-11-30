@@ -21,7 +21,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from ..tasks import versus_all
-from ..types import ComparisonMode
+from ..types import PairwiseScore
+from ..utility import EnumObject
 from .common import Property, Task
 from .sequence import SequenceModel
 
@@ -36,6 +37,10 @@ def dummy_process(**kwargs):
     return 42
 
 
+class PairwiseScores(EnumObject):
+    enum = PairwiseScore
+
+
 class VersusAllModel(Task):
     task_name = 'Versus All'
 
@@ -43,8 +48,11 @@ class VersusAllModel(Task):
     perform_species = Property(bool)
     perform_genera = Property(bool)
 
+    pairwise_scores: PairwiseScores
+
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
+        self.pairwise_scores = PairwiseScores()
         self.input_sequences_item = None
         self.perform_species = True
         self.perform_genera = False

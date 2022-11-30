@@ -18,6 +18,7 @@
 
 from PySide6 import QtCore
 
+from enum import Enum
 from dataclasses import dataclass
 from typing import Callable, ClassVar, Optional, Union
 
@@ -150,6 +151,32 @@ class PropertyMeta(type(QtCore.QObject)):
             return PropertiesRef(self)
 
         attrs[key_ref] = property(getref)
+
+
+class EnumObjectMeta(PropertyMeta):
+    def __new__(cls, name, bases, attrs):
+        enum = attrs.get('enum', None)
+        if not enum:
+            return super().__new__(cls, name, bases, attrs)
+
+        get_key = attrs.get('get_key', lambda x: x.key)
+        get_type = attrs.get('get_type', lambda x: x.type)
+        for field in enum:
+            attrs[get_key(field)] = Property(get_type(field))
+        return super().__new__(cls, name, bases, attrs)
+
+
+class EnumObject(QtCore.QObject, metaclass=EnumObjectMeta):
+    enum: Enum
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not 'enum' in dir(self):
+            return
+        get_key = getattr(self, 'get_key', lambda x: x.key)
+        get_default = getattr(self, 'get_default', lambda x: x.default)
+        for field in self.enum:
+            setattr(self, get_key(field), get_default(field))
 
 
 @dataclass(frozen=True)

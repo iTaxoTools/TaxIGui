@@ -122,7 +122,6 @@ class TitleCard(Card):
         layout.addLayout(buttons, 0)
         self.addLayout(layout)
 
-        self.controls = AttrDict()
         self.controls.run = run
         self.controls.cancel = cancel
         self.controls.title = title
@@ -174,7 +173,6 @@ class InputSelector(Card):
         layout.addWidget(browse)
         self.addLayout(layout)
 
-        self.controls = AttrDict()
         self.controls.combo = combo
 
     def draw_config(self):
@@ -370,7 +368,6 @@ class OptionalCategory(Card):
         layout.addSpacing(80)
         self.addLayout(layout)
 
-        self.controls = AttrDict()
         self.controls.title = title
 
     def handleStateChanged(self, state):
@@ -604,7 +601,6 @@ class VersusAllView(ObjectView):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.controls = AttrDict()
         self.draw()
 
     def draw(self):

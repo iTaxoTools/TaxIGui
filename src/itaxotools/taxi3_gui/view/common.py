@@ -20,7 +20,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from pathlib import Path
 
-from itaxotools.common.utility import override
+from itaxotools.common.utility import AttrDict, override
 
 from .. import app
 from ..model import BulkSequencesModel, Item, ItemModel, Object, SequenceModel
@@ -68,6 +68,7 @@ class Card(QtWidgets.QFrame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setStyleSheet("""Card{background: Palette(Midlight);}""")
+        self.controls = AttrDict()
 
         layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(24)
