@@ -26,10 +26,10 @@ from itaxotools.common.utility import override
 
 from ..threading import ProgressReport, Worker
 from ..types import Notification
-from ..utility import Property, PropertyMeta, PropertyRef
+from ..utility import Property, PropertyObject, PropertyRef
 
 
-class Object(QtCore.QObject, metaclass=PropertyMeta):
+class Object(PropertyObject):
     """Interface for backend structures"""
     name = Property(str)
 

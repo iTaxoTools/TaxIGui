@@ -28,8 +28,9 @@ class Property:
     key_ref = 'properties'
     key_list = '_property_list'
 
-    def __init__(self, type=object):
+    def __init__(self, type=object, default=None):
         self.type = type
+        self.default = default
 
     @staticmethod
     def key_value(key):
@@ -46,6 +47,10 @@ class Property:
     @staticmethod
     def key_setter(key):
         return f'_property_{key}_setter'
+
+    @staticmethod
+    def key_default(key):
+        return f'_property_{key}_default'
 
 
 class PropertyRef:
@@ -64,6 +69,10 @@ class PropertyRef:
     @property
     def set(self):
         return getattr(self._parent, Property.key_setter(self._key))
+
+    @property
+    def default(self):
+        return getattr(self._parent, Property.key_default(self._key))
 
     @property
     def key(self):
@@ -98,6 +107,9 @@ class PropertiesRef:
     def _list(self):
         return getattr(self._parent, Property.key_list)
 
+    def __iter__(self):
+        return iter(self._list())
+
 
 class PropertyMeta(type(QtCore.QObject)):
     def __new__(cls, name, bases, attrs):
@@ -121,6 +133,7 @@ class PropertyMeta(type(QtCore.QObject)):
         key_notify = Property.key_notify(key)
         key_getter = Property.key_getter(key)
         key_setter = Property.key_setter(key)
+        key_default = Property.key_default(key)
         key_list = Property.key_list
 
         notify = QtCore.Signal(prop.type)
@@ -139,6 +152,7 @@ class PropertyMeta(type(QtCore.QObject)):
         attrs[key_notify] = notify
         attrs[key_getter] = getter
         attrs[key_setter] = setter
+        attrs[key_default] = prop.default
 
         attrs[key] = QtCore.Property(
             type=prop.type,
@@ -156,6 +170,17 @@ class PropertyMeta(type(QtCore.QObject)):
         attrs[key_ref] = property(getref)
 
 
+class PropertyObject(QtCore.QObject, metaclass=PropertyMeta):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._set_property_defaults()
+
+    def _set_property_defaults(self):
+        for property in self.properties:
+            ref = self.properties[property]
+            ref.set(ref.default)
+
+
 class EnumObjectMeta(PropertyMeta):
     def __new__(cls, name, bases, attrs):
         enum = attrs.get('enum', None)
@@ -164,25 +189,22 @@ class EnumObjectMeta(PropertyMeta):
 
         get_key = attrs.get('get_key', lambda x: x.key)
         get_type = attrs.get('get_type', lambda x: x.type)
+        get_default = attrs.get('get_default', lambda x: x.default)
         for field in enum:
-            attrs[get_key(field)] = Property(get_type(field))
+            attrs[get_key(field)] = Property(get_type(field), get_default(field))
         return super().__new__(cls, name, bases, attrs)
 
 
-class EnumObject(QtCore.QObject, metaclass=EnumObjectMeta):
+class EnumObject(PropertyObject, metaclass=EnumObjectMeta):
     enum: Enum
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not 'enum' in dir(self):
-            return
-        self.reset()
+        if 'enum' in dir(self):
+            self.reset()
 
     def reset(self):
-        get_key = getattr(self, 'get_key', lambda x: x.key)
-        get_default = getattr(self, 'get_default', lambda x: x.default)
-        for field in self.enum:
-            setattr(self, get_key(field), get_default(field))
+        self._set_property_defaults()
 
 
 @dataclass(frozen=True)

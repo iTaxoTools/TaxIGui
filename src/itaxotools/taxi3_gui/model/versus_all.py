@@ -49,19 +49,19 @@ class PairwiseScores(EnumObject):
 class VersusAllModel(Task):
     task_name = 'Versus All'
 
-    input_sequences_item = Property(object)
-    perform_species = Property(bool)
+    input_sequences_item = Property(object, None)
+    perform_species = Property(bool, True)
     # todo: species item
-    perform_genera = Property(bool)
+    perform_genera = Property(bool, False)
     # todo: genera item
 
-    alignment_mode = Property(AlignmentMode)
-    alignment_write_pairs = Property(bool)
+    alignment_mode = Property(AlignmentMode, AlignmentMode.NoAlignment)
+    alignment_write_pairs = Property(bool, True)
 
-    distance_linear = Property(bool)
-    distance_matricial = Property(bool)
-    distance_precision = Property(int)
-    distance_missing = Property(str)
+    distance_linear = Property(bool, True)
+    distance_matricial = Property(bool, True)
+    distance_precision = Property(int, 4)
+    distance_missing = Property(str, 'NA')
 
     pairwise_scores: PairwiseScores
 
@@ -71,18 +71,6 @@ class VersusAllModel(Task):
 
         for property in self._readyTriggers():
             property.notify.connect(self.checkIfReady)
-
-        self.input_sequences_item = None
-        self.perform_species = True
-        self.perform_genera = False
-
-        self.alignment_mode = AlignmentMode.NoAlignment
-        self.alignment_write_pairs = True
-
-        self.distance_linear = True
-        self.distance_matricial = True
-        self.distance_precision = 4
-        self.distance_missing = 'NA'
 
         self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)
