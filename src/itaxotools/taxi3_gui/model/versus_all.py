@@ -75,7 +75,7 @@ class VersusAllModel(Task):
         return [
             self.properties.input_sequences_item,
             self.properties.alignment_mode,
-            *(self.pairwise_scores.properties[score.key] for score in PairwiseScore),
+            *(property for property in self.pairwise_scores.properties),
         ]
 
     def isReady(self):

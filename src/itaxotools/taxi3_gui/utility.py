@@ -16,8 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from __future__ import annotations
-
 from PySide6 import QtCore
 
 from enum import Enum
@@ -113,7 +111,7 @@ class PropertiesRef:
         return getattr(self._parent, Property.key_list)
 
     def __iter__(self):
-        return iter(self._list())
+        return (self[key] for key in self._list())
 
 
 class PropertyMeta(type(QtCore.QObject)):
@@ -186,8 +184,7 @@ class PropertyObject(QtCore.QObject, metaclass=PropertyMeta):
 
     def _set_property_defaults(self):
         for property in self.properties:
-            ref = self.properties[property]
-            ref.set(ref.default)
+            property.set(property.default)
 
 
 class EnumObjectMeta(PropertyMeta):
