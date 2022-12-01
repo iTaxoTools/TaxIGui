@@ -60,6 +60,8 @@ class VersusAllModel(Task):
 
     distance_linear = Property(bool, True)
     distance_matricial = Property(bool, True)
+
+    distance_percentile = Property(bool, False)
     distance_precision = Property(int, 4)
     distance_missing = Property(str, 'NA')
 
@@ -106,6 +108,7 @@ class VersusAllModel(Task):
             **{f'alignment_pairwise_{score.key}': getattr(self.pairwise_scores, score.key) for score in PairwiseScore},
             distance_linear=self.distance_linear,
             distance_matricial=self.distance_matricial,
+            distance_percentile=self.distance_percentile,
             distance_precision=self.distance_precision,
             distance_missing=self.distance_missing,
         )

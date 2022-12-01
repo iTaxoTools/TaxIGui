@@ -82,6 +82,32 @@ class RichRadioButton(QtWidgets.QRadioButton):
         return size
 
 
+class RadioButtonGroup(QtCore.QObject):
+    valueChanged = QtCore.Signal(object)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.members = dict()
+        self.value = None
+
+    def add(self, widget, value):
+        self.members[value] = widget
+        widget.toggled.connect(self.handleToggle)
+
+    def handleToggle(self, checked):
+        if not checked:
+            return
+        for value, widget in self.members.items():
+            if widget.isChecked():
+                self.valueChanged.emit(value)
+                self.value = value
+
+    def setValue(self, newValue):
+        self.value = newValue
+        for value, widget in self.members.items():
+            widget.setChecked(value == newValue)
+
+
 class TitleCard(Card):
     run = QtCore.Signal()
     cancel = QtCore.Signal()
@@ -376,7 +402,6 @@ class OptionalCategory(Card):
 
 
 class AlignmentModeSelector(Card):
-    toggled = QtCore.Signal(AlignmentMode)
     resetScores = QtCore.Signal()
 
     def __init__(self, parent=None):
@@ -397,16 +422,17 @@ class AlignmentModeSelector(Card):
         layout.addWidget(description)
         layout.setSpacing(16)
 
+        group = RadioButtonGroup()
+        group.valueChanged.connect(self.handleModeChanged)
+        self.controls.mode = group
+
         radios = QtWidgets.QVBoxLayout()
         radios.setSpacing(8)
-        self.controls.radio_buttons = list()
         for mode in AlignmentMode:
             button = RichRadioButton(f'{mode.label}:', mode.description, self)
-            button.alignmentMode = mode
             button.setEnabled(mode != AlignmentMode.MSA)
-            button.toggled.connect(self.handleToggle)
-            self.controls.radio_buttons.append(button)
             radios.addWidget(button)
+            group.add(button, mode)
 
         layout.addLayout(radios)
         self.addLayout(layout)
@@ -460,9 +486,7 @@ class AlignmentModeSelector(Card):
             if button.isChecked():
                 self.toggled.emit(button.alignmentMode)
 
-    def setMode(self, mode):
-        for button in self.controls.radio_buttons:
-            button.setChecked(mode == button.alignmentMode)
+    def handleModeChanged(self, mode):
         self.controls.pairwise_config.setVisible(mode == AlignmentMode.PairwiseAlignment)
 
 
@@ -559,6 +583,10 @@ class DistanceMetricSelector(Card):
         unit_radio = QtWidgets.QRadioButton('Distances from 0.0 to 1.0')
         percent_radio = QtWidgets.QRadioButton('Distances as percentages (%)')
 
+        percentile = RadioButtonGroup()
+        percentile.add(unit_radio, False)
+        percentile.add(percent_radio, True)
+
         layout.addWidget(unit_radio, 0, 0)
         layout.addWidget(percent_radio, 1, 0)
         layout.setColumnStretch(0, 2)
@@ -577,6 +605,7 @@ class DistanceMetricSelector(Card):
         precision = GLineEdit('4')
         missing = GLineEdit('NA')
 
+        self.controls.percentile = percentile
         self.controls.precision = precision
         self.controls.missing = missing
 
@@ -671,8 +700,8 @@ class VersusAllView(ObjectView):
         self.bind(object.properties.perform_genera, self.cards.perform_genera.setChecked)
         self.bind(object.properties.perform_genera, self.cards.input_genera.setVisible)
 
-        self.bind(self.cards.alignment_mode.toggled, object.properties.alignment_mode)
-        self.bind(object.properties.alignment_mode, self.cards.alignment_mode.setMode)
+        self.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
+        self.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
         self.bind(self.cards.alignment_mode.controls.write_pairs.toggled, object.properties.alignment_write_pairs)
         self.bind(object.properties.alignment_write_pairs, self.cards.alignment_mode.controls.write_pairs.setChecked)
         self.bind(self.cards.alignment_mode.resetScores, object.pairwise_scores.reset)
@@ -690,6 +719,10 @@ class VersusAllView(ObjectView):
         self.bind(object.properties.distance_linear, self.cards.distance_metrics.controls.write_linear.setChecked)
         self.bind(self.cards.distance_metrics.controls.write_matricial.toggled, object.properties.distance_matricial)
         self.bind(object.properties.distance_matricial, self.cards.distance_metrics.controls.write_matricial.setChecked)
+
+        self.bind(self.cards.distance_metrics.controls.percentile.valueChanged, object.properties.distance_percentile)
+        self.bind(object.properties.distance_percentile, self.cards.distance_metrics.controls.percentile.setValue)
+
         self.bind(self.cards.distance_metrics.controls.precision.textEditedSafe, object.properties.distance_precision, lambda x: type_convert(x, int, None))
         self.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
         self.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
