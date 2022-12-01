@@ -16,11 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from __future__ import annotations
+
 from PySide6 import QtCore
 
 from enum import Enum
 from dataclasses import dataclass
-from typing import Callable, ClassVar, Optional, Union
+from typing import Callable, ClassVar, Optional, Union, NamedTuple, Type
 
 
 class Property:
@@ -72,7 +74,10 @@ class PropertyRef:
 
     @property
     def default(self):
-        return getattr(self._parent, Property.key_default(self._key))
+        default = getattr(self._parent, Property.key_default(self._key))
+        if isinstance(default, type) and issubclass(default, PropertyObject):
+            default = default()
+        return default
 
     @property
     def key(self):
@@ -147,12 +152,16 @@ class PropertyMeta(type(QtCore.QObject)):
             if old != value:
                 getattr(self, key_notify).emit(value)
 
+        default = prop.default
+        if issubclass(prop.type, PropertyObject):
+            default = prop.type
+
         attrs[key_list].append(key)
 
         attrs[key_notify] = notify
         attrs[key_getter] = getter
         attrs[key_setter] = setter
-        attrs[key_default] = prop.default
+        attrs[key_default] = default
 
         attrs[key] = QtCore.Property(
             type=prop.type,

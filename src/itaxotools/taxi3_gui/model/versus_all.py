@@ -63,24 +63,19 @@ class VersusAllModel(Task):
     distance_precision = Property(int, 4)
     distance_missing = Property(str, 'NA')
 
-    pairwise_scores: PairwiseScores
+    pairwise_scores = Property(PairwiseScores)
 
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
-        self.pairwise_scores = PairwiseScores()
-
-        for property in self._readyTriggers():
-            property.notify.connect(self.checkIfReady)
 
         self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)
 
-    def _readyTriggers(self):
-        # refactor readyTriggers: this must be done after self.pairwise_scores has been initialized
+    def readyTriggers(self):
         return [
             self.properties.input_sequences_item,
             self.properties.alignment_mode,
-            *(self.pairwise_scores.properties[score.key] for score in PairwiseScore)
+            *(self.pairwise_scores.properties[score.key] for score in PairwiseScore),
         ]
 
     def isReady(self):
