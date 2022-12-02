@@ -22,25 +22,46 @@ from typing import NamedTuple
 from ._type import Type
 
 
-class Score(NamedTuple):
+class Entry(NamedTuple):
     label: str
     key: str
     default: int
 
 
 class PairwiseScore(Enum):
-    Match = Score('Match', 'match_score', 1)
-    Mismatch = Score('Mismatch', 'mismatch_score', -1)
-    InternalOpenGap = Score('Open inner gap', 'internal_open_gap_score', -8)
-    InternalExtendGap = Score('Extend inner gap', 'internal_extend_gap_score', -1)
-    EndOpenGap = Score('Open outer gap', 'end_open_gap_score', -1)
-    EndExtendGap = Score('Extend outer gap', 'end_extend_gap_score', -1)
+    Match = Entry('Match', 'match_score', 1)
+    Mismatch = Entry('Mismatch', 'mismatch_score', -1)
+    InternalOpenGap = Entry('Open inner gap', 'internal_open_gap_score', -8)
+    InternalExtendGap = Entry('Extend inner gap', 'internal_extend_gap_score', -1)
+    EndOpenGap = Entry('Open outer gap', 'end_open_gap_score', -1)
+    EndExtendGap = Entry('Extend outer gap', 'end_extend_gap_score', -1)
 
     def __init__(self, label, key, default):
         self.label = label
         self.key = key
         self.default = default
-        self.type = object  # PySide cannot parse: int | None
+        self.type = object
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}.{self._name_}>'
+
+
+class DistanceMetric(Enum):
+    Uncorrected = Entry('Uncorrected (p-distance)', 'p', True)
+    UncorrectedWithGaps = Entry('Uncorrected with gaps', 'pg', True)
+    JukesCantor = Entry('Jukes Cantor (jc)', 'jc', True)
+    Kimura2Parameter = Entry('Kimura 2-Parameter (k2p)', 'k2p', True)
+    NCD = Entry('Normalized Compression Distance (NCD)', 'ncd', False)
+    BBC = Entry('Base-Base Correlation (BBC)', 'bbc', False)
+
+    def __init__(self, label, key, default):
+        self.label = label
+        self.key = key
+        self.default = default
+        self.type = bool
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}.{self._name_}>'
 
 
 class AlignmentMode(Enum):

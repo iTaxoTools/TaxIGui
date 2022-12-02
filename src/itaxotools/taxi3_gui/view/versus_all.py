@@ -25,7 +25,7 @@ from itaxotools.common.utility import AttrDict
 from .. import app
 from ..utility import type_convert
 from ..model import Item, ItemModel, Object, SequenceModel
-from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsOption, AlignmentMode, PairwiseScore
+from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsOption, AlignmentMode, PairwiseScore, DistanceMetric
 from .common import Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
 
@@ -558,6 +558,17 @@ class DistanceMetricSelector(Card):
         layout.addLayout(metrics_free)
         layout.setSpacing(16)
 
+        self.controls.metrics = AttrDict()
+        self.controls.metrics.p = metric_p
+        self.controls.metrics.pg = metric_pg
+        self.controls.metrics.jc = metric_jc
+        self.controls.metrics.k2p = metric_k2p
+        self.controls.metrics.ncd = metric_ncd
+        self.controls.metrics.bbc = metric_bbc
+
+        self.controls.bbc_k = metric_bbc_k_field
+        self.controls.bbc_k_label = metric_bbc_k_label
+
         self.addLayout(layout)
 
     def draw_file_type(self):
@@ -659,7 +670,7 @@ class VersusAllView(ObjectView):
             self)
         self.cards.input_species = PartitionSelector('Species Partition', self)
         self.cards.perform_genera = OptionalCategory(
-            'Perform Species Analysis',
+            'Perform Genus Analysis',
             'Calculate various metrics betweens all pairs of genera (mean/min/max), '
             'based on the distances between their member specimens.',
             self)
@@ -712,6 +723,15 @@ class VersusAllView(ObjectView):
                 object.pairwise_scores.properties[score.key],
                 self.cards.alignment_mode.controls.score_fields[score.key].setText,
                 lambda x: str(x) if x is not None else '')
+
+        for key in (metric.key for metric in DistanceMetric):
+            self.bind(self.cards.distance_metrics.controls.metrics[key].toggled, object.distance_metrics.properties[key])
+            self.bind(object.distance_metrics.properties[key], self.cards.distance_metrics.controls.metrics[key].setChecked)
+
+        self.bind(self.cards.distance_metrics.controls.bbc_k.textEditedSafe, object.distance_metrics.properties.bbc_k, lambda x: type_convert(x, int, None))
+        self.bind(object.distance_metrics.properties.bbc_k, self.cards.distance_metrics.controls.bbc_k.setText, lambda x: str(x) if x is not None else '')
+        self.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k.setEnabled)
+        self.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k_label.setEnabled)
 
         self.bind(self.cards.distance_metrics.controls.write_linear.toggled, object.properties.distance_linear)
         self.bind(object.properties.distance_linear, self.cards.distance_metrics.controls.write_linear.setChecked)

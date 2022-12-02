@@ -21,7 +21,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from ..tasks import versus_all
-from ..types import PairwiseScore, AlignmentMode
+from ..types import PairwiseScore, DistanceMetric, AlignmentMode
 from ..utility import EnumObject
 from .common import Property, Task
 from .sequence import SequenceModel
@@ -46,6 +46,18 @@ class PairwiseScores(EnumObject):
             for score in self.enum)
 
 
+class DistanceMetrics(EnumObject):
+    enum = DistanceMetric
+
+    bbc_k = Property(object, 10)
+
+    def as_list(self):
+        return [
+            field for field in self.enum
+            if self.properties[field.key].value
+        ]
+
+
 class VersusAllModel(Task):
     task_name = 'Versus All'
 
@@ -62,10 +74,11 @@ class VersusAllModel(Task):
     distance_matricial = Property(bool, True)
 
     distance_percentile = Property(bool, False)
-    distance_precision = Property(int, 4)
+    distance_precision = Property(object, 4)
     distance_missing = Property(str, 'NA')
 
     pairwise_scores = Property(PairwiseScores)
+    distance_metrics = Property(DistanceMetrics)
 
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
@@ -78,6 +91,9 @@ class VersusAllModel(Task):
             self.properties.input_sequences_item,
             self.properties.alignment_mode,
             *(property for property in self.pairwise_scores.properties),
+            self.distance_metrics.properties.bbc,
+            self.distance_metrics.properties.bbc_k,
+            self.properties.distance_precision,
         ]
 
     def isReady(self):
@@ -87,6 +103,9 @@ class VersusAllModel(Task):
             return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
+                return False
+        if self.distance_metrics.bbc:
+            if self.distance_metrics.bbc_k is None:
                 return False
         if self.distance_precision is None:
             return False
@@ -106,6 +125,8 @@ class VersusAllModel(Task):
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
             **{f'alignment_pairwise_{score.key}': getattr(self.pairwise_scores, score.key) for score in PairwiseScore},
+            distance_metrics=self.distance_metrics.as_list(),
+            distance_metrics_bbc_k=self.distance_metrics.bbc_k,
             distance_linear=self.distance_linear,
             distance_matricial=self.distance_matricial,
             distance_percentile=self.distance_percentile,
