@@ -91,20 +91,18 @@ class RadioButtonGroup(QtCore.QObject):
         self.value = None
 
     def add(self, widget, value):
-        self.members[value] = widget
+        self.members[widget] = value
         widget.toggled.connect(self.handleToggle)
 
     def handleToggle(self, checked):
         if not checked:
             return
-        for value, widget in self.members.items():
-            if widget.isChecked():
-                self.valueChanged.emit(value)
-                self.value = value
+        self.value = self.members[self.sender()]
+        self.valueChanged.emit(self.value)
 
     def setValue(self, newValue):
         self.value = newValue
-        for value, widget in self.members.items():
+        for widget, value in self.members.items():
             widget.setChecked(value == newValue)
 
 
