@@ -21,7 +21,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from ..tasks import versus_all
-from ..types import PairwiseScore, DistanceMetric, AlignmentMode
+from ..types import PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
 from ..utility import EnumObject
 from .common import Property, Task
 from .sequence import SequenceModel
@@ -40,10 +40,17 @@ def dummy_process(**kwargs):
 class PairwiseScores(EnumObject):
     enum = PairwiseScore
 
+    def as_dict(self):
+        return {
+            score.key: self.properties[score.key].value
+            for score in self.enum
+        }
+
     def is_valid(self):
         return not any(
-            not isinstance(self.properties[score.key].value, int)
-            for score in self.enum)
+            self.properties[score.key].value is None
+            for score in self.enum
+        )
 
 
 class DistanceMetrics(EnumObject):
@@ -56,6 +63,10 @@ class DistanceMetrics(EnumObject):
             field for field in self.enum
             if self.properties[field.key].value
         ]
+
+
+class StatisticsGroups(EnumObject):
+    enum = StatisticsGroup
 
 
 class VersusAllModel(Task):
@@ -79,6 +90,7 @@ class VersusAllModel(Task):
 
     pairwise_scores = Property(PairwiseScores)
     distance_metrics = Property(DistanceMetrics)
+    statistics_groups = Property(StatisticsGroups)
 
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
@@ -124,7 +136,7 @@ class VersusAllModel(Task):
             perform_genera=self.perform_genera,
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
-            **{f'alignment_pairwise_{score.key}': getattr(self.pairwise_scores, score.key) for score in PairwiseScore},
+            alignment_pairwise_scores = self.pairwise_scores.as_dict(),
             distance_metrics=self.distance_metrics.as_list(),
             distance_metrics_bbc_k=self.distance_metrics.bbc_k,
             distance_linear=self.distance_linear,
@@ -132,6 +144,9 @@ class VersusAllModel(Task):
             distance_percentile=self.distance_percentile,
             distance_precision=self.distance_precision,
             distance_missing=self.distance_missing,
+            statistics_all=self.statistics_groups.for_all,
+            statistics_species=self.statistics_groups.per_species,
+            statistics_genus=self.statistics_groups.per_genus,
         )
 
     def onDone(self, results):

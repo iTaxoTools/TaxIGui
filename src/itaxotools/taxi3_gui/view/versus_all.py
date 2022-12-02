@@ -25,7 +25,7 @@ from itaxotools.common.utility import AttrDict
 from .. import app
 from ..utility import type_convert
 from ..model import Item, ItemModel, Object, SequenceModel
-from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsOption, AlignmentMode, PairwiseScore, DistanceMetric
+from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from .common import Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
 
@@ -640,9 +640,10 @@ class StatisticSelector(Card):
         contents = QtWidgets.QHBoxLayout()
         contents.setSpacing(8)
 
-        for option in StatisticsOption:
-            widget = QtWidgets.QCheckBox(str(option))
+        for group in StatisticsGroup:
+            widget = QtWidgets.QCheckBox(group.label)
             contents.addWidget(widget)
+            self.controls[group.key] = widget
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(title)
@@ -745,6 +746,10 @@ class VersusAllView(ObjectView):
         self.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
         self.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
         self.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
+
+        for group in StatisticsGroup:
+            self.bind(self.cards.stats_options.controls[group.key].toggled, object.statistics_groups.properties[group.key])
+            self.bind(object.statistics_groups.properties[group.key], self.cards.stats_options.controls[group.key].setChecked)
 
     def setBusy(self, busy: bool):
         for card in self.cards:
