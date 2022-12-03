@@ -37,6 +37,7 @@ class SequenceModel(Object):
 
 
 class Tabfile(SequenceModel):
+    headers = Property(list)
     index_column = Property(str)
     sequence_column = Property(str)
 

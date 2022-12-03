@@ -188,7 +188,6 @@ class Worker(QtCore.QThread):
         """Execute given function on a child process"""
         if self.process is None:
             self.init()
-        print(f'>>> {repr(id)}',)
         self.queue.append(id)
         self.commands.send(Command(id, function, args, kwargs))
 

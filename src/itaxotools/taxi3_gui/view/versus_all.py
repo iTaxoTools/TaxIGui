@@ -23,7 +23,7 @@ from pathlib import Path
 from itaxotools.common.utility import AttrDict
 
 from .. import app
-from ..utility import type_convert
+from ..utility import bind, unbind, type_convert
 from ..model import Item, ItemModel, Object, SequenceModel
 from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from .common import Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
@@ -177,6 +177,7 @@ class InputSelector(Card):
 
     def __init__(self, text, parent=None, model=app.model.items):
         super().__init__(parent)
+        self.bindings = set()
         self.draw_main(text, model)
         self.draw_config()
 
@@ -187,7 +188,7 @@ class InputSelector(Card):
         combo = NoWheelComboBox()
         combo.setModel(model)
         combo.setRootModelIndex(model.sequences_index)
-        combo.currentIndexChanged.connect(self.handleIndexChanged)
+        combo.currentIndexChanged.connect(self.handleItemChanged)
 
         browse = QtWidgets.QPushButton('Import')
         browse.clicked.connect(self.handleBrowse)
@@ -204,7 +205,7 @@ class InputSelector(Card):
     def draw_config(self):
         pass
 
-    def handleIndexChanged(self, row):
+    def handleItemChanged(self, row):
         if row < 0:
             item = None
         else:
@@ -224,9 +225,25 @@ class InputSelector(Card):
     def setItem(self, item):
         row = item.row if item else -1
         self.controls.combo.setCurrentIndex(row)
+        self.unbind_all()
+
+    def bind(self, src, dst, proxy=None):
+        key = bind(src, dst, proxy)
+        self.bindings.add(key)
+
+    def unbind(self, src, dst):
+        key = unbind(src, dst)
+        self.bindings.remove(key)
+
+    def unbind_all(self):
+        for key in self.bindings:
+            unbind(key.signal, key.slot)
+        self.bindings.clear()
 
 
 class SequenceSelector(InputSelector):
+    indexColumnChanged = QtCore.Signal(str)
+    sequenceColumnChanged = QtCore.Signal(str)
 
     def draw_config(self):
         layout = QtWidgets.QGridLayout()
@@ -267,6 +284,9 @@ class SequenceSelector(InputSelector):
         index_combo = NoWheelComboBox()
         sequence_combo = NoWheelComboBox()
 
+        index_combo.currentIndexChanged.connect(self.handleIndexColumnChanged)
+        sequence_combo.currentIndexChanged.connect(self.handleSequenceColumnChanged)
+
         layout.addWidget(index_combo, 0, column)
         layout.addWidget(sequence_combo, 1, column)
         layout.setColumnStretch(column, 1)
@@ -294,10 +314,43 @@ class SequenceSelector(InputSelector):
         self.addWidget(widget)
 
         self.controls.config = widget
+        self.controls.index_combo = index_combo
+        self.controls.sequence_combo = sequence_combo
 
     def setItem(self, item):
         super().setItem(item)
-        self.controls.config.setVisible(bool(item))
+        if item and isinstance(item.object, SequenceModel.Tabfile):
+            self.populateCombos(item.object.headers)
+            self.bind(item.object.properties.index_column, self.setColumnIndex)
+            self.bind(item.object.properties.sequence_column, self.setColumnSequence)
+            self.bind(self.indexColumnChanged, item.object.properties.index_column)
+            self.bind(self.sequenceColumnChanged, item.object.properties.sequence_column)
+            self.controls.config.setVisible(True)
+        else:
+            self.controls.config.setVisible(False)
+
+    def populateCombos(self, headers):
+        self.controls.index_combo.clear()
+        self.controls.sequence_combo.clear()
+        for header in headers:
+            self.controls.index_combo.addItem(header, header)
+            self.controls.sequence_combo.addItem(header, header)
+
+    def setColumnIndex(self, column):
+        row = self.controls.index_combo.findData(column)
+        self.controls.index_combo.setCurrentIndex(row)
+
+    def setColumnSequence(self, column):
+        row = self.controls.sequence_combo.findData(column)
+        self.controls.sequence_combo.setCurrentIndex(row)
+
+    def handleIndexColumnChanged(self, row):
+        value = self.controls.index_combo.currentData() if row >= 0 else ''
+        self.indexColumnChanged.emit(value)
+
+    def handleSequenceColumnChanged(self, row):
+        value = self.controls.sequence_combo.currentData() if row >= 0 else ''
+        self.sequenceColumnChanged.emit(value)
 
 
 class PartitionSelector(InputSelector):
