@@ -51,11 +51,19 @@ class Type(metaclass=TypeMeta):
 
     def __repr__(self):
         if self._parent:
-            return f'<{self._parent.__name__}.{type(self).__name__}>'
+            return f'<{".".join(self._get_name_chain())}>'
         return super().__repr__()
 
     def __eq__(self, other):
         return type(self) is type(other)
+
+    @classmethod
+    def _get_name_chain(cls):
+        chain = [cls.__name__]
+        while cls._parent:
+            cls = cls._parent
+            chain.append(cls.__name__)
+        return reversed(chain[:-1])
 
     @property
     def type(self):

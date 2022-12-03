@@ -43,6 +43,9 @@ class Object(PropertyObject, Type, metaclass=_TypedPropertyObjectMeta):
         super().__init__()
         self.name = name
 
+    def __repr__(self):
+        return Type.__repr__(self)
+
 
 class Group(Object):
     pass

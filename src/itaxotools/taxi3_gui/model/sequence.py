@@ -32,11 +32,8 @@ class SequenceModel(Object):
         self.name = path.name
         self.reader = reader
 
-    def __str__(self):
-        return f'SequenceModel({repr(self.name)})'
-
     def __repr__(self):
-        return str(self)
+        return f'{".".join(self._get_name_chain())}({repr(self.name)})'
 
 
 class Tabfile(SequenceModel):
@@ -50,6 +47,3 @@ class Tabfile(SequenceModel):
         self.headers = info.headers
         self.index_column = self.headers[0]
         self.sequence_column = self.headers[1]
-
-    def __str__(self):
-        return f'SequenceModel.Tabfile({repr(self.name)})'
