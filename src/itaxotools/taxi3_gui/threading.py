@@ -18,21 +18,22 @@
 
 from PySide6 import QtCore
 
+from collections import deque
 import multiprocessing as mp
 import sys
 
 from itaxotools.common.utility import override
 
 from .threading_loop import (
-    InitDone, ProgressReport, ResultDone, ResultFail, loop)
+    Command, InitDone, ReportProgress, ReportDone, ReportFail, ReportError, loop)
 
 
 class Worker(QtCore.QThread):
     """Execute functions on a child process, get notified with results"""
-    done = QtCore.Signal(object)
-    fail = QtCore.Signal(object, str)
-    error = QtCore.Signal(int)
-    progress = QtCore.Signal(ProgressReport)
+    done = QtCore.Signal(ReportDone)
+    fail = QtCore.Signal(ReportFail)
+    error = QtCore.Signal(ReportError)
+    progress = QtCore.Signal(ReportProgress)
 
     def __init__(self, name='Worker', eager=True, init=None, stream=None):
         """Immediately starts thread execution"""
@@ -41,6 +42,7 @@ class Worker(QtCore.QThread):
         self.initializer = init
         self.name = name
 
+        self.queue = deque()
         self.ready = mp.Semaphore(0)
         self.pipeIn = None
         self.pipeOut = None
@@ -85,7 +87,7 @@ class Worker(QtCore.QThread):
         waitList = {
             sentinel: None,
             self.results: self.handleResults,
-            self.reports: self.handleReports,
+            self.reports: self.handleProgress,
             self.pipeOut: self.handleOut,
             self.pipeErr: self.handleErr,
         }
@@ -110,7 +112,9 @@ class Worker(QtCore.QThread):
                 if not self.initialized:
                     # If process failed during init, don't run it again
                     self.eager = False
-                self.error.emit(self.process.exitcode)
+                id = self.queue[0]  # just get the current id
+                report = ReportError(id, self.process.exitcode)
+                self.handleResults(report)
 
         self.pipeIn.close()
         self.pipeOut.close()
@@ -123,16 +127,21 @@ class Worker(QtCore.QThread):
         if self.eager and not self.quitting:
             self.init()
 
-    def handleResults(self, result):
+    def handleResults(self, report):
         """Internal. Emit results."""
-        if isinstance(result, InitDone):
+        if isinstance(report, InitDone):
             self.initialized = True
-        if isinstance(result, ResultDone):
-            self.done.emit(result.result)
-        elif isinstance(result, ResultFail):
-            self.fail.emit(result.exception, result.trace)
+            return
+        current_id = self.queue.popleft()
+        assert report.id == current_id
+        if isinstance(report, ReportDone):
+            self.done.emit(report)
+        elif isinstance(report, ReportFail):
+            self.fail.emit(report)
+        elif isinstance(report, ReportError):
+            self.error.emit(report)
 
-    def handleReports(self, report):
+    def handleProgress(self, report):
         """Internal. Emit progress report."""
         self.progress.emit(report)
 
@@ -175,11 +184,13 @@ class Worker(QtCore.QThread):
     def _streamOut(self, data):
         self.stream.write(data)
 
-    def exec(self, function, *args, **kwargs):
+    def exec(self, id, function, *args, **kwargs):
         """Execute given function on a child process"""
         if self.process is None:
             self.init()
-        self.commands.send((function, args, kwargs))
+        print(f'>>> {repr(id)}',)
+        self.queue.append(id)
+        self.commands.send(Command(id, function, args, kwargs))
 
     def reset(self):
         """Interrupt the current task"""

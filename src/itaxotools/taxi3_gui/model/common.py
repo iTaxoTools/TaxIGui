@@ -20,11 +20,11 @@ from PySide6 import QtCore
 
 import itertools
 from collections import defaultdict
-from typing import Callable, List
+from typing import Any, Callable, List
 
 from itaxotools.common.utility import override
 
-from ..threading import ProgressReport, Worker
+from ..threading import ReportProgress, ReportDone, ReportFail, ReportError, Worker
 from ..types import Notification
 from ..utility import Property, PropertyObject, PropertyRef
 
@@ -46,7 +46,7 @@ class Task(Object):
     task_name = 'Task'
 
     notification = QtCore.Signal(Notification)
-    progression = QtCore.Signal(ProgressReport)
+    progression = QtCore.Signal(ReportProgress)
 
     ready = Property(bool)
     busy = Property(bool)
@@ -77,20 +77,20 @@ class Task(Object):
     def __repr__(self):
         return str(self)
 
-    def onProgress(self, report: ProgressReport):
+    def onProgress(self, report: ReportProgress):
         self.progression.emit(report)
 
-    def onFail(self, exception: Exception, traceback: str):
-        print(str(exception))
-        print(traceback)
-        self.notification.emit(Notification.Fail(str(exception), traceback))
+    def onFail(self, report: ReportFail):
+        print(str(report.exception))
+        print(report.traceback)
+        self.notification.emit(Notification.Fail(str(report.exception), report.traceback))
         self.busy = False
 
-    def onError(self, exitcode: int):
-        self.notification.emit(Notification.Fail(f'Process failed with exit code: {exitcode}'))
+    def onError(self, report: ReportError):
+        self.notification.emit(Notification.Fail(f'Process failed with exit code: {report.exit_code}'))
         self.busy = False
 
-    def onDone(self, results):
+    def onDone(self, report: ReportDone):
         """Overload this to handle results. Must call done()."""
         self.done()
 
@@ -128,9 +128,9 @@ class Task(Object):
         """Called by start(). Overload this with calls to exec()"""
         self.exec(lambda *args: None)
 
-    def exec(self, task: Callable, *args, **kwargs):
+    def exec(self, id: Any, task: Callable, *args, **kwargs):
         """Call this from run() to execute tasks"""
-        self.worker.exec(task, *args, **kwargs)
+        self.worker.exec(id, task, *args, **kwargs)
 
 
 class Item:

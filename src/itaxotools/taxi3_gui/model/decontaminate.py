@@ -95,7 +95,7 @@ class DecontaminateModel(Task):
             reference = self.outgroup_item.object
 
             self.exec(
-                decontaminate.decontaminate, work_dir,
+                None, decontaminate.decontaminate, work_dir,
                 input_paths, input.reader,
                 reference.path, reference.reader,
                 self.comparison_mode,
@@ -109,7 +109,7 @@ class DecontaminateModel(Task):
             outgroup_weight = self.outgroup_weight / self.ingroup_weight
 
             self.exec(
-                decontaminate.decontaminate2, work_dir,
+                None, decontaminate.decontaminate2, work_dir,
                 input_paths, input.reader,
                 reference_outgroup.path, reference_outgroup.reader,
                 reference_ingroup.path, reference_ingroup.reader,
@@ -117,7 +117,8 @@ class DecontaminateModel(Task):
                 self.comparison_mode,
             )
 
-    def onDone(self, results):
+    def onDone(self, report):
+        results = report.result
         decontaminated_bulk = list()
         contaminants_bulk = list()
         summary_bulk = list()

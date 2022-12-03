@@ -19,6 +19,7 @@
 import sys
 import traceback
 from dataclasses import dataclass
+from typing import Any, NamedTuple, Callable, List, Dict
 
 from itaxotools.common.io import PipeIO
 
@@ -29,27 +30,37 @@ class InitDone:
     pass
 
 
-class ResultDone:
-    def __init__(self, result):
-        self.result = result
+class Command(NamedTuple):
+    id: Any
+    function: Callable
+    args: List[Any]
+    kwargs: Dict[str, Any]
 
 
-class ResultFail:
-    def __init__(self, exception):
-        trace = traceback.format_exc()
-        self.exception = exception
-        self.trace = trace
+class ReportDone(NamedTuple):
+    id: Any
+    result: Any
 
 
-@dataclass
-class ProgressReport:
+class ReportFail(NamedTuple):
+    id: Any
+    exception: Exception
+    traceback: str
+
+
+class ReportError(NamedTuple):
+    id: Any
+    exit_code: int
+
+
+class ReportProgress(NamedTuple):
     text: str
     value: int = 0
     minimum: int = 0
     maximum: int = 0
 
 
-def loop(initializer, commands, results, reports, pipeIn, pipeOut, pipeErr):
+def loop(initializer, commands, results, progress, pipeIn, pipeOut, pipeErr):
     """Wait for commands, send back results"""
 
     inp = PipeIO(pipeIn, 'r')
@@ -61,8 +72,8 @@ def loop(initializer, commands, results, reports, pipeIn, pipeOut, pipeErr):
     sys.stderr = err
 
     def _progress_handler(*args, **kwargs):
-        report = ProgressReport(*args, **kwargs)
-        reports.send(report)
+        report = ReportProgress(*args, **kwargs)
+        progress.send(report)
 
     itaxotools.progress_handler = _progress_handler
 
@@ -71,10 +82,11 @@ def loop(initializer, commands, results, reports, pipeIn, pipeOut, pipeErr):
     results.send(InitDone())
 
     while True:
-        function, args, kwargs = commands.recv()
+        id, function, args, kwargs = commands.recv()
         try:
             result = function(*args, **kwargs)
-            result = ResultDone(result)
+            report = ReportDone(id, result)
         except Exception as exception:
-            result = ResultFail(exception)
-        results.send(result)
+            trace = traceback.format_exc()
+            report = ReportFail(id, exception, trace)
+        results.send(report)

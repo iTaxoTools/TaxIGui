@@ -37,6 +37,13 @@ def dummy_process(**kwargs):
     return 42
 
 
+def dummy_again():
+    import sys
+    sys.exit(2)
+    raise Exception('BOO')
+    print('AGAIN!')
+
+
 class PairwiseScores(EnumObject):
     enum = PairwiseScore
 
@@ -129,6 +136,7 @@ class VersusAllModel(Task):
         work_dir.mkdir()
 
         self.exec(
+            None,
             dummy_process,
             work_dir=work_dir,
             input_sequences=self.input_sequences_item.object.path,
@@ -149,5 +157,16 @@ class VersusAllModel(Task):
             statistics_genus=self.statistics_groups.per_genus,
         )
 
-    def onDone(self, results):
+        self.exec(42, dummy_again)
+
+    def onDone(self, report):
+        print('<<<', report)
         self.done()
+
+    def onFail(self, report):
+        print('!!!', report)
+        self.busy = False
+
+    def onError(self, report):
+        print('XXX', report)
+        self.busy = False

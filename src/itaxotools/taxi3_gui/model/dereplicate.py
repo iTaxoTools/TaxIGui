@@ -71,14 +71,15 @@ class DereplicateModel(Task):
             input_paths = [sequence.path for sequence in input.sequences]
 
         self.exec(
-            dereplicate.dereplicate, work_dir,
+            None, dereplicate.dereplicate, work_dir,
             input_paths, input.reader,
             self.comparison_mode,
             self.similarity_threshold,
             self.length_threshold or None,
         )
 
-    def onDone(self, results):
+    def onDone(self, report):
+        results = report.result
         dereplicated_bulk = list()
         excluded_bulk = list()
         for input, result in results.items():
