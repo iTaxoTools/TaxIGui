@@ -164,7 +164,7 @@ class VersusAllModel(Task):
 
     def add_sequence_file_from_info(self, info):
         if info.type == SequenceFile.Tabfile:
-            index = app.model.items.add_sequence(SequenceModel(info.path), focus=False)
+            index = app.model.items.add_sequence(SequenceModel.Tabfile(info), focus=False)
             self.input_sequences_item = index.data(ItemModel.ItemRole)
         else:
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))

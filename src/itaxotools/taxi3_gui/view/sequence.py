@@ -21,6 +21,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from itaxotools.common.utility import AttrDict
 
 from ..types import SequenceReader
+from ..model.sequence import SequenceModel
 from .common import Card, NoWheelComboBox, ObjectView
 
 

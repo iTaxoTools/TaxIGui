@@ -25,11 +25,17 @@ from typing import Any, Callable, List
 from itaxotools.common.utility import override
 
 from ..threading import ReportProgress, ReportDone, ReportFail, ReportError, Worker
-from ..types import Notification
+from ..types import Notification, Type
 from ..utility import Property, PropertyObject, PropertyRef
 
 
-class Object(PropertyObject):
+class _TypedPropertyObjectMeta(type(PropertyObject), type(Type)):
+    def __new__(cls, name, bases, attrs):
+        obj = super().__new__(cls, name, bases, attrs)
+        return cls._patch_object(obj, name, bases)
+
+
+class Object(PropertyObject, Type, metaclass=_TypedPropertyObjectMeta):
     """Interface for backend structures"""
     name = Property(str)
 

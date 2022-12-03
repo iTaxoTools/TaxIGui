@@ -18,7 +18,7 @@
 
 from pathlib import Path
 
-from ..types import SequenceReader
+from ..types import Type, SequenceReader, SequenceFile
 from .common import Object, Property
 
 
@@ -37,3 +37,19 @@ class SequenceModel(Object):
 
     def __repr__(self):
         return str(self)
+
+
+class Tabfile(SequenceModel):
+    index_column = Property(str)
+    sequence_column = Property(str)
+
+    def __init__(self, info):
+        assert info.type == SequenceFile.Tabfile
+        assert len(info.headers) >= 2
+        super().__init__(info.path, SequenceReader.TabfileReader)
+        self.headers = info.headers
+        self.index_column = self.headers[0]
+        self.sequence_column = self.headers[1]
+
+    def __str__(self):
+        return f'SequenceModel.Tabfile({repr(self.name)})'

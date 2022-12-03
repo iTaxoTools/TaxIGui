@@ -49,6 +49,7 @@ class Body(QtWidgets.QStackedWidget):
 
         self.addView(Task, TaskView)
         self.addView(SequenceModel, SequenceView)
+        self.addView(SequenceModel.Tabfile, SequenceView)
         self.addView(BulkSequencesModel, BulkSequencesView)
         self.addView(DereplicateModel, DereplicateView)
         self.addView(DecontaminateModel, DecontaminateView)
