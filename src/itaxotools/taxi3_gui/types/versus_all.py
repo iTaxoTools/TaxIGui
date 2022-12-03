@@ -16,10 +16,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from enum import Enum
+from enum import Enum, auto
 from typing import NamedTuple
 
 from ._type import Type
+
+
+class VersusAllSubtask(Enum):
+    Main = auto()
+    AddSequenceFile = auto()
+    AddSpeciesFile = auto()
+    AddGeneraFile = auto()
+
+
+class SequenceFile(Type):
+    def __init__(self, path):
+        self.path = path
+
+
+class Unknown(SequenceFile):
+    pass
+    
+
+class Tabfile(SequenceFile):
+    def __init__(self, path, headers):
+        self.path = path
+        self.headers = headers
 
 
 class Entry(NamedTuple):

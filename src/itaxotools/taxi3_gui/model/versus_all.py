@@ -20,8 +20,10 @@ from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from .. import app
 from ..tasks import versus_all
-from ..types import PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
+from ..model import Item, ItemModel, Object, SequenceModel
+from ..types import Notification, SequenceFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, VersusAllSubtask
 from ..utility import EnumObject
 from .common import Property, Task
 from .sequence import SequenceModel
@@ -37,11 +39,10 @@ def dummy_process(**kwargs):
     return 42
 
 
-def dummy_again():
-    import sys
-    sys.exit(2)
-    raise Exception('BOO')
-    print('AGAIN!')
+def dummy_get_sequence_file_info(path):
+    if path.suffix in ['.tsv', '.tab']:
+        return SequenceFile.Tabfile(path, ['seqid', 'sequences'])
+    return SequenceFile.Unknown(path)
 
 
 class PairwiseScores(EnumObject):
@@ -130,13 +131,14 @@ class VersusAllModel(Task):
             return False
         return True
 
-    def run(self):
+    def start(self):
+        self.busy = True
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         work_dir = self.temporary_path / timestamp
         work_dir.mkdir()
 
         self.exec(
-            None,
+            VersusAllSubtask.Main,
             dummy_process,
             work_dir=work_dir,
             input_sequences=self.input_sequences_item.object.path,
@@ -157,16 +159,21 @@ class VersusAllModel(Task):
             statistics_genus=self.statistics_groups.per_genus,
         )
 
-        self.exec(42, dummy_again)
+    def add_sequence_file(self, path):
+        self.exec(VersusAllSubtask.AddSequenceFile, dummy_get_sequence_file_info, path)
+
+    def add_sequence_file_from_info(self, info):
+        if info.type == SequenceFile.Tabfile:
+            index = app.model.items.add_sequence(SequenceModel(info.path), focus=False)
+            self.input_sequences_item = index.data(ItemModel.ItemRole)
+        else:
+            self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
 
     def onDone(self, report):
-        print('<<<', report)
-        self.done()
-
-    def onFail(self, report):
-        print('!!!', report)
-        self.busy = False
-
-    def onError(self, report):
-        print('XXX', report)
+        if report.id == VersusAllSubtask.Main:
+            print('<<<', report.result)
+            self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
+        if report.id == VersusAllSubtask.AddSequenceFile:
+            print('???', report.result)
+            self.add_sequence_file_from_info(report.result)
         self.busy = False

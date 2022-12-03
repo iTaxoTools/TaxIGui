@@ -173,6 +173,7 @@ class TitleCard(Card):
 
 class InputSelector(Card):
     itemChanged = QtCore.Signal(Item)
+    addSequenceFile = QtCore.Signal(Path)
 
     def __init__(self, text, parent=None, model=app.model.items):
         super().__init__(parent)
@@ -218,10 +219,7 @@ class InputSelector(Card):
             self.window(), f'{app.title} - Import Sequence File')
         if not filename:
             return
-        path = Path(filename)
-        index = app.model.items.add_sequence(SequenceModel(path), focus=False)
-        item = index.data(ItemModel.ItemRole)
-        self.setItem(item)
+        self.addSequenceFile.emit(Path(filename))
 
     def setItem(self, item):
         row = item.row if item else -1
@@ -692,6 +690,8 @@ class VersusAllView(ObjectView):
         self.object = object
         self.unbind_all()
 
+        self.bind(object.notification, self.showNotification)
+
         self.bind(self.cards.title.run, object.start)
         self.bind(self.cards.title.cancel, object.stop)
         self.bind(object.properties.name, self.cards.title.setTitle)
@@ -701,6 +701,7 @@ class VersusAllView(ObjectView):
 
         self.bind(self.cards.input_sequences.itemChanged, object.properties.input_sequences_item)
         self.bind(object.properties.input_sequences_item, self.cards.input_sequences.setItem)
+        self.bind(self.cards.input_sequences.addSequenceFile, object.add_sequence_file)
 
         self.bind(self.cards.perform_species.toggled, object.properties.perform_species)
         self.bind(object.properties.perform_species, self.cards.perform_species.setChecked)
@@ -754,6 +755,21 @@ class VersusAllView(ObjectView):
     def setBusy(self, busy: bool):
         for card in self.cards:
             card.setEnabled(not busy)
+
+    def showNotification(self, notification):
+        icon = {
+            Notification.Info: QtWidgets.QMessageBox.Information,
+            Notification.Warn: QtWidgets.QMessageBox.Warning,
+            Notification.Fail: QtWidgets.QMessageBox.Critical,
+        }[notification.type]
+
+        msgBox = QtWidgets.QMessageBox(self.window())
+        msgBox.setWindowTitle(app.title)
+        msgBox.setIcon(icon)
+        msgBox.setText(notification.text)
+        msgBox.setDetailedText(notification.info)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msgBox.exec()
 
 
 class VersusAllViewLegacy(ObjectView):
