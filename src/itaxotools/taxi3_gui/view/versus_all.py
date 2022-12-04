@@ -29,19 +29,20 @@ from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, Stati
 from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
 
-class SequencesProxyModel(QtCore.QAbstractProxyModel):
+class ItemProxyModel(QtCore.QAbstractProxyModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.root = None
+        self.unselected = '---'
 
     def sourceDataChanged(self, topLeft, bottomRight):
         self.dataChanged.emit(self.mapFromSource(topLeft), self.mapFromSource(bottomRight))
 
     @override
-    def setSourceModel(self, model):
+    def setSourceModel(self, model, root):
         super().setSourceModel(model)
-        self.root = model.sequences
+        self.root = root
         model.dataChanged.connect(self.sourceDataChanged)
 
     @override
@@ -49,11 +50,13 @@ class SequencesProxyModel(QtCore.QAbstractProxyModel):
         item = sourceIndex.internalPointer()
         if not item or item.parent != self.root:
             return QtCore.QModelIndex()
-        return self.createIndex(item.row, 0, item)
+        return self.createIndex(item.row + 1, 0, item)
 
     @override
     def mapToSource(self, proxyIndex):
         if not proxyIndex.isValid():
+            return QtCore.QModelIndex()
+        if proxyIndex.row() == 0:
             return QtCore.QModelIndex()
         item = proxyIndex.internalPointer()
         source = self.sourceModel()
@@ -63,9 +66,11 @@ class SequencesProxyModel(QtCore.QAbstractProxyModel):
     def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
         if parent.isValid() or column != 0:
             return QtCore.QModelIndex()
-        if row < 0 or row >= len(self.root.children):
+        if row < 0 or row > len(self.root.children):
             return QtCore.QModelIndex()
-        return self.createIndex(row, 0, self.root.children[row])
+        if row == 0:
+            return self.createIndex(0, 0)
+        return self.createIndex(row, 0, self.root.children[row - 1])
 
     @override
     def parent(self, index=QtCore.QModelIndex()) -> QtCore.QModelIndex:
@@ -73,11 +78,29 @@ class SequencesProxyModel(QtCore.QAbstractProxyModel):
 
     @override
     def rowCount(self, parent=QtCore.QModelIndex()) -> int:
-        return len(self.root.children)
+        return len(self.root.children) + 1
 
     @override
     def columnCount(self, parent=QtCore.QModelIndex()) -> int:
         return 1
+
+    @override
+    def data(self, index: QtCore.QModelIndex, role: QtCore.Qt.ItemDataRole):
+        if not index.isValid():
+            return None
+        if index.row() == 0:
+            if role == QtCore.Qt.DisplayRole:
+                return self.unselected
+            return None
+        return super().data(index, role)
+
+    @override
+    def flags(self, index: QtCore.QModelIndex):
+        if not index.isValid():
+            return QtCore.Qt.NoItemFlags
+        if index.row() == 0:
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        return super().flags(index)
 
 
 class RichRadioButton(QtWidgets.QRadioButton):
@@ -235,10 +258,8 @@ class InputSelector(Card):
         label.setStyleSheet("""font-size: 16px;""")
 
         combo = NoWheelComboBox()
-        proxy_model = SequencesProxyModel()
-        proxy_model.setSourceModel(model)
-        combo.setModel(proxy_model)
         combo.currentIndexChanged.connect(self.handleItemChanged)
+        self.set_model(combo, model)
 
         wait = NoWheelComboBox()
         wait.addItem('Scanning file, please wait...')
@@ -270,15 +291,14 @@ class InputSelector(Card):
     def draw_config(self):
         self.controls.config = None
 
+    def set_model(self, combo, model):
+        combo.setModel(model)
+
     def handleItemChanged(self, row):
-        return
-        if row < 0:
-            item = None
+        if row > 0:
+            item = self.controls.combo.itemData(row, ItemModel.ItemRole)
         else:
-            model = self.controls.combo.model()
-            parent = model.sequences_index
-            index = model.index(row, 0, parent)
-            item = index.data(ItemModel.ItemRole)
+            item = None
         self.itemChanged.emit(item)
 
     def handleBrowse(self, *args):
@@ -289,7 +309,7 @@ class InputSelector(Card):
         self.addSequenceFile.emit(Path(filename))
 
     def setItem(self, item):
-        row = item.row if item else -1
+        row = item.row + 1 if item else 0
         self.controls.combo.setCurrentIndex(row)
         self.unbind_all()
 
@@ -319,6 +339,11 @@ class InputSelector(Card):
 class SequenceSelector(InputSelector):
     indexColumnChanged = QtCore.Signal(str)
     sequenceColumnChanged = QtCore.Signal(str)
+
+    def set_model(self, combo, model):
+        proxy_model = ItemProxyModel()
+        proxy_model.setSourceModel(model, model.sequences)
+        combo.setModel(proxy_model)
 
     def draw_config(self):
         layout = QtWidgets.QGridLayout()

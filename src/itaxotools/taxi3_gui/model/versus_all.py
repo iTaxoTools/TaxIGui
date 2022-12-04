@@ -187,3 +187,13 @@ class VersusAllModel(Task):
             self.add_sequence_file_from_info(report.result)
             self.busy_sequence = False
         self.busy = False
+
+    def onFail(self, report):
+        super().onFail(report)
+        self.busy_main = False
+        self.busy_sequence = False
+
+    def onError(self, report):
+        super().onError(report)
+        self.busy_main = False
+        self.busy_sequence = False
