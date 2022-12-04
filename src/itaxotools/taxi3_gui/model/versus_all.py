@@ -42,7 +42,7 @@ def dummy_process(**kwargs):
 def dummy_get_sequence_file_info(path):
     import time
     print('...')
-    time.sleep(2)
+    time.sleep(1)
     if path.suffix in ['.tsv', '.tab']:
         return SequenceFile.Tabfile(path, ['seqid', 'sequences'])
     return SequenceFile.Unknown(path)

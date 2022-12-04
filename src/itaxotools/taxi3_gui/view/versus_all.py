@@ -20,13 +20,64 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from pathlib import Path
 
-from itaxotools.common.utility import AttrDict
+from itaxotools.common.utility import AttrDict, override
 
 from .. import app
 from ..utility import bind, unbind, type_convert
 from ..model import Item, ItemModel, Object, SequenceModel
 from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
-from .common import Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
+from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
+
+
+class SequencesProxyModel(QtCore.QAbstractProxyModel):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.root = None
+
+    def sourceDataChanged(self, topLeft, bottomRight):
+        self.dataChanged.emit(self.mapFromSource(topLeft), self.mapFromSource(bottomRight))
+
+    @override
+    def setSourceModel(self, model):
+        super().setSourceModel(model)
+        self.root = model.sequences
+        model.dataChanged.connect(self.sourceDataChanged)
+
+    @override
+    def mapFromSource(self, sourceIndex):
+        item = sourceIndex.internalPointer()
+        if not item or item.parent != self.root:
+            return QtCore.QModelIndex()
+        return self.createIndex(item.row, 0, item)
+
+    @override
+    def mapToSource(self, proxyIndex):
+        if not proxyIndex.isValid():
+            return QtCore.QModelIndex()
+        item = proxyIndex.internalPointer()
+        source = self.sourceModel()
+        return source.createIndex(item.row, 0, item)
+
+    @override
+    def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
+        if parent.isValid() or column != 0:
+            return QtCore.QModelIndex()
+        if row < 0 or row >= len(self.root.children):
+            return QtCore.QModelIndex()
+        return self.createIndex(row, 0, self.root.children[row])
+
+    @override
+    def parent(self, index=QtCore.QModelIndex()) -> QtCore.QModelIndex:
+        return QtCore.QModelIndex()
+
+    @override
+    def rowCount(self, parent=QtCore.QModelIndex()) -> int:
+        return len(self.root.children)
+
+    @override
+    def columnCount(self, parent=QtCore.QModelIndex()) -> int:
+        return 1
 
 
 class RichRadioButton(QtWidgets.QRadioButton):
@@ -184,8 +235,9 @@ class InputSelector(Card):
         label.setStyleSheet("""font-size: 16px;""")
 
         combo = NoWheelComboBox()
-        combo.setModel(model)
-        combo.setRootModelIndex(model.sequences_index)
+        proxy_model = SequencesProxyModel()
+        proxy_model.setSourceModel(model)
+        combo.setModel(proxy_model)
         combo.currentIndexChanged.connect(self.handleItemChanged)
 
         wait = NoWheelComboBox()
@@ -219,6 +271,7 @@ class InputSelector(Card):
         self.controls.config = None
 
     def handleItemChanged(self, row):
+        return
         if row < 0:
             item = None
         else:

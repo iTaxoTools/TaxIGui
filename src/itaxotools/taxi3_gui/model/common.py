@@ -196,6 +196,7 @@ class ItemModel(QtCore.QAbstractItemModel):
         child.properties.name.notify.connect(entryChanged)
         self.endInsertRows()
         index = self.index(row, 0, parent)
+        self.dataChanged.emit(index, index)
         if focus:
             self.focus(index)
         return index
