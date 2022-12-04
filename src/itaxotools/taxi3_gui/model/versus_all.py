@@ -151,6 +151,8 @@ class VersusAllModel(Task):
             input_sequences=self.input_sequences_item.object.path,
             input_sequences_index_column=self.input_sequences_item.object.index_column,
             input_sequences_sequence_column=self.input_sequences_item.object.sequence_column,
+            input_sequences_index_filter=self.input_sequences_item.object.index_filter,
+            input_sequences_sequence_filter=self.input_sequences_item.object.sequence_filter,
             perform_species=self.perform_species,
             perform_genera=self.perform_genera,
             alignment_mode=self.alignment_mode,

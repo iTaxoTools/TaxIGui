@@ -25,7 +25,7 @@ from itaxotools.common.utility import AttrDict, override
 from .. import app
 from ..utility import bind, unbind, type_convert
 from ..model import Item, ItemModel, Object, SequenceModel
-from ..types import Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
+from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
 
@@ -178,6 +178,52 @@ class RadioButtonGroup(QtCore.QObject):
         self.value = newValue
         for widget, value in self.members.items():
             widget.setChecked(value == newValue)
+
+
+class ColumnFilterDelegate(QtWidgets.QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        if not index.isValid():
+            return
+
+        self.initStyleOption(option, index)
+        option.text = index.data(ColumnFilterCombobox.LabelRole)
+        QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, painter)
+
+    def sizeHint(self, option, index):
+        height = self.parent().sizeHint().height()
+        return QtCore.QSize(100, height)
+
+
+class ColumnFilterCombobox(NoWheelComboBox):
+    valueChanged = QtCore.Signal(ColumnFilter)
+
+    DataRole = QtCore.Qt.UserRole
+    LabelRole = QtCore.Qt.UserRole + 1
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        model = QtGui.QStandardItemModel()
+        for filter in ColumnFilter:
+            item = QtGui.QStandardItem()
+            item.setData(filter.abr, QtCore.Qt.DisplayRole)
+            item.setData(filter.label, self.LabelRole)
+            item.setData(filter, self.DataRole)
+            model.appendRow(item)
+        self.setModel(model)
+
+        delegate = ColumnFilterDelegate(self)
+        self.setItemDelegate(delegate)
+
+        self.view().setMinimumWidth(100)
+
+        self.currentIndexChanged.connect(self.handleIndexChanged)
+
+    def handleIndexChanged(self, index):
+        self.valueChanged.emit(self.itemData(index, self.DataRole))
+
+    def setValue(self, value):
+        index = self.findData(value, self.DataRole)
+        self.setCurrentIndex(index)
 
 
 class TitleCard(Card):
@@ -392,9 +438,9 @@ class SequenceSelector(InputSelector):
         layout.setColumnStretch(column, 1)
         column += 1
 
-        index_filter = NoWheelComboBox()
+        index_filter = ColumnFilterCombobox()
         index_filter.setFixedWidth(40)
-        sequence_filter = NoWheelComboBox()
+        sequence_filter = ColumnFilterCombobox()
         sequence_filter.setFixedWidth(40)
 
         layout.addWidget(index_filter, 0, column)
@@ -416,15 +462,21 @@ class SequenceSelector(InputSelector):
         self.controls.config = widget
         self.controls.index_combo = index_combo
         self.controls.sequence_combo = sequence_combo
+        self.controls.index_filter = index_filter
+        self.controls.sequence_filter = sequence_filter
 
     def setItem(self, item):
         super().setItem(item)
         if item and isinstance(item.object, SequenceModel.Tabfile):
             self.populateCombos(item.object.headers)
             self.bind(item.object.properties.index_column, self.setColumnIndex)
-            self.bind(item.object.properties.sequence_column, self.setColumnSequence)
             self.bind(self.indexColumnChanged, item.object.properties.index_column)
+            self.bind(item.object.properties.sequence_column, self.setColumnSequence)
             self.bind(self.sequenceColumnChanged, item.object.properties.sequence_column)
+            self.bind(item.object.properties.index_filter, self.controls.index_filter.setValue)
+            self.bind(self.controls.index_filter.valueChanged, item.object.properties.index_filter)
+            self.bind(item.object.properties.sequence_filter, self.controls.sequence_filter.setValue)
+            self.bind(self.controls.sequence_filter.valueChanged, item.object.properties.sequence_filter)
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)

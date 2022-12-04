@@ -18,7 +18,7 @@
 
 from pathlib import Path
 
-from ..types import Type, SequenceReader, SequenceFile
+from ..types import Type, SequenceReader, SequenceFile, ColumnFilter
 from .common import Object, Property
 
 
@@ -38,8 +38,10 @@ class SequenceModel(Object):
 
 class Tabfile(SequenceModel):
     headers = Property(list)
-    index_column = Property(str)
-    sequence_column = Property(str)
+    index_column = Property(str, '')
+    sequence_column = Property(str, '')
+    index_filter = Property(ColumnFilter, ColumnFilter.All)
+    sequence_filter = Property(ColumnFilter, ColumnFilter.All)
 
     def __init__(self, info):
         assert info.type == SequenceFile.Tabfile

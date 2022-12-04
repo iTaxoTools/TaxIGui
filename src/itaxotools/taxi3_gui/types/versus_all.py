@@ -36,7 +36,7 @@ class SequenceFile(Type):
 
 class Unknown(SequenceFile):
     pass
-    
+
 
 class Tabfile(SequenceFile):
     def __init__(self, path, headers):
@@ -97,3 +97,13 @@ class AlignmentMode(Enum):
     def __init__(self, label, description):
         self.label = label
         self.description = description
+
+
+class ColumnFilter(Enum):
+    All = ('*', 'All contents')
+    First = ('1', 'First word')
+
+    def __init__(self, abr, text):
+        self.abr = abr
+        self.text = text
+        self.label = f'{text} ({abr})'
