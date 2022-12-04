@@ -40,6 +40,9 @@ def dummy_process(**kwargs):
 
 
 def dummy_get_sequence_file_info(path):
+    import time
+    print('...')
+    time.sleep(2)
     if path.suffix in ['.tsv', '.tab']:
         return SequenceFile.Tabfile(path, ['seqid', 'sequences'])
     return SequenceFile.Unknown(path)
@@ -100,6 +103,9 @@ class VersusAllModel(Task):
     distance_metrics = Property(DistanceMetrics)
     statistics_groups = Property(StatisticsGroups)
 
+    busy_main = Property(bool, False)
+    busy_sequence = Property(bool, False)
+
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
 
@@ -133,6 +139,7 @@ class VersusAllModel(Task):
 
     def start(self):
         self.busy = True
+        self.busy_main = True
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         work_dir = self.temporary_path / timestamp
         work_dir.mkdir()
@@ -162,6 +169,7 @@ class VersusAllModel(Task):
         )
 
     def add_sequence_file(self, path):
+        self.busy_sequence = True
         self.exec(VersusAllSubtask.AddSequenceFile, dummy_get_sequence_file_info, path)
 
     def add_sequence_file_from_info(self, info):
@@ -174,6 +182,8 @@ class VersusAllModel(Task):
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
+            self.busy_main = False
         if report.id == VersusAllSubtask.AddSequenceFile:
             self.add_sequence_file_from_info(report.result)
+            self.busy_sequence = False
         self.busy = False

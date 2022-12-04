@@ -164,11 +164,9 @@ class TitleCard(Card):
         self.controls.run.setEnabled(ready)
 
     def setBusy(self, busy: bool):
+        self.setEnabled(True)
         self.controls.run.setVisible(not busy)
         self.controls.cancel.setVisible(busy)
-
-    def setEnabled(self, enabled: bool):
-        pass
 
 
 class InputSelector(Card):
@@ -190,20 +188,35 @@ class InputSelector(Card):
         combo.setRootModelIndex(model.sequences_index)
         combo.currentIndexChanged.connect(self.handleItemChanged)
 
+        wait = NoWheelComboBox()
+        wait.addItem('Scanning file, please wait...')
+        wait.setEnabled(False)
+        wait.setVisible(False)
+
         browse = QtWidgets.QPushButton('Import')
         browse.clicked.connect(self.handleBrowse)
+
+        loading = QtWidgets.QPushButton('Loading')
+        loading.setEnabled(False)
+        loading.setVisible(False)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(label)
         layout.addSpacing(8)
         layout.addWidget(combo, 1)
+        layout.addWidget(wait, 1)
         layout.addWidget(browse)
+        layout.addWidget(loading)
         self.addLayout(layout)
 
+        self.controls.label = label
         self.controls.combo = combo
+        self.controls.wait = wait
+        self.controls.browse = browse
+        self.controls.loading = loading
 
     def draw_config(self):
-        pass
+        self.controls.config = None
 
     def handleItemChanged(self, row):
         if row < 0:
@@ -239,6 +252,15 @@ class InputSelector(Card):
         for key in self.bindings:
             unbind(key.signal, key.slot)
         self.bindings.clear()
+
+    def setBusy(self, busy: bool):
+        self.setEnabled(True)
+        self.controls.combo.setVisible(not busy)
+        self.controls.wait.setVisible(busy)
+        self.controls.browse.setVisible(not busy)
+        self.controls.loading.setVisible(busy)
+        self.controls.label.setEnabled(not busy)
+        self.controls.config.setEnabled(not busy)
 
 
 class SequenceSelector(InputSelector):
@@ -749,8 +771,8 @@ class VersusAllView(ObjectView):
         self.bind(self.cards.title.cancel, object.stop)
         self.bind(object.properties.name, self.cards.title.setTitle)
         self.bind(object.properties.ready, self.cards.title.setReady)
-        self.bind(object.properties.busy, self.cards.title.setBusy)
-        self.bind(object.properties.busy, self.setBusy)
+        self.bind(object.properties.busy_main, self.setBusyMain)
+        self.bind(object.properties.busy_sequence, self.setBusySequence)
 
         self.bind(self.cards.input_sequences.itemChanged, object.properties.input_sequences_item)
         self.bind(object.properties.input_sequences_item, self.cards.input_sequences.setItem)
@@ -805,9 +827,15 @@ class VersusAllView(ObjectView):
             self.bind(self.cards.stats_options.controls[group.key].toggled, object.statistics_groups.properties[group.key])
             self.bind(object.statistics_groups.properties[group.key], self.cards.stats_options.controls[group.key].setChecked)
 
-    def setBusy(self, busy: bool):
+    def setBusyMain(self, busy: bool):
         for card in self.cards:
             card.setEnabled(not busy)
+        self.cards.title.setBusy(busy)
+
+    def setBusySequence(self, busy: bool):
+        for card in self.cards:
+            card.setEnabled(not busy)
+        self.cards.input_sequences.setBusy(busy)
 
     def showNotification(self, notification):
         icon = {
