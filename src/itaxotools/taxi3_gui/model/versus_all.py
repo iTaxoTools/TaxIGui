@@ -31,11 +31,15 @@ from .input_file import InputFileModel
 
 
 def dummy_process(**kwargs):
+    import time
+    import itaxotools
     for k, v in kwargs.items():
         print(k, v)
-    import time
     print('...')
-    time.sleep(2)
+    for x in range(100):
+        itaxotools.progress_handler(text='dummy', value=x+1, maximum=100)
+        time.sleep(0.02)
+
     print('Done!~')
     return 42
 

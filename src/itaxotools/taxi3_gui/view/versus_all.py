@@ -289,6 +289,20 @@ class TitleCard(Card):
         self.controls.cancel.setVisible(busy)
 
 
+class ProgressCard(QtWidgets.QProgressBar):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMaximum(0)
+        self.setMinimum(0)
+        self.setValue(0)
+        self.setVisible(False)
+
+    def showProgress(self, report):
+        self.setMaximum(report.maximum)
+        self.setMinimum(report.minimum)
+        self.setValue(report.value)
+
+
 class InputSelector(Card):
     itemChanged = QtCore.Signal(Item)
     addInputFile = QtCore.Signal(Path)
@@ -876,6 +890,7 @@ class VersusAllView(ObjectView):
     def draw(self):
         self.cards = AttrDict()
         self.cards.title = TitleCard(self)
+        self.cards.progress = ProgressCard(self)
         self.cards.input_sequences = SequenceSelector('Input Sequences', self)
         self.cards.perform_species = OptionalCategory(
             'Perform Species Analysis',
@@ -906,6 +921,7 @@ class VersusAllView(ObjectView):
         self.unbind_all()
 
         self.bind(object.notification, self.showNotification)
+        self.bind(object.progression, self.cards.progress.showProgress)
 
         self.bind(self.cards.title.run, object.start)
         self.bind(self.cards.title.cancel, object.stop)
@@ -971,6 +987,8 @@ class VersusAllView(ObjectView):
         for card in self.cards:
             card.setEnabled(not busy)
         self.cards.title.setBusy(busy)
+        self.cards.progress.setEnabled(busy)
+        self.cards.progress.setVisible(busy)
 
     def setBusySequence(self, busy: bool):
         for card in self.cards:
