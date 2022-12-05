@@ -18,6 +18,8 @@
 
 from enum import Enum, auto
 from typing import NamedTuple
+from dataclasses import dataclass, asdict
+from pathlib import Path
 
 from ._type import Type
 
@@ -29,19 +31,28 @@ class VersusAllSubtask(Enum):
     AddGeneraFile = auto()
 
 
-class SequenceFile(Type):
-    def __init__(self, path):
-        self.path = path
+@dataclass
+class InputFile(Type):
+    path: Path
 
+    def as_dict(self):
+        return asdict(self)
+        
 
-class Unknown(SequenceFile):
+@dataclass
+class Unknown(InputFile):
     pass
 
 
-class Tabfile(SequenceFile):
-    def __init__(self, path, headers):
-        self.path = path
-        self.headers = headers
+@dataclass
+class Tabfile(InputFile):
+    path: Path
+    headers: list[str]
+    individuals: int = None
+    sequences: int = None
+    organism: int = None
+    species: int = None
+    genera: int = None
 
 
 class Entry(NamedTuple):

@@ -46,5 +46,6 @@ class Tabfile(PartitionModel):
         assert isinstance(file_item.object, InputFileModel.Tabfile)
         super().__init__(file_item)
         headers = file_item.object.headers
-        self.subset_column = headers[0]
-        self.individual_column = headers[1]
+        smart_columns = file_item.object.smart_columns
+        self.subset_column = headers[smart_columns.get('organism', 0)]
+        self.individual_column = headers[smart_columns.get('individuals', 0)]

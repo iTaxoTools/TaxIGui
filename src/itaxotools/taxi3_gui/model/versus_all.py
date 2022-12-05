@@ -23,7 +23,7 @@ from tempfile import TemporaryDirectory
 from .. import app
 from ..tasks import versus_all
 from ..model import Item, ItemModel, Object
-from ..types import Notification, SequenceFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, VersusAllSubtask
+from ..types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, VersusAllSubtask
 from ..utility import EnumObject, Property, Instance
 from .common import Task
 from .sequence import SequenceModel2
@@ -50,8 +50,8 @@ def dummy_get_file_info(path):
     print('...')
     time.sleep(1)
     if path.suffix in ['.tsv', '.tab']:
-        return SequenceFile.Tabfile(path, ['seqid', 'sequences', 'organism'])
-    return SequenceFile.Unknown(path)
+        return InputFile.Tabfile(path, ['garbage', 'seqid', 'sequences', 'organism'], 1, 2, 3)
+    return InputFile.Unknown(path)
 
 
 class PairwiseScores(EnumObject):
@@ -227,11 +227,11 @@ class VersusAllModel(Task):
         self.exec(VersusAllSubtask.AddGeneraFile, dummy_get_file_info, path)
 
     def add_file_item_from_info(self, info):
-        if info.type == SequenceFile.Tabfile:
+        if info.type == InputFile.Tabfile:
             if len(info.headers) < 2:
                 self.notification.emit(Notification.Warn('Not enough columns in tabfile.'))
                 return
-            index = app.model.items.add_file(InputFileModel.Tabfile(info.path, info.headers), focus=False)
+            index = app.model.items.add_file(InputFileModel.Tabfile(**info.as_dict()), focus=False)
             return index.data(ItemModel.ItemRole)
         else:
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))

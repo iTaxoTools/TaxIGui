@@ -18,7 +18,7 @@
 
 from pathlib import Path
 
-from ..types import Type, SequenceReader, SequenceFile, ColumnFilter
+from ..types import Type, SequenceReader, ColumnFilter
 from .common import Object, Property
 
 
@@ -36,8 +36,10 @@ class InputFileModel(Object):
 
 class Tabfile(InputFileModel):
     headers = Property(list)
+    smart_columns = Property(dict)
 
-    def __init__(self, path, headers):
+    def __init__(self, path: Path, headers: list[str], **smart_columns):
         assert len(headers) >= 2
         super().__init__(path)
         self.headers = headers
+        self.smart_columns = smart_columns

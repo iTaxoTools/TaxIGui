@@ -18,7 +18,7 @@
 
 from pathlib import Path
 
-from ..types import Type, SequenceReader, SequenceFile, ColumnFilter
+from ..types import Type, SequenceReader, ColumnFilter
 from .common import Object, Property, Item
 from .input_file import InputFileModel
 
@@ -60,5 +60,6 @@ class Tabfile(SequenceModel2):
         assert isinstance(file_item.object, InputFileModel.Tabfile)
         super().__init__(file_item)
         headers = file_item.object.headers
-        self.index_column = headers[0]
-        self.sequence_column = headers[1]
+        smart_columns = file_item.object.smart_columns
+        self.index_column = headers[smart_columns.get('individuals', 0)]
+        self.sequence_column = headers[smart_columns.get('sequences', 1)]
