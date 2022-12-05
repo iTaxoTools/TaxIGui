@@ -28,6 +28,7 @@ from ..utility import EnumObject
 from .common import Property, Task
 from .sequence import SequenceModel2
 from .input_file import InputFileModel
+from .partition import PartitionModel
 
 
 def dummy_process(**kwargs):
@@ -44,12 +45,12 @@ def dummy_process(**kwargs):
     return 42
 
 
-def dummy_get_sequence_file_info(path):
+def dummy_get_file_info(path):
     import time
     print('...')
     time.sleep(1)
     if path.suffix in ['.tsv', '.tab']:
-        return SequenceFile.Tabfile(path, ['seqid', 'sequences'])
+        return SequenceFile.Tabfile(path, ['seqid', 'sequences', 'organism'])
     return SequenceFile.Unknown(path)
 
 
@@ -90,9 +91,9 @@ class VersusAllModel(Task):
 
     input_sequences = Property(SequenceModel2, None)
     perform_species = Property(bool, True)
-    # todo: species item
+    input_species = Property(PartitionModel, None)
     perform_genera = Property(bool, False)
-    # todo: genera item
+    input_genera = Property(PartitionModel, None)
 
     alignment_mode = Property(AlignmentMode, AlignmentMode.NoAlignment)
     alignment_write_pairs = Property(bool, True)
@@ -110,6 +111,8 @@ class VersusAllModel(Task):
 
     busy_main = Property(bool, False)
     busy_sequence = Property(bool, False)
+    busy_species = Property(bool, False)
+    busy_genera = Property(bool, False)
 
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
@@ -120,6 +123,10 @@ class VersusAllModel(Task):
     def readyTriggers(self):
         return [
             self.properties.input_sequences,
+            self.properties.input_species,
+            self.properties.input_genera,
+            self.properties.perform_species,
+            self.properties.perform_genera,
             self.properties.alignment_mode,
             *(property for property in self.pairwise_scores.properties),
             self.distance_metrics.properties.bbc,
@@ -131,6 +138,10 @@ class VersusAllModel(Task):
         if self.input_sequences is None:
             return False
         if not isinstance(self.input_sequences, SequenceModel2):
+            return False
+        if self.perform_species and not self.input_species:
+            return False
+        if self.perform_genera and not self.input_genera:
             return False
         if not self.input_sequences.file_item:
             return False
@@ -179,35 +190,67 @@ class VersusAllModel(Task):
 
     def add_sequence_file(self, path):
         self.busy_sequence = True
-        self.exec(VersusAllSubtask.AddSequenceFile, dummy_get_sequence_file_info, path)
+        self.exec(VersusAllSubtask.AddSequenceFile, dummy_get_file_info, path)
 
-    def add_sequence_file_from_info(self, info):
+    def add_species_file(self, path):
+        self.busy_species = True
+        self.exec(VersusAllSubtask.AddSpeciesFile, dummy_get_file_info, path)
+
+    def add_genus_file(self, path):
+        self.busy_genera = True
+        self.exec(VersusAllSubtask.AddGeneraFile, dummy_get_file_info, path)
+
+    def add_file_item_from_info(self, info):
         if info.type == SequenceFile.Tabfile:
             if len(info.headers) < 2:
                 self.notification.emit(Notification.Warn('Not enough columns in tabfile.'))
                 return
             index = app.model.items.add_file(InputFileModel.Tabfile(info.path, info.headers), focus=False)
-            file_item = index.data(ItemModel.ItemRole)
-            self.input_sequences = SequenceModel2.Tabfile(file_item)
+            return index.data(ItemModel.ItemRole)
         else:
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
+            return None
+
+    def get_model_from_file_item(self, file_item, model_parent):
+        if file_item is None:
+            return None
+        try:
+            model_type = {
+                InputFileModel.Tabfile: {
+                    SequenceModel2: SequenceModel2.Tabfile,
+                    PartitionModel: PartitionModel.Tabfile,
+                },
+            }[type(file_item.object)][model_parent]
+        except Exception:
+            self.notification.emit(Notification.Warn('Unexpected file type.'))
+            return None
+        return model_type(file_item)
 
     def set_sequence_file_from_file_item(self, file_item):
-        if file_item is None:
-            self.input_sequences = None
-        elif isinstance(file_item.object, InputFileModel.Tabfile):
-            self.input_sequences = SequenceModel2.Tabfile(file_item)
-        else:
-            self.notification.emit(Notification.Warn('Unexpected file item.'))
-            self.input_sequences = None
+        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
+
+    def set_species_file_from_file_item(self, file_item):
+        self.input_species = self.get_model_from_file_item(file_item, PartitionModel)
+
+    def set_genera_file_from_file_item(self, file_item):
+        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel)
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
             self.busy_main = False
         if report.id == VersusAllSubtask.AddSequenceFile:
-            self.add_sequence_file_from_info(report.result)
+            file_item = self.add_file_item_from_info(report.result)
+            self.set_sequence_file_from_file_item(file_item)
             self.busy_sequence = False
+        if report.id == VersusAllSubtask.AddSpeciesFile:
+            file_item = self.add_file_item_from_info(report.result)
+            self.set_species_file_from_file_item(file_item)
+            self.busy_species = False
+        if report.id == VersusAllSubtask.AddGeneraFile:
+            file_item = self.add_file_item_from_info(report.result)
+            self.set_genera_file_from_file_item(file_item)
+            self.busy_genera = False
         self.busy = False
 
     def onFail(self, report):

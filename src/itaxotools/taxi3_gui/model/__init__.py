@@ -24,3 +24,4 @@ from .dereplicate import DereplicateModel
 from .sequence import SequenceModel, SequenceModel2
 from .versus_all import VersusAllModel
 from .input_file import InputFileModel
+from .partition import PartitionModel
