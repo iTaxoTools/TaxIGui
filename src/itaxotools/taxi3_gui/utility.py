@@ -23,6 +23,21 @@ from dataclasses import dataclass
 from typing import Callable, ClassVar, Optional, Union, NamedTuple, Type
 
 
+class Instance:
+    """Pass as type or instance to instantiate a property by default"""
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+
+class _Instance:
+    """Internal instructions for default class instatiation"""
+    def __init__(self, type, *args, **kwargs):
+        self.type = type
+        self.args = args
+        self.kwargs = kwargs
+
+
 class Property:
 
     key_ref = 'properties'
@@ -73,8 +88,8 @@ class PropertyRef:
     @property
     def default(self):
         default = getattr(self._parent, Property.key_default(self._key))
-        if isinstance(default, type) and issubclass(default, PropertyObject):
-            default = default()
+        if isinstance(default, _Instance):
+            return default.type(*default.args, **default.kwargs)
         return default
 
     @property
@@ -151,8 +166,10 @@ class PropertyMeta(type(QtCore.QObject)):
                 getattr(self, key_notify).emit(value)
 
         default = prop.default
-        if issubclass(prop.type, PropertyObject):
-            default = prop.type
+        if default == Instance:
+            default = _Instance(prop.type)
+        if isinstance(default, Instance):
+            default = _Instance(prop.type, *default.args, **default.kwargs)
 
         attrs[key_list].append(key)
 

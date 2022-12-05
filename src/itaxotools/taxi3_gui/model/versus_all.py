@@ -24,8 +24,8 @@ from .. import app
 from ..tasks import versus_all
 from ..model import Item, ItemModel, Object
 from ..types import Notification, SequenceFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, VersusAllSubtask
-from ..utility import EnumObject
-from .common import Property, Task
+from ..utility import EnumObject, Property, Instance
+from .common import Task
 from .sequence import SequenceModel2
 from .input_file import InputFileModel
 from .partition import PartitionModel
@@ -106,9 +106,9 @@ class VersusAllModel(Task):
     distance_precision = Property(object, 4)
     distance_missing = Property(str, 'NA')
 
-    pairwise_scores = Property(PairwiseScores)
-    distance_metrics = Property(DistanceMetrics)
-    statistics_groups = Property(StatisticsGroups)
+    pairwise_scores = Property(PairwiseScores, Instance)
+    distance_metrics = Property(DistanceMetrics, Instance)
+    statistics_groups = Property(StatisticsGroups, Instance)
 
     busy_main = Property(bool, False)
     busy_sequence = Property(bool, False)
@@ -254,12 +254,24 @@ class VersusAllModel(Task):
 
     def set_sequence_file_from_file_item(self, file_item):
         self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
+        self.propagate_file_item(file_item)
 
     def set_species_file_from_file_item(self, file_item):
         self.input_species = self.get_model_from_file_item(file_item, PartitionModel)
+        self.propagate_file_item(file_item)
 
     def set_genera_file_from_file_item(self, file_item):
         self.input_genera = self.get_model_from_file_item(file_item, PartitionModel)
+        self.propagate_file_item(file_item)
+
+    def propagate_file_item(self, file_item):
+        if file_item and isinstance(file_item.object, InputFileModel.Tabfile):
+            if not self.input_sequences:
+                self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
+            if not self.input_species:
+                self.input_species = self.get_model_from_file_item(file_item, PartitionModel)
+            if not self.input_genera:
+                self.input_genera = self.get_model_from_file_item(file_item, PartitionModel)
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
