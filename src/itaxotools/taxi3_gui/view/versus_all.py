@@ -990,6 +990,8 @@ class VersusAllView(ObjectView):
         self.bind(object.properties.ready, self.cards.title.setReady)
         self.bind(object.properties.busy_main, self.setBusyMain)
         self.bind(object.properties.busy_sequence, self.setBusySequence)
+        self.bind(object.properties.busy_species, self.setBusySpecies)
+        self.bind(object.properties.busy_genera, self.setBusyGenera)
 
         self.bind(self.cards.input_sequences.itemChanged, object.set_sequence_file_from_file_item)
         self.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
@@ -1063,6 +1065,16 @@ class VersusAllView(ObjectView):
         for card in self.cards:
             card.setEnabled(not busy)
         self.cards.input_sequences.setBusy(busy)
+
+    def setBusySpecies(self, busy: bool):
+        for card in self.cards:
+            card.setEnabled(not busy)
+        self.cards.input_species.setBusy(busy)
+
+    def setBusyGenera(self, busy: bool):
+        for card in self.cards:
+            card.setEnabled(not busy)
+        self.cards.input_genera.setBusy(busy)
 
     def showNotification(self, notification):
         icon = {
