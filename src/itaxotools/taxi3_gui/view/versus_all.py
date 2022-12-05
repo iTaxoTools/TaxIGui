@@ -533,6 +533,11 @@ class PartitionSelector(InputSelector):
     subsetColumnChanged = QtCore.Signal(str)
     individualColumnChanged = QtCore.Signal(str)
 
+    def __init__(self, text, subset_text=None, individual_text=None, parent=None, model=app.model.items):
+        self._subset_text = subset_text or 'Subsets'
+        self._individual_text = individual_text or 'Individuals'
+        super().__init__(text, parent, model)
+
     def set_model(self, combo, model):
         proxy_model = ItemProxyModel()
         proxy_model.setSourceModel(model, model.files)
@@ -564,8 +569,8 @@ class PartitionSelector(InputSelector):
         layout.setColumnMinimumWidth(column, 32)
         column += 1
 
-        subset_label = QtWidgets.QLabel('Subsets:')
-        individual_label = QtWidgets.QLabel('Individuals:')
+        subset_label = QtWidgets.QLabel(f'{self._subset_text}:')
+        individual_label = QtWidgets.QLabel(f'{self._individual_text}:')
 
         layout.addWidget(subset_label, 0, column)
         layout.addWidget(individual_label, 1, column)
@@ -953,13 +958,13 @@ class VersusAllView(ObjectView):
             'Calculate various metrics betweens all pairs of species (mean/min/max), '
             'based on the distances between their member specimens.',
             self)
-        self.cards.input_species = PartitionSelector('Species Partition', self)
+        self.cards.input_species = PartitionSelector('Species Partition', 'Species', 'Individuals', self)
         self.cards.perform_genera = OptionalCategory(
             'Perform Genus Analysis',
             'Calculate various metrics betweens all pairs of genera (mean/min/max), '
             'based on the distances between their member specimens.',
             self)
-        self.cards.input_genera = PartitionSelector('Genera Partition', self)
+        self.cards.input_genera = PartitionSelector('Genera Partition', 'Genera', 'Individuals', self)
         self.cards.alignment_mode = AlignmentModeSelector(self)
         self.cards.distance_metrics = DistanceMetricSelector(self)
         self.cards.stats_options = StatisticSelector(self)
