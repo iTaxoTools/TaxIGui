@@ -355,6 +355,9 @@ class InputSelector(Card):
         self.addSequenceFile.emit(Path(filename))
 
     def setItem(self, item):
+        # Workaround to repaint bugged card line
+        QtCore.QTimer.singleShot(10, self.update)
+
         row = item.row + 1 if item else 0
         self.controls.combo.setCurrentIndex(row)
         self.unbind_all()
