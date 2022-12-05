@@ -176,7 +176,7 @@ class ItemModel(QtCore.QAbstractItemModel):
         self.root = Item('')
         self.tasks = self.root.add_child(Group('Tasks'))
         self.sequences = self.root.add_child(Group('Sequences'))
-        self.files = self.root.add_child(Group('Files'))
+        self.files = self.root.add_child(Group('Imported Files'))
 
     @property
     def tasks_index(self):
