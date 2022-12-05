@@ -89,10 +89,11 @@ class StatisticsGroups(EnumObject):
 class VersusAllModel(Task):
     task_name = 'Versus All'
 
-    input_sequences = Property(SequenceModel2, None)
     perform_species = Property(bool, True)
-    input_species = Property(PartitionModel, None)
     perform_genera = Property(bool, False)
+
+    input_sequences = Property(SequenceModel2, None)
+    input_species = Property(PartitionModel, None)
     input_genera = Property(PartitionModel, None)
 
     alignment_mode = Property(AlignmentMode, AlignmentMode.NoAlignment)
@@ -139,12 +140,18 @@ class VersusAllModel(Task):
             return False
         if not isinstance(self.input_sequences, SequenceModel2):
             return False
-        if self.perform_species and not self.input_species:
-            return False
-        if self.perform_genera and not self.input_genera:
-            return False
         if not self.input_sequences.file_item:
             return False
+        if self.perform_species:
+            if not isinstance(self.input_species, PartitionModel):
+                return False
+            if not self.input_species.file_item:
+                return False
+        if self.perform_genera:
+            if not isinstance(self.input_genera, PartitionModel):
+                return False
+            if not self.input_genera.file_item:
+                return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
                 return False
@@ -166,13 +173,32 @@ class VersusAllModel(Task):
             VersusAllSubtask.Main,
             dummy_process,
             work_dir=work_dir,
+
+            perform_species=self.perform_species,
+            perform_genera=self.perform_genera,
+
             input_sequences=self.input_sequences.file_item.object.path,
             input_sequences_index_column=self.input_sequences.index_column,
             input_sequences_sequence_column=self.input_sequences.sequence_column,
             input_sequences_index_filter=self.input_sequences.index_filter,
             input_sequences_sequence_filter=self.input_sequences.sequence_filter,
-            perform_species=self.perform_species,
-            perform_genera=self.perform_genera,
+
+            **(dict(
+                input_species=self.input_species.file_item.object.path,
+                input_species_subset_column=self.input_species.subset_column,
+                input_species_individual_column=self.input_species.individual_column,
+                input_species_subset_filter=self.input_species.subset_filter,
+                input_species_individual_filter=self.input_species.individual_filter,
+            ) if self.perform_species else {}),
+
+            **(dict(
+                input_genera=self.input_genera.file_item.object.path,
+                input_genera_subset_column=self.input_genera.subset_column,
+                input_genera_individual_column=self.input_genera.individual_column,
+                input_genera_subset_filter=self.input_genera.subset_filter,
+                input_genera_individual_filter=self.input_genera.individual_filter,
+            ) if self.perform_genera else {}),
+
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
             alignment_pairwise_scores = self.pairwise_scores.as_dict(),
@@ -196,7 +222,7 @@ class VersusAllModel(Task):
         self.busy_species = True
         self.exec(VersusAllSubtask.AddSpeciesFile, dummy_get_file_info, path)
 
-    def add_genus_file(self, path):
+    def add_genera_file(self, path):
         self.busy_genera = True
         self.exec(VersusAllSubtask.AddGeneraFile, dummy_get_file_info, path)
 

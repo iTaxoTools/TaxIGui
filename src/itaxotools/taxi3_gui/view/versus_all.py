@@ -24,7 +24,7 @@ from itaxotools.common.utility import AttrDict, override
 
 from .. import app
 from ..utility import Guard, bind, unbind, type_convert
-from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2
+from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
 from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
@@ -530,9 +530,15 @@ class SequenceSelector(InputSelector):
 
 
 class PartitionSelector(InputSelector):
+    subsetColumnChanged = QtCore.Signal(str)
+    individualColumnChanged = QtCore.Signal(str)
+
+    def set_model(self, combo, model):
+        proxy_model = ItemProxyModel()
+        proxy_model.setSourceModel(model, model.files)
+        combo.setModel(proxy_model)
 
     def draw_config(self):
-
         layout = QtWidgets.QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
@@ -558,31 +564,34 @@ class PartitionSelector(InputSelector):
         layout.setColumnMinimumWidth(column, 32)
         column += 1
 
-        index_label = QtWidgets.QLabel('Individuals:')
-        sequence_label = QtWidgets.QLabel('Subsets:')
+        subset_label = QtWidgets.QLabel('Subsets:')
+        individual_label = QtWidgets.QLabel('Individuals:')
 
-        layout.addWidget(index_label, 0, column)
-        layout.addWidget(sequence_label, 1, column)
+        layout.addWidget(subset_label, 0, column)
+        layout.addWidget(individual_label, 1, column)
         column += 1
 
         layout.setColumnMinimumWidth(column, 8)
         column += 1
 
-        index_combo = NoWheelComboBox()
-        sequence_combo = NoWheelComboBox()
+        subset_combo = NoWheelComboBox()
+        individual_combo = NoWheelComboBox()
 
-        layout.addWidget(index_combo, 0, column)
-        layout.addWidget(sequence_combo, 1, column)
+        subset_combo.currentIndexChanged.connect(self.handleSubsetColumnChanged)
+        individual_combo.currentIndexChanged.connect(self.handleIndividualColumnChanged)
+
+        layout.addWidget(subset_combo, 0, column)
+        layout.addWidget(individual_combo, 1, column)
         layout.setColumnStretch(column, 1)
         column += 1
 
-        index_filter = NoWheelComboBox()
-        index_filter.setFixedWidth(40)
-        sequence_filter = NoWheelComboBox()
-        sequence_filter.setFixedWidth(40)
+        subset_filter = ColumnFilterCombobox()
+        subset_filter.setFixedWidth(40)
+        individual_filter = ColumnFilterCombobox()
+        individual_filter.setFixedWidth(40)
 
-        layout.addWidget(index_filter, 0, column)
-        layout.addWidget(sequence_filter, 1, column)
+        layout.addWidget(subset_filter, 0, column)
+        layout.addWidget(individual_filter, 1, column)
         column += 1
 
         layout.setColumnMinimumWidth(column, 16)
@@ -593,7 +602,54 @@ class PartitionSelector(InputSelector):
         layout.addWidget(view, 0, column)
         column += 1
 
-        self.addLayout(layout)
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+        self.addWidget(widget)
+
+        self.controls.config = widget
+        self.controls.subset_combo = subset_combo
+        self.controls.individual_combo = individual_combo
+        self.controls.subset_filter = subset_filter
+        self.controls.individual_filter = individual_filter
+
+    def setObject(self, object):
+        super().setObject(object)
+        if object and isinstance(object, PartitionModel.Tabfile):
+            self.populateCombos(object.file_item.object.headers)
+            self.bind(object.properties.subset_column, self.setColumnSubset)
+            self.bind(self.subsetColumnChanged, object.properties.subset_column)
+            self.bind(object.properties.individual_column, self.setColumnIndividual)
+            self.bind(self.individualColumnChanged, object.properties.individual_column)
+            self.bind(object.properties.subset_filter, self.controls.subset_filter.setValue)
+            self.bind(self.controls.subset_filter.valueChanged, object.properties.subset_filter)
+            self.bind(object.properties.individual_filter, self.controls.individual_filter.setValue)
+            self.bind(self.controls.individual_filter.valueChanged, object.properties.individual_filter)
+            self.controls.config.setVisible(True)
+        else:
+            self.controls.config.setVisible(False)
+
+    def populateCombos(self, headers):
+        self.controls.subset_combo.clear()
+        self.controls.individual_combo.clear()
+        for header in headers:
+            self.controls.subset_combo.addItem(header, header)
+            self.controls.individual_combo.addItem(header, header)
+
+    def setColumnSubset(self, column):
+        row = self.controls.subset_combo.findData(column)
+        self.controls.subset_combo.setCurrentIndex(row)
+
+    def setColumnIndividual(self, column):
+        row = self.controls.individual_combo.findData(column)
+        self.controls.individual_combo.setCurrentIndex(row)
+
+    def handleSubsetColumnChanged(self, row):
+        value = self.controls.subset_combo.currentData() if row >= 0 else ''
+        self.subsetColumnChanged.emit(value)
+
+    def handleIndividualColumnChanged(self, row):
+        value = self.controls.individual_combo.currentData() if row >= 0 else ''
+        self.individualColumnChanged.emit(value)
 
 
 class OptionalCategory(Card):
@@ -938,9 +994,17 @@ class VersusAllView(ObjectView):
         self.bind(object.properties.perform_species, self.cards.perform_species.setChecked)
         self.bind(object.properties.perform_species, self.cards.input_species.setVisible)
 
+        self.bind(self.cards.input_species.itemChanged, object.set_species_file_from_file_item)
+        self.bind(object.properties.input_species, self.cards.input_species.setObject)
+        self.bind(self.cards.input_species.addInputFile, object.add_species_file)
+
         self.bind(self.cards.perform_genera.toggled, object.properties.perform_genera)
         self.bind(object.properties.perform_genera, self.cards.perform_genera.setChecked)
         self.bind(object.properties.perform_genera, self.cards.input_genera.setVisible)
+
+        self.bind(self.cards.input_genera.itemChanged, object.set_genera_file_from_file_item)
+        self.bind(object.properties.input_genera, self.cards.input_genera.setObject)
+        self.bind(self.cards.input_genera.addInputFile, object.add_genera_file)
 
         self.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
         self.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
