@@ -16,11 +16,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from pathlib import Path
 
-from .bulk_sequences import BulkSequencesModel, SequenceListModel
-from .common import Group, Item, ItemModel, Object, Task
-from .decontaminate import DecontaminateModel
-from .dereplicate import DereplicateModel
-from .sequence import SequenceModel, SequenceModel2
-from .versus_all import VersusAllModel
-from .input_file import InputFileModel
+from ..types import Type, SequenceReader, SequenceFile, ColumnFilter
+from .common import Object, Property
+
+
+class InputFileModel(Object):
+    path = Property(Path)
+
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+        self.name = path.name
+
+    def __repr__(self):
+        return f'{".".join(self._get_name_chain())}({repr(self.name)})'
+
+
+class Tabfile(InputFileModel):
+    headers = Property(list)
+
+    def __init__(self, path, headers):
+        assert len(headers) >= 2
+        super().__init__(path)
+        self.headers = headers

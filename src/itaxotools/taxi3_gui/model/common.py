@@ -37,14 +37,18 @@ class _TypedPropertyObjectMeta(type(PropertyObject), type(Type)):
 
 class Object(PropertyObject, Type, metaclass=_TypedPropertyObjectMeta):
     """Interface for backend structures"""
-    name = Property(str)
+    name = Property(str, '')
 
     def __init__(self, name=None):
         super().__init__()
-        self.name = name
+        if name:
+            self.name = name
 
     def __repr__(self):
         return Type.__repr__(self)
+
+    def __eq__(self, other):
+        return id(self) == id(other)
 
 
 class Group(Object):
@@ -172,6 +176,7 @@ class ItemModel(QtCore.QAbstractItemModel):
         self.root = Item('')
         self.tasks = self.root.add_child(Group('Tasks'))
         self.sequences = self.root.add_child(Group('Sequences'))
+        self.files = self.root.add_child(Group('Files'))
 
     @property
     def tasks_index(self):
@@ -206,6 +211,9 @@ class ItemModel(QtCore.QAbstractItemModel):
 
     def add_sequence(self, sequence, focus=False):
         return self._add_entry(self.sequences, sequence, focus)
+
+    def add_file(self, file, focus=False):
+        return self._add_entry(self.files, file, focus)
 
     def focus(self, index):
         self.focused.emit(index)

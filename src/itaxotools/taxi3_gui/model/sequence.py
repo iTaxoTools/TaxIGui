@@ -19,7 +19,8 @@
 from pathlib import Path
 
 from ..types import Type, SequenceReader, SequenceFile, ColumnFilter
-from .common import Object, Property
+from .common import Object, Property, Item
+from .input_file import InputFileModel
 
 
 class SequenceModel(Object):
@@ -36,17 +37,28 @@ class SequenceModel(Object):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
 
 
-class Tabfile(SequenceModel):
-    headers = Property(list)
+class SequenceModel2(Object):
+    file_item = Property(Item, None)
+
+    def __init__(self, file_item=None):
+        super().__init__()
+        self.file_item = file_item
+        if file_item:
+            self.name = f'Sequences from {file_item.object.path.name}'
+
+    def __repr__(self):
+        return f'{".".join(self._get_name_chain())}({repr(self.name)})'
+
+
+class Tabfile(SequenceModel2):
     index_column = Property(str, '')
     sequence_column = Property(str, '')
     index_filter = Property(ColumnFilter, ColumnFilter.All)
     sequence_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(self, info):
-        assert info.type == SequenceFile.Tabfile
-        assert len(info.headers) >= 2
-        super().__init__(info.path, SequenceReader.TabfileReader)
-        self.headers = info.headers
-        self.index_column = self.headers[0]
-        self.sequence_column = self.headers[1]
+    def __init__(self, file_item):
+        assert isinstance(file_item.object, InputFileModel.Tabfile)
+        super().__init__(file_item)
+        headers = file_item.object.headers
+        self.index_column = headers[0]
+        self.sequence_column = headers[1]

@@ -23,8 +23,8 @@ from pathlib import Path
 from itaxotools.common.utility import AttrDict, override
 
 from .. import app
-from ..utility import bind, unbind, type_convert
-from ..model import Item, ItemModel, Object, SequenceModel
+from ..utility import Guard, bind, unbind, type_convert
+from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2
 from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
@@ -291,11 +291,12 @@ class TitleCard(Card):
 
 class InputSelector(Card):
     itemChanged = QtCore.Signal(Item)
-    addSequenceFile = QtCore.Signal(Path)
+    addInputFile = QtCore.Signal(Path)
 
     def __init__(self, text, parent=None, model=app.model.items):
         super().__init__(parent)
         self.bindings = set()
+        self._guard = Guard()
         self.draw_main(text, model)
         self.draw_config()
 
@@ -341,6 +342,8 @@ class InputSelector(Card):
         combo.setModel(model)
 
     def handleItemChanged(self, row):
+        if self._guard:
+            return
         if row > 0:
             item = self.controls.combo.itemData(row, ItemModel.ItemRole)
         else:
@@ -352,14 +355,18 @@ class InputSelector(Card):
             self.window(), f'{app.title} - Import Sequence File')
         if not filename:
             return
-        self.addSequenceFile.emit(Path(filename))
+        self.addInputFile.emit(Path(filename))
 
-    def setItem(self, item):
+    def setObject(self, object):
         # Workaround to repaint bugged card line
         QtCore.QTimer.singleShot(10, self.update)
 
-        row = item.row + 1 if item else 0
-        self.controls.combo.setCurrentIndex(row)
+        if object is not None:
+            file_item = object.file_item
+            row = file_item.row + 1 if file_item else 0
+            with self._guard:
+                self.controls.combo.setCurrentIndex(row)
+
         self.unbind_all()
 
     def bind(self, src, dst, proxy=None):
@@ -391,7 +398,7 @@ class SequenceSelector(InputSelector):
 
     def set_model(self, combo, model):
         proxy_model = ItemProxyModel()
-        proxy_model.setSourceModel(model, model.sequences)
+        proxy_model.setSourceModel(model, model.files)
         combo.setModel(proxy_model)
 
     def draw_config(self):
@@ -468,18 +475,18 @@ class SequenceSelector(InputSelector):
         self.controls.index_filter = index_filter
         self.controls.sequence_filter = sequence_filter
 
-    def setItem(self, item):
-        super().setItem(item)
-        if item and isinstance(item.object, SequenceModel.Tabfile):
-            self.populateCombos(item.object.headers)
-            self.bind(item.object.properties.index_column, self.setColumnIndex)
-            self.bind(self.indexColumnChanged, item.object.properties.index_column)
-            self.bind(item.object.properties.sequence_column, self.setColumnSequence)
-            self.bind(self.sequenceColumnChanged, item.object.properties.sequence_column)
-            self.bind(item.object.properties.index_filter, self.controls.index_filter.setValue)
-            self.bind(self.controls.index_filter.valueChanged, item.object.properties.index_filter)
-            self.bind(item.object.properties.sequence_filter, self.controls.sequence_filter.setValue)
-            self.bind(self.controls.sequence_filter.valueChanged, item.object.properties.sequence_filter)
+    def setObject(self, object):
+        super().setObject(object)
+        if object and isinstance(object, SequenceModel2.Tabfile):
+            self.populateCombos(object.file_item.object.headers)
+            self.bind(object.properties.index_column, self.setColumnIndex)
+            self.bind(self.indexColumnChanged, object.properties.index_column)
+            self.bind(object.properties.sequence_column, self.setColumnSequence)
+            self.bind(self.sequenceColumnChanged, object.properties.sequence_column)
+            self.bind(object.properties.index_filter, self.controls.index_filter.setValue)
+            self.bind(self.controls.index_filter.valueChanged, object.properties.index_filter)
+            self.bind(object.properties.sequence_filter, self.controls.sequence_filter.setValue)
+            self.bind(self.controls.sequence_filter.valueChanged, object.properties.sequence_filter)
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)
@@ -907,9 +914,9 @@ class VersusAllView(ObjectView):
         self.bind(object.properties.busy_main, self.setBusyMain)
         self.bind(object.properties.busy_sequence, self.setBusySequence)
 
-        self.bind(self.cards.input_sequences.itemChanged, object.properties.input_sequences_item)
-        self.bind(object.properties.input_sequences_item, self.cards.input_sequences.setItem)
-        self.bind(self.cards.input_sequences.addSequenceFile, object.add_sequence_file)
+        self.bind(self.cards.input_sequences.itemChanged, object.set_sequence_file_from_file_item)
+        self.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
+        self.bind(self.cards.input_sequences.addInputFile, object.add_sequence_file)
 
         self.bind(self.cards.perform_species.toggled, object.properties.perform_species)
         self.bind(object.properties.perform_species, self.cards.perform_species.setChecked)

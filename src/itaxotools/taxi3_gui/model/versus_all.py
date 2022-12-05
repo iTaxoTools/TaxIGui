@@ -22,11 +22,12 @@ from tempfile import TemporaryDirectory
 
 from .. import app
 from ..tasks import versus_all
-from ..model import Item, ItemModel, Object, SequenceModel
+from ..model import Item, ItemModel, Object
 from ..types import Notification, SequenceFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, VersusAllSubtask
 from ..utility import EnumObject
 from .common import Property, Task
-from .sequence import SequenceModel
+from .sequence import SequenceModel2
+from .input_file import InputFileModel
 
 
 def dummy_process(**kwargs):
@@ -83,7 +84,7 @@ class StatisticsGroups(EnumObject):
 class VersusAllModel(Task):
     task_name = 'Versus All'
 
-    input_sequences_item = Property(object, None)
+    input_sequences = Property(SequenceModel2, None)
     perform_species = Property(bool, True)
     # todo: species item
     perform_genera = Property(bool, False)
@@ -114,7 +115,7 @@ class VersusAllModel(Task):
 
     def readyTriggers(self):
         return [
-            self.properties.input_sequences_item,
+            self.properties.input_sequences,
             self.properties.alignment_mode,
             *(property for property in self.pairwise_scores.properties),
             self.distance_metrics.properties.bbc,
@@ -123,9 +124,11 @@ class VersusAllModel(Task):
         ]
 
     def isReady(self):
-        if self.input_sequences_item is None:
+        if self.input_sequences is None:
             return False
-        if not isinstance(self.input_sequences_item.object, SequenceModel):
+        if not isinstance(self.input_sequences, SequenceModel2):
+            return False
+        if not self.input_sequences.file_item:
             return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
@@ -148,11 +151,11 @@ class VersusAllModel(Task):
             VersusAllSubtask.Main,
             dummy_process,
             work_dir=work_dir,
-            input_sequences=self.input_sequences_item.object.path,
-            input_sequences_index_column=self.input_sequences_item.object.index_column,
-            input_sequences_sequence_column=self.input_sequences_item.object.sequence_column,
-            input_sequences_index_filter=self.input_sequences_item.object.index_filter,
-            input_sequences_sequence_filter=self.input_sequences_item.object.sequence_filter,
+            input_sequences=self.input_sequences.file_item.object.path,
+            input_sequences_index_column=self.input_sequences.index_column,
+            input_sequences_sequence_column=self.input_sequences.sequence_column,
+            input_sequences_index_filter=self.input_sequences.index_filter,
+            input_sequences_sequence_filter=self.input_sequences.sequence_filter,
             perform_species=self.perform_species,
             perform_genera=self.perform_genera,
             alignment_mode=self.alignment_mode,
@@ -176,10 +179,23 @@ class VersusAllModel(Task):
 
     def add_sequence_file_from_info(self, info):
         if info.type == SequenceFile.Tabfile:
-            index = app.model.items.add_sequence(SequenceModel.Tabfile(info), focus=False)
-            self.input_sequences_item = index.data(ItemModel.ItemRole)
+            if len(info.headers) < 2:
+                self.notification.emit(Notification.Warn('Not enough columns in tabfile.'))
+                return
+            index = app.model.items.add_file(InputFileModel.Tabfile(info.path, info.headers), focus=False)
+            file_item = index.data(ItemModel.ItemRole)
+            self.input_sequences = SequenceModel2.Tabfile(file_item)
         else:
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
+
+    def set_sequence_file_from_file_item(self, file_item):
+        if file_item is None:
+            self.input_sequences = None
+        elif isinstance(file_item.object, InputFileModel.Tabfile):
+            self.input_sequences = SequenceModel2.Tabfile(file_item)
+        else:
+            self.notification.emit(Notification.Warn('Unexpected file item.'))
+            self.input_sequences = None
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
