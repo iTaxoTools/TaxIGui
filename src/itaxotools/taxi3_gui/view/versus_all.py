@@ -375,11 +375,13 @@ class InputSelector(Card):
         # Workaround to repaint bugged card line
         QtCore.QTimer.singleShot(10, self.update)
 
-        if object is not None:
+        if object is None:
+            row = 0
+        else:
             file_item = object.file_item
             row = file_item.row + 1 if file_item else 0
-            with self._guard:
-                self.controls.combo.setCurrentIndex(row)
+        with self._guard:
+            self.controls.combo.setCurrentIndex(row)
 
         self.unbind_all()
 
