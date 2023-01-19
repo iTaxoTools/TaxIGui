@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple
 
-from ..types import ComparisonMode
+from ..types import ComparisonMode, ColumnFilter, AlignmentMode, DistanceMetric
 
 
 @dataclass
@@ -71,15 +71,80 @@ def get_file_info(path: Path):
     return InputFile.Unknown(path)
 
 
-def versus_all(work_dir, input_sequences, **kwargs) -> tuple[float, Path]:
+def versus_all(
+
+    work_dir: Path,
+
+    perform_species: bool,
+    perform_genera: bool,
+
+    input_sequences: Path,
+    # input_species: Path,
+    # input_genera: Path,
+
+    alignment_mode: AlignmentMode,
+    alignment_write_pairs: bool,
+    alignment_pairwise_scores: dict,
+
+    distance_metrics: list[DistanceMetric],
+    distance_metrics_bbc_k: int,
+    distance_linear: bool,
+    distance_matricial: bool,
+    distance_percentile: bool,
+    distance_precision: int,
+    distance_missing: str,
+
+    statistics_all: bool,
+    statistics_species: bool,
+    statistics_genus: bool,
+
+    **kwargs
+
+) -> tuple[Path, float]:
+
     from itaxotools.taxi3.tasks.versus_all import VersusAll
+    from itaxotools.taxi3.distances import DistanceMetric as BackendDistanceMetric
 
     task = VersusAll()
+    task.work_dir = work_dir
     task.progress_handler = progress_handler
+
     task.set_input_sequences_from_path(input_sequences)
     task.set_input_species_from_path(input_sequences)
     task.set_input_genera_from_path(input_sequences)
-    task.work_dir = work_dir
+
+    # task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
+    task.params.pairs.write = alignment_write_pairs
+    # task.params.pairs.write = alignment_pairwise_scores
+
+    task.params.subsets.species = perform_species
+    task.params.subsets.genera = perform_genera
+
+    metrics_tr = {
+        DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
+        DistanceMetric.UncorrectedWithGaps: (BackendDistanceMetric.UncorrectedWithGaps, []),
+        DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
+        DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
+        DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
+        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metrics_bbc_k]),
+    }
+    metrics = [
+        metrics_tr[metric][0](*metrics_tr[metric][1])
+        for metric in distance_metrics
+    ]
+    task.params.distances.metrics = metrics
+    task.params.distances.write_linear = distance_linear
+    task.params.distances.write_matricial = distance_matricial
+
+    # task.params.format.float
+    # task.params.format.percentage
+    # task.params.format.missing
+    # task.params.format.percentage_multiply
+
+    task.params.stats.all = statistics_all
+    task.params.stats.species = statistics_species
+    task.params.stats.genera = statistics_genus
+
     results = task.start()
 
     return results
