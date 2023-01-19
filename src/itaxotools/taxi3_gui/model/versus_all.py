@@ -92,6 +92,9 @@ class VersusAllModel(Task):
     busy_species = Property(bool, False)
     busy_genera = Property(bool, False)
 
+    dummy_results = Property(Path, None)
+    dummy_time = Property(float, None)
+
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
 
@@ -253,7 +256,8 @@ class VersusAllModel(Task):
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
-            print(report.result)
+            self.dummy_results = report.result.output_directory
+            self.dummy_time = report.result.seconds_taken
             self.busy_main = False
         if report.id == VersusAllSubtask.AddSequenceFile:
             file_item = self.add_file_item_from_info(report.result)

@@ -289,6 +289,41 @@ class TitleCard(Card):
         self.controls.cancel.setVisible(busy)
 
 
+class DummyResultsCard(Card):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.path = Path()
+
+        title = QtWidgets.QLabel('Results: ')
+        title.setStyleSheet("""font-size: 16px;""")
+
+        path = QtWidgets.QLineEdit()
+        path.setReadOnly(True)
+
+        browse = QtWidgets.QPushButton('Browse')
+        browse.clicked.connect(self.handleBrowse)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(title)
+        layout.addWidget(path, 1)
+        layout.addWidget(browse)
+        layout.setSpacing(12)
+        self.addLayout(layout)
+
+        self.controls.path = path
+        self.controls.browse = browse
+
+    def handleBrowse(self):
+        url = QtCore.QUrl.fromLocalFile(str(self.path))
+        QtGui.QDesktopServices.openUrl(url)
+
+    def setPath(self, path: Path):
+        if path is None:
+            path = Path()
+        self.path = path
+        self.controls.path.setText(str(path))
+
+
 class ProgressCard(QtWidgets.QProgressBar):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -957,6 +992,7 @@ class VersusAllView(ObjectView):
     def draw(self):
         self.cards = AttrDict()
         self.cards.title = TitleCard(self)
+        self.cards.dummy_results = DummyResultsCard(self)
         self.cards.progress = ProgressCard(self)
         self.cards.input_sequences = SequenceSelector('Input Sequences', self)
         self.cards.perform_species = OptionalCategory(
@@ -1055,6 +1091,9 @@ class VersusAllView(ObjectView):
         self.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
         self.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
         self.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
+
+        self.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
+        self.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
 
         for group in StatisticsGroup:
             self.bind(self.cards.stats_options.controls[group.key].toggled, object.statistics_groups.properties[group.key])
