@@ -42,10 +42,23 @@ class Tabfile(PartitionModel):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
     individual_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(self, file_item):
+    @staticmethod
+    def _find_first(dictionary, items, default):
+        for item in items:
+            if dictionary.get(item) is not None:
+                return dictionary[item]
+        return default
+
+    def __init__(self, file_item, subset: str):
         assert isinstance(file_item.object, InputFileModel.Tabfile)
         super().__init__(file_item)
         headers = file_item.object.headers
         smart_columns = file_item.object.smart_columns
-        self.subset_column = headers[smart_columns.get('organism', 0)]
-        self.individual_column = headers[smart_columns.get('individuals', 0)]
+
+        subset_index = self._find_first(smart_columns, [subset, 'organism'], 0) or 0
+        individuals_index = smart_columns.get('individuals', 0)
+        self.subset_column = headers[subset_index]
+        self.individual_column = headers[individuals_index]
+
+        if subset == 'genera' and subset_index == smart_columns.get('organism', -1):
+            self.subset_filter = ColumnFilter.First

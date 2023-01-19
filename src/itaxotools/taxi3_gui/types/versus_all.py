@@ -37,7 +37,7 @@ class InputFile(Type):
 
     def as_dict(self):
         return asdict(self)
-        
+
 
 @dataclass
 class Unknown(InputFile):

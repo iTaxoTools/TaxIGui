@@ -45,15 +45,6 @@ def dummy_process(**kwargs):
     return 42
 
 
-def dummy_get_file_info(path):
-    import time
-    print('...')
-    time.sleep(1)
-    if path.suffix in ['.tsv', '.tab']:
-        return InputFile.Tabfile(path, ['garbage', 'seqid', 'sequences', 'organism'], 1, 2, 3)
-    return InputFile.Unknown(path)
-
-
 class PairwiseScores(EnumObject):
     enum = PairwiseScore
 
@@ -216,15 +207,15 @@ class VersusAllModel(Task):
 
     def add_sequence_file(self, path):
         self.busy_sequence = True
-        self.exec(VersusAllSubtask.AddSequenceFile, dummy_get_file_info, path)
+        self.exec(VersusAllSubtask.AddSequenceFile, versus_all.get_file_info, path)
 
     def add_species_file(self, path):
         self.busy_species = True
-        self.exec(VersusAllSubtask.AddSpeciesFile, dummy_get_file_info, path)
+        self.exec(VersusAllSubtask.AddSpeciesFile, versus_all.get_file_info, path)
 
     def add_genera_file(self, path):
         self.busy_genera = True
-        self.exec(VersusAllSubtask.AddGeneraFile, dummy_get_file_info, path)
+        self.exec(VersusAllSubtask.AddGeneraFile, versus_all.get_file_info, path)
 
     def add_file_item_from_info(self, info):
         if info.type == InputFile.Tabfile:
@@ -237,7 +228,7 @@ class VersusAllModel(Task):
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
             return None
 
-    def get_model_from_file_item(self, file_item, model_parent):
+    def get_model_from_file_item(self, file_item, model_parent, *args, **kwargs):
         if file_item is None:
             return None
         try:
@@ -250,18 +241,18 @@ class VersusAllModel(Task):
         except Exception:
             self.notification.emit(Notification.Warn('Unexpected file type.'))
             return None
-        return model_type(file_item)
+        return model_type(file_item, *args, **kwargs)
 
     def set_sequence_file_from_file_item(self, file_item):
         self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
         self.propagate_file_item(file_item)
 
     def set_species_file_from_file_item(self, file_item):
-        self.input_species = self.get_model_from_file_item(file_item, PartitionModel)
+        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
         self.propagate_file_item(file_item)
 
     def set_genera_file_from_file_item(self, file_item):
-        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel)
+        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
         self.propagate_file_item(file_item)
 
     def propagate_file_item(self, file_item):
@@ -269,9 +260,9 @@ class VersusAllModel(Task):
             if not self.input_sequences:
                 self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
             if not self.input_species:
-                self.input_species = self.get_model_from_file_item(file_item, PartitionModel)
+                self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
             if not self.input_genera:
-                self.input_genera = self.get_model_from_file_item(file_item, PartitionModel)
+                self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
