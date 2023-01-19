@@ -23,7 +23,7 @@ from pathlib import Path
 from itaxotools.common.utility import AttrDict, override
 
 from .. import app
-from ..utility import Guard, bind, unbind, type_convert
+from ..utility import Guard, bind, unbind, type_convert, human_readable_size
 from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
 from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
@@ -490,6 +490,7 @@ class SequenceSelector(InputSelector):
         self.controls.sequence_combo = sequence_combo
         self.controls.index_filter = index_filter
         self.controls.sequence_filter = sequence_filter
+        self.controls.file_size = size_label_value
 
     def setObject(self, object):
         super().setObject(object)
@@ -503,6 +504,7 @@ class SequenceSelector(InputSelector):
             self.bind(self.controls.index_filter.valueChanged, object.properties.index_filter)
             self.bind(object.properties.sequence_filter, self.controls.sequence_filter.setValue)
             self.bind(self.controls.sequence_filter.valueChanged, object.properties.sequence_filter)
+            self.bind(object.file_item.object.properties.size, self.controls.file_size.setText, lambda x: human_readable_size(x))
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)
@@ -618,6 +620,7 @@ class PartitionSelector(InputSelector):
         self.controls.individual_combo = individual_combo
         self.controls.subset_filter = subset_filter
         self.controls.individual_filter = individual_filter
+        self.controls.file_size = size_label_value
 
     def setObject(self, object):
         super().setObject(object)
@@ -631,6 +634,7 @@ class PartitionSelector(InputSelector):
             self.bind(self.controls.subset_filter.valueChanged, object.properties.subset_filter)
             self.bind(object.properties.individual_filter, self.controls.individual_filter.setValue)
             self.bind(self.controls.individual_filter.valueChanged, object.properties.individual_filter)
+            self.bind(object.file_item.object.properties.size, self.controls.file_size.setText, lambda x: human_readable_size(x))
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)

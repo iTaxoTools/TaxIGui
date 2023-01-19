@@ -58,6 +58,7 @@ def get_file_info(path: Path):
     if info.format == FileFormat.Tabfile:
         return InputFile.Tabfile(
             path = path,
+            size = info.size,
             headers = info.headers,
             individuals = get_index(info.headers, info.header_individuals),
             sequences = get_index(info.headers, info.header_sequences),

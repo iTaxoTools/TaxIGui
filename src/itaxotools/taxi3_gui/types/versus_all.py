@@ -34,6 +34,7 @@ class VersusAllSubtask(Enum):
 @dataclass
 class InputFile(Type):
     path: Path
+    size: int
 
     def as_dict(self):
         return asdict(self)

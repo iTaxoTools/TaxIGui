@@ -35,11 +35,13 @@ class InputFileModel(Object):
 
 
 class Tabfile(InputFileModel):
+    size = Property(int, 0)
     headers = Property(list)
     smart_columns = Property(dict)
 
-    def __init__(self, path: Path, headers: list[str], **smart_columns):
+    def __init__(self, path: Path, headers: list[str], size=0, **smart_columns):
         assert len(headers) >= 2
         super().__init__(path)
+        self.size = size
         self.headers = headers
         self.smart_columns = smart_columns

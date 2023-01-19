@@ -316,3 +316,11 @@ def type_convert(value, type, default):
         return type(value)
     except ValueError:
         return default
+
+
+def human_readable_size(size):
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size < 1000.0 or unit == 'GB':
+            break
+        size /= 1000.0
+    return f'{size:.2f} {unit}'
