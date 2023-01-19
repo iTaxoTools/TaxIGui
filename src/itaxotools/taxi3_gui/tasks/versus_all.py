@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple
@@ -28,12 +30,12 @@ class VersusAllResults:
     pass
 
 
-def progress_handler(progress):
+def progress_handler(caption, index, total):
     import itaxotools
     itaxotools.progress_handler(
-        text=progress.operation,
-        value=progress.current_step,
-        maximum=progress.total_steps,
+        text=caption,
+        value=index,
+        maximum=total,
     )
 
 
@@ -69,76 +71,15 @@ def get_file_info(path: Path):
     return InputFile.Unknown(path)
 
 
-def versus_all(
-    work_dir: Path,
-    input: Path,
-    comparison_mode: ComparisonMode,
-) -> Dict[Path, Tuple[Path, Path]]:
+def versus_all(work_dir, input_sequences, **kwargs) -> tuple[float, Path]:
+    from itaxotools.taxi3.tasks.versus_all import VersusAll
 
-    from itaxotools.taxi3.library.config import AlignmentScores, Config
-    from itaxotools.taxi3.library.datatypes import (
-        Metric, SequenceData, SpeciesPartition, SubspeciesPartition,
-        TabfileReader, ValidFilePath, VoucherPartition)
-    from itaxotools.taxi3.library.task import (
-        Alignment, CalculateDistances, VersusAll)
+    task = VersusAll()
+    task.progress_handler = progress_handler
+    task.set_input_sequences_from_path(input_sequences)
+    task.set_input_species_from_path(input_sequences)
+    task.set_input_genera_from_path(input_sequences)
+    task.work_dir = work_dir
+    results = task.start()
 
-    from itaxotools import progress_handler
-
-    alignment = {
-        ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
-        ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
-        ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
-    }[comparison_mode.type]
-
-    config = None
-    if comparison_mode.type is ComparisonMode.PairwiseAlignment:
-        scores = AlignmentScores._from_scores_dict(comparison_mode.config)
-        config = Config(scores)
-
-    metrics = [Metric.Uncorrected]
-
-    progress_handler('Calculating distances...')
-    task = CalculateDistances(warn=print)
-    task.sequences = SequenceData.from_path(ValidFilePath(input), TabfileReader)
-    task.alignment = alignment
-    task.metrics = metrics
-    task.config = config
-    task.start()
-
-    distances = task.result
-
-    progress_handler('Running Versus All analysis...')
-    task = VersusAll(warn=print)
-
-    data = TabfileReader.read_data(ValidFilePath(input))
-    for table in data:
-        if isinstance(table, SequenceData):
-            task.sequences = table
-        elif isinstance(table, VoucherPartition):
-            task.vouchers = table
-        elif isinstance(table, SpeciesPartition):
-            task.species = table
-        elif isinstance(table, SubspeciesPartition):
-            task.subspecies = table
-
-    task.distances = distances
-    task.alignment = alignment
-    task.metrics = metrics
-    task.config = config
-    task.start()
-
-    progress_handler('Printing results...')
-    tables = task.result
-    for table in (
-        [
-            tables.sequence_summary_statistic.total,
-            tables.sequence_summary_statistic.by_species,
-        ]
-        + tables.distances
-        + tables.mean_min_max_distances
-        + [tables.summary_statistics]
-    ):
-        if table:
-            print(table.get_dataframe().to_string())
-
-    return 42
+    return results

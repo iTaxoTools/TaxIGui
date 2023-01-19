@@ -31,20 +31,6 @@ from .input_file import InputFileModel
 from .partition import PartitionModel
 
 
-def dummy_process(**kwargs):
-    import time
-    import itaxotools
-    for k, v in kwargs.items():
-        print(k, v)
-    print('...')
-    for x in range(100):
-        itaxotools.progress_handler(text='dummy', value=x+1, maximum=100)
-        time.sleep(0.02)
-
-    print('Done!~')
-    return 42
-
-
 class PairwiseScores(EnumObject):
     enum = PairwiseScore
 
@@ -162,7 +148,7 @@ class VersusAllModel(Task):
 
         self.exec(
             VersusAllSubtask.Main,
-            dummy_process,
+            versus_all.versus_all,
             work_dir=work_dir,
 
             perform_species=self.perform_species,
@@ -267,6 +253,7 @@ class VersusAllModel(Task):
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
+            print(report.result)
             self.busy_main = False
         if report.id == VersusAllSubtask.AddSequenceFile:
             file_item = self.add_file_item_from_info(report.result)
