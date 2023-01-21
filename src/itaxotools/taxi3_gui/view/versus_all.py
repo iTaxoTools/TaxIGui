@@ -983,6 +983,42 @@ class StatisticSelector(Card):
         self.addLayout(layout)
 
 
+class PlotSelector(Card):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        title = QtWidgets.QCheckBox('Generate histogram plots')
+        title.setStyleSheet("""font-size: 16px;""")
+
+        description = QtWidgets.QLabel(
+            'Plot histograms of the distribution of sequence distances across species/genera. '
+            'You may customize the width of the bins across the horizontal axis (from 0.0 to 1.0).'
+        )
+        description.setWordWrap(True)
+
+        label = QtWidgets.QLabel('Bin width:')
+        binwidth = GLineEdit('')
+        binwidth.setValidator(QtGui.QDoubleValidator())
+        binwidth.setPlaceholderText('0.05')
+
+        contents = QtWidgets.QHBoxLayout()
+        contents.addWidget(label)
+        contents.addWidget(binwidth)
+        contents.addStretch(1)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(title)
+        layout.addWidget(description)
+        layout.addLayout(contents)
+        layout.setSpacing(8)
+
+        self.addLayout(layout)
+
+        self.controls.plot = title
+        self.controls.binwidth = binwidth
+
+
 class VersusAllView(ObjectView):
 
     def __init__(self, parent=None):
@@ -1010,6 +1046,7 @@ class VersusAllView(ObjectView):
         self.cards.alignment_mode = AlignmentModeSelector(self)
         self.cards.distance_metrics = DistanceMetricSelector(self)
         self.cards.stats_options = StatisticSelector(self)
+        self.cards.plot_options = PlotSelector(self)
 
         layout = QtWidgets.QVBoxLayout()
         for card in self.cards:
@@ -1092,12 +1129,17 @@ class VersusAllView(ObjectView):
         self.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
         self.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
 
-        self.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
-        self.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
-
         for group in StatisticsGroup:
             self.bind(self.cards.stats_options.controls[group.key].toggled, object.statistics_groups.properties[group.key])
             self.bind(object.statistics_groups.properties[group.key], self.cards.stats_options.controls[group.key].setChecked)
+
+        self.bind(object.properties.plot_histograms, self.cards.plot_options.controls.plot.setChecked)
+        self.bind(object.properties.plot_binwidth, self.cards.plot_options.controls.binwidth.setText, lambda x: str(x) if x is not None else '')
+        self.bind(self.cards.plot_options.controls.plot.toggled, object.properties.plot_histograms)
+        self.bind(self.cards.plot_options.controls.binwidth.textEditedSafe, object.properties.plot_binwidth, lambda x: type_convert(x, float, None))
+
+        self.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
+        self.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
 
     def setBusyMain(self, busy: bool):
         for card in self.cards:

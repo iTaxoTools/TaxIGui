@@ -98,27 +98,29 @@ def versus_all(
     statistics_species: bool,
     statistics_genus: bool,
 
+    plot_histograms: bool,
+    plot_binwidth: float,
+
     **kwargs
 
 ) -> tuple[Path, float]:
 
     from itaxotools.taxi3.tasks.versus_all import VersusAll
     from itaxotools.taxi3.distances import DistanceMetric as BackendDistanceMetric
+    from itaxotools.taxi3.sequences import Sequences, SequenceHandler
+    from itaxotools.taxi3.partitions import Partition, PartitionHandler
 
     task = VersusAll()
     task.work_dir = work_dir
     task.progress_handler = progress_handler
 
-    task.set_input_sequences_from_path(input_sequences)
-    task.set_input_species_from_path(input_sequences)
-    task.set_input_genera_from_path(input_sequences)
+    task.input.sequences = Sequences.fromPath(input_sequences, SequenceHandler.Tabfile, idHeader='seqid', seqHeader='sequence')
+    task.input.species = Partition.fromPath(input_sequences, PartitionHandler.Tabfile, idHeader='seqid', subHeader='organism')
+    task.input.genera = Partition.fromPath(input_sequences, PartitionHandler.Tabfile, idHeader='seqid', subHeader='organism', filter=PartitionHandler.subset_first_word)
 
     # task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
     task.params.pairs.write = alignment_write_pairs
     # task.params.pairs.write = alignment_pairwise_scores
-
-    task.params.subsets.species = perform_species
-    task.params.subsets.genera = perform_genera
 
     metrics_tr = {
         DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
@@ -144,6 +146,9 @@ def versus_all(
     task.params.stats.all = statistics_all
     task.params.stats.species = statistics_species
     task.params.stats.genera = statistics_genus
+
+    task.params.plot.histograms = plot_histograms
+    task.params.plot.binwidth = plot_binwidth
 
     results = task.start()
 

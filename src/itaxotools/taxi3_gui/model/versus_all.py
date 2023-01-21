@@ -87,6 +87,9 @@ class VersusAllModel(Task):
     distance_metrics = Property(DistanceMetrics, Instance)
     statistics_groups = Property(StatisticsGroups, Instance)
 
+    plot_histograms = Property(bool, True)
+    plot_binwidth = Property(float, 0.05)
+
     busy_main = Property(bool, False)
     busy_sequence = Property(bool, False)
     busy_species = Property(bool, False)
@@ -192,6 +195,9 @@ class VersusAllModel(Task):
             statistics_all=self.statistics_groups.for_all,
             statistics_species=self.statistics_groups.per_species,
             statistics_genus=self.statistics_groups.per_genus,
+
+            plot_histograms=self.plot_histograms,
+            plot_binwidth=self.plot_binwidth or self.properties.plot_binwidth.default,
         )
 
     def add_sequence_file(self, path):
