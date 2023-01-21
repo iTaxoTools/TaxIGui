@@ -62,11 +62,11 @@ def get_file_info(path: Path):
             path = path,
             size = info.size,
             headers = info.headers,
-            individuals = get_index(info.headers, info.header_individuals),
-            sequences = get_index(info.headers, info.header_sequences),
-            organism = get_index(info.headers, info.header_organism),
-            species = get_index(info.headers, info.header_species),
-            genera = get_index(info.headers, info.header_genus),
+            individuals = info.header_individuals,
+            sequences = info.header_sequences,
+            organism = info.header_organism,
+            species = info.header_species,
+            genera = info.header_genus,
         )
     return InputFile.Unknown(path)
 

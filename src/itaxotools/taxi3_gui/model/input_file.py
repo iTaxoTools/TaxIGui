@@ -18,30 +18,29 @@
 
 from pathlib import Path
 
-from ..types import Type, SequenceReader, ColumnFilter
+from ..types import Type, SequenceReader, ColumnFilter, InputFile
+from ..utility import Instance
 from .common import Object, Property
 
 
 class InputFileModel(Object):
     path = Property(Path)
+    size = Property(int)
 
-    def __init__(self, path):
+    def __init__(self, path, size):
         super().__init__()
         self.path = path
         self.name = path.name
+        self.size = size  # bytes
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
 
 
 class Tabfile(InputFileModel):
-    size = Property(int, 0)
-    headers = Property(list)
-    smart_columns = Property(dict)
+    info = Property(InputFile.Tabfile, None)
 
-    def __init__(self, path: Path, headers: list[str], size=0, **smart_columns):
-        assert len(headers) >= 2
-        super().__init__(path)
-        self.size = size
-        self.headers = headers
-        self.smart_columns = smart_columns
+    def __init__(self, info: InputFile.Tabfile):
+        assert len(info.headers) >= 2
+        super().__init__(info.path, info.size)
+        self.info = info

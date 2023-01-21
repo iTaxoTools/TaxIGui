@@ -530,7 +530,7 @@ class SequenceSelector(InputSelector):
     def setObject(self, object):
         super().setObject(object)
         if object and isinstance(object, SequenceModel2.Tabfile):
-            self.populateCombos(object.file_item.object.headers)
+            self.populateCombos(object.file_item.object.info.headers)
             self.bind(object.properties.index_column, self.setColumnIndex)
             self.bind(self.indexColumnChanged, object.properties.index_column)
             self.bind(object.properties.sequence_column, self.setColumnSequence)
@@ -548,23 +548,21 @@ class SequenceSelector(InputSelector):
         self.controls.index_combo.clear()
         self.controls.sequence_combo.clear()
         for header in headers:
-            self.controls.index_combo.addItem(header, header)
-            self.controls.sequence_combo.addItem(header, header)
+            self.controls.index_combo.addItem(header)
+            self.controls.sequence_combo.addItem(header)
 
-    def setColumnIndex(self, column):
-        row = self.controls.index_combo.findData(column)
-        self.controls.index_combo.setCurrentIndex(row)
+    def setColumnIndex(self, column: int):
+        self.controls.index_combo.setCurrentIndex(column)
 
-    def setColumnSequence(self, column):
-        row = self.controls.sequence_combo.findData(column)
-        self.controls.sequence_combo.setCurrentIndex(row)
+    def setColumnSequence(self, column: int):
+        self.controls.sequence_combo.setCurrentIndex(column)
 
-    def handleIndexColumnChanged(self, row):
-        value = self.controls.index_combo.currentData() if row >= 0 else ''
+    def handleIndexColumnChanged(self, column):
+        value = self.controls.index_combo.currentData() if column >= 0 else -1
         self.indexColumnChanged.emit(value)
 
-    def handleSequenceColumnChanged(self, row):
-        value = self.controls.sequence_combo.currentData() if row >= 0 else ''
+    def handleSequenceColumnChanged(self, column):
+        value = self.controls.sequence_combo.currentData() if column >= 0 else -1
         self.sequenceColumnChanged.emit(value)
 
 
@@ -660,7 +658,7 @@ class PartitionSelector(InputSelector):
     def setObject(self, object):
         super().setObject(object)
         if object and isinstance(object, PartitionModel.Tabfile):
-            self.populateCombos(object.file_item.object.headers)
+            self.populateCombos(object.file_item.object.info.headers)
             self.bind(object.properties.subset_column, self.setColumnSubset)
             self.bind(self.subsetColumnChanged, object.properties.subset_column)
             self.bind(object.properties.individual_column, self.setColumnIndividual)
@@ -681,20 +679,18 @@ class PartitionSelector(InputSelector):
             self.controls.subset_combo.addItem(header, header)
             self.controls.individual_combo.addItem(header, header)
 
-    def setColumnSubset(self, column):
-        row = self.controls.subset_combo.findData(column)
-        self.controls.subset_combo.setCurrentIndex(row)
+    def setColumnSubset(self, column: int):
+        self.controls.subset_combo.setCurrentIndex(column)
 
-    def setColumnIndividual(self, column):
-        row = self.controls.individual_combo.findData(column)
-        self.controls.individual_combo.setCurrentIndex(row)
+    def setColumnIndividual(self, column: int):
+        self.controls.individual_combo.setCurrentIndex(column)
 
-    def handleSubsetColumnChanged(self, row):
-        value = self.controls.subset_combo.currentData() if row >= 0 else ''
+    def handleSubsetColumnChanged(self, column: int):
+        value = self.controls.subset_combo.currentData() if column >= 0 else -1
         self.subsetColumnChanged.emit(value)
 
-    def handleIndividualColumnChanged(self, row):
-        value = self.controls.individual_combo.currentData() if row >= 0 else ''
+    def handleIndividualColumnChanged(self, column: int):
+        value = self.controls.individual_combo.currentData() if column >= 0 else -1
         self.individualColumnChanged.emit(value)
 
 

@@ -47,13 +47,12 @@ class Unknown(InputFile):
 
 @dataclass
 class Tabfile(InputFile):
-    path: Path
     headers: list[str]
-    individuals: int = None
-    sequences: int = None
-    organism: int = None
-    species: int = None
-    genera: int = None
+    individuals: str = None
+    sequences: str = None
+    organism: str = None
+    species: str = None
+    genera: str = None
 
 
 class Entry(NamedTuple):

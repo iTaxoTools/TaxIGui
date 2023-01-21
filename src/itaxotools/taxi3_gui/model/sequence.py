@@ -51,15 +51,21 @@ class SequenceModel2(Object):
 
 
 class Tabfile(SequenceModel2):
-    index_column = Property(str, '')
-    sequence_column = Property(str, '')
+    index_column = Property(int, -1)
+    sequence_column = Property(int, -1)
     index_filter = Property(ColumnFilter, ColumnFilter.All)
     sequence_filter = Property(ColumnFilter, ColumnFilter.All)
 
     def __init__(self, file_item):
         assert isinstance(file_item.object, InputFileModel.Tabfile)
         super().__init__(file_item)
-        headers = file_item.object.headers
-        smart_columns = file_item.object.smart_columns
-        self.index_column = headers[smart_columns.get('individuals', 0)]
-        self.sequence_column = headers[smart_columns.get('sequences', 1)]
+        info = file_item.object.info
+        self.index_column = self._header_get(info.headers, info.individuals)
+        self.sequence_column = self._header_get(info.headers, info.sequences)
+
+    @staticmethod
+    def _header_get(headers: list[str], field: str):
+        try:
+            return headers.index(field)
+        except ValueError:
+            return -1

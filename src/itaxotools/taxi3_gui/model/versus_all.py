@@ -217,7 +217,7 @@ class VersusAllModel(Task):
             if len(info.headers) < 2:
                 self.notification.emit(Notification.Warn('Not enough columns in tabfile.'))
                 return
-            index = app.model.items.add_file(InputFileModel.Tabfile(**info.as_dict()), focus=False)
+            index = app.model.items.add_file(InputFileModel.Tabfile(info), focus=False)
             return index.data(ItemModel.ItemRole)
         else:
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
@@ -243,11 +243,11 @@ class VersusAllModel(Task):
         self.propagate_file_item(file_item)
 
     def set_species_file_from_file_item(self, file_item):
-        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.species)
         self.propagate_file_item(file_item)
 
     def set_genera_file_from_file_item(self, file_item):
-        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.genera)
         self.propagate_file_item(file_item)
 
     def propagate_file_item(self, file_item):
@@ -255,9 +255,9 @@ class VersusAllModel(Task):
             if not self.input_sequences:
                 self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
             if not self.input_species:
-                self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+                self.input_species = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.species)
             if not self.input_genera:
-                self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+                self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.genera)
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
