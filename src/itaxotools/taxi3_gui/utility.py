@@ -258,6 +258,7 @@ class Binding:
         id = cls(signal, slot)
         bind_slot = cls.bindings[id]
         signal.disconnect(bind_slot)
+        return id
 
 
 class Binder(set):
@@ -289,6 +290,7 @@ class Binder(set):
         self,
         source: Union[PropertyRef, QtCore.SignalInstance],
         destination: Union[PropertyRef, Callable],
+        remove=True,
     ):
 
         if isinstance(source, PropertyRef):
@@ -302,12 +304,13 @@ class Binder(set):
             slot = destination
 
         key = Binding._unbind(signal, slot)
-
-        self.remove(key)
+        if remove:
+            self.remove(key)
+        return key
 
     def unbind_all(self):
         for key in self:
-            unbind(key.signal, key.slot)
+            self.unbind(key.signal, key.slot, remove=False)
         self.clear()
 
 
