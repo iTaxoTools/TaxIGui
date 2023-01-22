@@ -237,29 +237,29 @@ class DereplicateView(ObjectView):
 
         self.object = object
 
-        self.unbind_all()
+        self.binder.unbind_all()
 
-        self.bind(object.properties.name, self.controls.title.setText)
-        self.bind(object.properties.ready, self.controls.run.setEnabled)
-        self.bind(object.properties.busy, self.handleBusy)
+        self.binder.bind(object.properties.name, self.controls.title.setText)
+        self.binder.bind(object.properties.ready, self.controls.run.setEnabled)
+        self.binder.bind(object.properties.busy, self.handleBusy)
 
-        self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setText, lambda x: f'{x:.2f}')
-        self.bind(self.controls.similarityThreshold.textEditedSafe, object.properties.similarity_threshold, lambda x: float(x))
+        self.binder.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setText, lambda x: f'{x:.2f}')
+        self.binder.bind(self.controls.similarityThreshold.textEditedSafe, object.properties.similarity_threshold, lambda x: float(x))
 
-        self.bind(object.properties.similarity_threshold, self.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
-        self.bind(self.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
+        self.binder.bind(object.properties.similarity_threshold, self.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
+        self.binder.bind(self.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
 
-        self.bind(object.properties.length_threshold, self.controls.lengthThreshold.setText, lambda x: str(x))
-        self.bind(self.controls.lengthThreshold.textEditedSafe, object.properties.length_threshold, lambda x: int(x) if x else 0)
+        self.binder.bind(object.properties.length_threshold, self.controls.lengthThreshold.setText, lambda x: str(x))
+        self.binder.bind(self.controls.lengthThreshold.textEditedSafe, object.properties.length_threshold, lambda x: int(x) if x else 0)
 
-        self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
-        self.bind(object.properties.comparison_mode, self.handleMode)
-        self.bind(self.controls.comparisonModeSelector.toggled, self.resetSimilarityThreshold)
-        self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
-        self.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
+        self.binder.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
+        self.binder.bind(object.properties.comparison_mode, self.handleMode)
+        self.binder.bind(self.controls.comparisonModeSelector.toggled, self.resetSimilarityThreshold)
+        self.binder.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
+        self.binder.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
 
-        self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
-        self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
+        self.binder.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
+        self.binder.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
 
     def resetSimilarityThreshold(self, mode):
         if mode.type is ComparisonMode.AlignmentFree:

@@ -25,7 +25,7 @@ from itaxotools.common.utility import AttrDict, override
 from .. import app
 from ..model import BulkSequencesModel, Item, ItemModel, Object, SequenceModel
 from ..types import ComparisonMode, PairwiseComparisonConfig
-from ..utility import Guard, bind, unbind
+from ..utility import Guard, Binder
 
 
 class ObjectView(QtWidgets.QFrame):
@@ -33,28 +33,60 @@ class ObjectView(QtWidgets.QFrame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setStyleSheet("""ObjectView{background: Palette(Dark);}""")
-        self.bindings = set()
+        self.binder = Binder()
         self.object = None
 
     def setObject(self, object: Object):
         self.object = object
-        self.updateView()
+        self.binder.unbind_all()
+        self.binder.bind(object.notification, self.showNotification)
 
-    def updateView(self):
-        pass
+    def showNotification(self, notification):
+        icon = {
+            Notification.Info: QtWidgets.QMessageBox.Information,
+            Notification.Warn: QtWidgets.QMessageBox.Warning,
+            Notification.Fail: QtWidgets.QMessageBox.Critical,
+        }[notification.type]
 
-    def bind(self, src, dst, proxy=None):
-        key = bind(src, dst, proxy)
-        self.bindings.add(key)
+        msgBox = QtWidgets.QMessageBox(self.window())
+        msgBox.setWindowTitle(app.title)
+        msgBox.setIcon(icon)
+        msgBox.setText(notification.text)
+        msgBox.setDetailedText(notification.info)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        self.window().msgShow(msgBox)
 
-    def unbind(self, src, dst):
-        key = unbind(src, dst)
-        self.bindings.remove(key)
+    def getOpenPath(self, caption='Open File', dir='', filter=''):
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self.window(), f'{app.title} - {caption}', dir, filter=filter)
+        if not filename:
+            return None
+        return Path(filename)
 
-    def unbind_all(self):
-        for key in self.bindings:
-            unbind(key.signal, key.slot)
-        self.bindings.clear()
+    def getSavePath(self, caption='Open File', dir=''):
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self.window(), f'{app.title} - {caption}', dir)
+        if not filename:
+            return None
+        return Path(filename)
+
+    def getExistingDirectory(self, caption='Open File', dir=''):
+        filename = QtWidgets.QFileDialog.getExistingDirectory(
+            self.window(), f'{app.title} - {caption}', dir)
+        if not filename:
+            return None
+        return Path(filename)
+
+    def getConfirmation(self, title='Confirmation', text='Are you sure?'):
+        msgBox = QtWidgets.QMessageBox(self)
+        msgBox.setWindowTitle(f'{app.title} - {title}')
+        msgBox.setIcon(QtWidgets.QMessageBox.Question)
+        msgBox.setText(text)
+        msgBox.setStandardButtons(
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        msgBox.setDefaultButton(QtWidgets.QMessageBox.No)
+        confirm = self.window().msgShow(msgBox)
+        return confirm == QtWidgets.QMessageBox.Yes
 
 
 class TaskView(ObjectView):
@@ -71,6 +103,7 @@ class Card(QtWidgets.QFrame):
         self.controls = AttrDict()
 
         layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(16, 10, 16, 10)
         layout.setSpacing(24)
         self.setLayout(layout)
 
@@ -290,7 +323,6 @@ class NoWheelComboBox(QtWidgets.QComboBox):
 
 
 class GLineEdit(QtWidgets.QLineEdit):
-
     textEditedSafe = QtCore.Signal(str)
 
     def __init__(self, *args, **kwargs):
@@ -331,3 +363,254 @@ class GSpinBox(QtWidgets.QSpinBox):
     @override
     def wheelEvent(self, event):
         event.ignore()
+
+
+class LongLabel(QtWidgets.QLabel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        self.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
+        self.setWordWrap(True)
+
+        action = QtGui.QAction('&Copy', self)
+        action.triggered.connect(self.copy)
+        self.addAction(action)
+
+        action = QtGui.QAction(self)
+        action.setSeparator(True)
+        self.addAction(action)
+
+        action = QtGui.QAction('Select &All', self)
+        action.triggered.connect(self.select)
+        self.addAction(action)
+
+    def copy(self):
+        text = self.selectedText()
+        QtWidgets.QApplication.clipboard().setText(text)
+
+    def select(self):
+        self.setSelection(0, len(self.text()))
+
+
+class RadioButtonGroup(QtCore.QObject):
+    valueChanged = QtCore.Signal(object)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.members = dict()
+        self.value = None
+
+    def add(self, widget, value):
+        self.members[widget] = value
+        widget.toggled.connect(self.handleToggle)
+
+    def handleToggle(self, checked):
+        if not checked:
+            return
+        self.value = self.members[self.sender()]
+        self.valueChanged.emit(self.value)
+
+    def setValue(self, newValue):
+        self.value = newValue
+        for widget, value in self.members.items():
+            widget.setChecked(value == newValue)
+
+
+class NoWheelRadioButton(QtWidgets.QRadioButton):
+    # Fix scrolling when hovering disabled button
+    def event(self, event):
+        if isinstance(event, QtGui.QWheelEvent):
+            event.ignore()
+            return False
+        return super().event(event)
+
+
+class RichRadioButton(NoWheelRadioButton):
+    def __init__(self, text, desc, parent=None):
+        super().__init__(text, parent)
+        self.desc = desc
+        self.setStyleSheet("""
+            RichRadioButton {
+                letter-spacing: 1px;
+                font-weight: bold;
+            }""")
+        font = self.font()
+        font.setBold(False)
+        font.setLetterSpacing(QtGui.QFont.PercentageSpacing, 0)
+        self.small_font = font
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        painter.setFont(self.small_font)
+        width = self.size().width()
+        height = self.size().height()
+        sofar = super().sizeHint().width()
+
+        rect = QtCore.QRect(sofar, 0, width - sofar, height)
+        flags = QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
+        painter.drawText(rect, flags, self.desc)
+
+        painter.end()
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        x = event.localPos().x()
+        w = self.sizeHint().width()
+        if x < w:
+            self.setChecked(True)
+
+    def sizeHint(self):
+        metrics = QtGui.QFontMetrics(self.small_font)
+        extra = metrics.horizontalAdvance(self.desc)
+        size = super().sizeHint()
+        size += QtCore.QSize(extra, 0)
+        return size
+
+
+class SpinningCircle(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.handleTimer)
+        self.timerStep = 10
+        self.radius = 8
+        self.period = 2
+        self.span = 120
+        self.width = 2
+
+    def setVisible(self, visible):
+        super().setVisible(visible)
+        if visible:
+            self.start()
+        else:
+            self.stop()
+
+    def start(self):
+        self.timer.start(self.timerStep)
+
+    def stop(self):
+        self.timer.stop()
+
+    def handleTimer(self):
+        self.repaint()
+
+    def sizeHint(self):
+        diameter = (self.radius + self.width) * 2
+        return QtCore.QSize(diameter, diameter)
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter()
+        painter.begin(self)
+
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setBrush(QtCore.Qt.NoBrush)
+
+        x = self.size().width()/2
+        y = self.size().height()/2
+        painter.translate(QtCore.QPoint(x, y))
+
+        palette = QtGui.QGuiApplication.palette()
+        weak = palette.color(QtGui.QPalette.Mid)
+        bold = palette.color(QtGui.QPalette.Shadow)
+
+        rad = self.radius
+        rect = QtCore.QRect(-rad, -rad, 2 * rad, 2 * rad)
+
+        painter.setPen(QtGui.QPen(weak, self.width, QtCore.Qt.SolidLine))
+        painter.drawEllipse(rect)
+
+        period_ns = int(self.period * 10**9)
+        ns = time_ns() % period_ns
+        degrees = - 360 * ns / period_ns
+        painter.setPen(QtGui.QPen(bold, self.width, QtCore.Qt.SolidLine))
+        painter.drawArc(rect, degrees * 16, self.span * 16)
+
+        painter.end()
+
+
+class CategoryButton(QtWidgets.QAbstractButton):
+    def __init__(self, text, parent=None):
+        super().__init__(parent)
+        self.setCursor(QtCore.Qt.PointingHandCursor)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Maximum,
+            QtWidgets.QSizePolicy.Policy.Preferred)
+        self.setMouseTracking(True)
+        self.setCheckable(True)
+        self.setText(text)
+        self.hovered = False
+        self.triangle_pixels = 38
+        self.grayed = False
+
+        self.toggled.connect(self.handleChecked)
+
+    def setGray(self, gray):
+        self.grayed = gray
+
+    def enterEvent(self, event):
+        self.hovered = True
+
+    def leaveEvent(self, event):
+        self.hovered = False
+
+    def handleChecked(self, checked):
+        self.checked = checked
+
+    def _fontSize(self):
+        return self.fontMetrics().size(QtCore.Qt.TextSingleLine, self.text())
+
+    def sizeHint(self):
+        return self._fontSize() + QtCore.QSize(self.triangle_pixels, 0)
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter()
+        painter.begin(self)
+
+        palette = QtGui.QGuiApplication.palette()
+        weak = palette.color(QtGui.QPalette.Mid)
+        mild = palette.color(QtGui.QPalette.Dark)
+        bold = palette.color(QtGui.QPalette.Shadow)
+
+        color = weak if self.grayed else bold
+        if self.grayed:
+            painter.setPen(QtGui.QPen(mild, 1, QtCore.Qt.SolidLine))
+
+        up_triangle = QtGui.QPolygon([
+            QtCore.QPoint(-6, 3),
+            QtCore.QPoint(6, 3),
+            QtCore.QPoint(0, -3)])
+
+        down_triangle = QtGui.QPolygon([
+            QtCore.QPoint(-6, -3),
+            QtCore.QPoint(6, -3),
+            QtCore.QPoint(0, 3)])
+
+        if self.isChecked():
+            triangle = up_triangle
+        else:
+            triangle = down_triangle
+
+        rect = QtCore.QRect(QtCore.QPoint(0, 0), self._fontSize())
+
+        painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.text())
+
+        if self.hovered:
+            painter.save()
+            painter.translate(0, -1)
+            painter.setPen(QtGui.QPen(color, 1, QtCore.Qt.SolidLine))
+            painter.drawLine(rect.bottomLeft(), rect.bottomRight())
+            painter.restore()
+
+        painter.save()
+        painter.translate(self._fontSize().width(), self._fontSize().height() / 2)
+        painter.translate(self.triangle_pixels / 2, 1)
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(QtGui.QBrush(color))
+        painter.drawPolygon(triangle)
+        painter.restore()
+
+        painter.end()

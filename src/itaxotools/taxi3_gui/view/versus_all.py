@@ -23,7 +23,7 @@ from pathlib import Path
 from itaxotools.common.utility import AttrDict, override
 
 from .. import app
-from ..utility import Guard, bind, unbind, type_convert, human_readable_size
+from ..utility import Guard, Binder, type_convert, human_readable_size
 from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
 from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
@@ -344,7 +344,7 @@ class InputSelector(Card):
 
     def __init__(self, text, parent=None, model=app.model.items):
         super().__init__(parent)
-        self.bindings = set()
+        self.binder = Binder()
         self._guard = Guard()
         self.draw_main(text, model)
         self.draw_config()
@@ -418,20 +418,7 @@ class InputSelector(Card):
         with self._guard:
             self.controls.combo.setCurrentIndex(row)
 
-        self.unbind_all()
-
-    def bind(self, src, dst, proxy=None):
-        key = bind(src, dst, proxy)
-        self.bindings.add(key)
-
-    def unbind(self, src, dst):
-        key = unbind(src, dst)
-        self.bindings.remove(key)
-
-    def unbind_all(self):
-        for key in self.bindings:
-            unbind(key.signal, key.slot)
-        self.bindings.clear()
+        self.binder.unbind_all()
 
     def setBusy(self, busy: bool):
         self.setEnabled(True)
@@ -531,15 +518,15 @@ class SequenceSelector(InputSelector):
         super().setObject(object)
         if object and isinstance(object, SequenceModel2.Tabfile):
             self.populateCombos(object.file_item.object.info.headers)
-            self.bind(object.properties.index_column, self.setColumnIndex)
-            self.bind(self.indexColumnChanged, object.properties.index_column)
-            self.bind(object.properties.sequence_column, self.setColumnSequence)
-            self.bind(self.sequenceColumnChanged, object.properties.sequence_column)
-            self.bind(object.properties.index_filter, self.controls.index_filter.setValue)
-            self.bind(self.controls.index_filter.valueChanged, object.properties.index_filter)
-            self.bind(object.properties.sequence_filter, self.controls.sequence_filter.setValue)
-            self.bind(self.controls.sequence_filter.valueChanged, object.properties.sequence_filter)
-            self.bind(object.file_item.object.properties.size, self.controls.file_size.setText, lambda x: human_readable_size(x))
+            self.binder.bind(object.properties.index_column, self.setColumnIndex)
+            self.binder.bind(self.indexColumnChanged, object.properties.index_column)
+            self.binder.bind(object.properties.sequence_column, self.setColumnSequence)
+            self.binder.bind(self.sequenceColumnChanged, object.properties.sequence_column)
+            self.binder.bind(object.properties.index_filter, self.controls.index_filter.setValue)
+            self.binder.bind(self.controls.index_filter.valueChanged, object.properties.index_filter)
+            self.binder.bind(object.properties.sequence_filter, self.controls.sequence_filter.setValue)
+            self.binder.bind(self.controls.sequence_filter.valueChanged, object.properties.sequence_filter)
+            self.binder.bind(object.file_item.object.properties.size, self.controls.file_size.setText, lambda x: human_readable_size(x))
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)
@@ -659,15 +646,15 @@ class PartitionSelector(InputSelector):
         super().setObject(object)
         if object and isinstance(object, PartitionModel.Tabfile):
             self.populateCombos(object.file_item.object.info.headers)
-            self.bind(object.properties.subset_column, self.setColumnSubset)
-            self.bind(self.subsetColumnChanged, object.properties.subset_column)
-            self.bind(object.properties.individual_column, self.setColumnIndividual)
-            self.bind(self.individualColumnChanged, object.properties.individual_column)
-            self.bind(object.properties.subset_filter, self.controls.subset_filter.setValue)
-            self.bind(self.controls.subset_filter.valueChanged, object.properties.subset_filter)
-            self.bind(object.properties.individual_filter, self.controls.individual_filter.setValue)
-            self.bind(self.controls.individual_filter.valueChanged, object.properties.individual_filter)
-            self.bind(object.file_item.object.properties.size, self.controls.file_size.setText, lambda x: human_readable_size(x))
+            self.binder.bind(object.properties.subset_column, self.setColumnSubset)
+            self.binder.bind(self.subsetColumnChanged, object.properties.subset_column)
+            self.binder.bind(object.properties.individual_column, self.setColumnIndividual)
+            self.binder.bind(self.individualColumnChanged, object.properties.individual_column)
+            self.binder.bind(object.properties.subset_filter, self.controls.subset_filter.setValue)
+            self.binder.bind(self.controls.subset_filter.valueChanged, object.properties.subset_filter)
+            self.binder.bind(object.properties.individual_filter, self.controls.individual_filter.setValue)
+            self.binder.bind(self.controls.individual_filter.valueChanged, object.properties.individual_filter)
+            self.binder.bind(object.file_item.object.properties.size, self.controls.file_size.setText, lambda x: human_readable_size(x))
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)
@@ -1054,88 +1041,88 @@ class VersusAllView(ObjectView):
 
     def setObject(self, object):
         self.object = object
-        self.unbind_all()
+        self.binder.unbind_all()
 
-        self.bind(object.notification, self.showNotification)
-        self.bind(object.progression, self.cards.progress.showProgress)
+        self.binder.bind(object.notification, self.showNotification)
+        self.binder.bind(object.progression, self.cards.progress.showProgress)
 
-        self.bind(self.cards.title.run, object.start)
-        self.bind(self.cards.title.cancel, object.stop)
-        self.bind(object.properties.name, self.cards.title.setTitle)
-        self.bind(object.properties.ready, self.cards.title.setReady)
-        self.bind(object.properties.busy_main, self.setBusyMain)
-        self.bind(object.properties.busy_sequence, self.setBusySequence)
-        self.bind(object.properties.busy_species, self.setBusySpecies)
-        self.bind(object.properties.busy_genera, self.setBusyGenera)
+        self.binder.bind(self.cards.title.run, object.start)
+        self.binder.bind(self.cards.title.cancel, object.stop)
+        self.binder.bind(object.properties.name, self.cards.title.setTitle)
+        self.binder.bind(object.properties.ready, self.cards.title.setReady)
+        self.binder.bind(object.properties.busy_main, self.setBusyMain)
+        self.binder.bind(object.properties.busy_sequence, self.setBusySequence)
+        self.binder.bind(object.properties.busy_species, self.setBusySpecies)
+        self.binder.bind(object.properties.busy_genera, self.setBusyGenera)
 
-        self.bind(self.cards.input_sequences.itemChanged, object.set_sequence_file_from_file_item)
-        self.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
-        self.bind(self.cards.input_sequences.addInputFile, object.add_sequence_file)
+        self.binder.bind(self.cards.input_sequences.itemChanged, object.set_sequence_file_from_file_item)
+        self.binder.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
+        self.binder.bind(self.cards.input_sequences.addInputFile, object.add_sequence_file)
 
-        self.bind(self.cards.perform_species.toggled, object.properties.perform_species)
-        self.bind(object.properties.perform_species, self.cards.perform_species.setChecked)
-        self.bind(object.properties.perform_species, self.cards.input_species.setVisible)
+        self.binder.bind(self.cards.perform_species.toggled, object.properties.perform_species)
+        self.binder.bind(object.properties.perform_species, self.cards.perform_species.setChecked)
+        self.binder.bind(object.properties.perform_species, self.cards.input_species.setVisible)
 
-        self.bind(self.cards.input_species.itemChanged, object.set_species_file_from_file_item)
-        self.bind(object.properties.input_species, self.cards.input_species.setObject)
-        self.bind(self.cards.input_species.addInputFile, object.add_species_file)
+        self.binder.bind(self.cards.input_species.itemChanged, object.set_species_file_from_file_item)
+        self.binder.bind(object.properties.input_species, self.cards.input_species.setObject)
+        self.binder.bind(self.cards.input_species.addInputFile, object.add_species_file)
 
-        self.bind(self.cards.perform_genera.toggled, object.properties.perform_genera)
-        self.bind(object.properties.perform_genera, self.cards.perform_genera.setChecked)
-        self.bind(object.properties.perform_genera, self.cards.input_genera.setVisible)
+        self.binder.bind(self.cards.perform_genera.toggled, object.properties.perform_genera)
+        self.binder.bind(object.properties.perform_genera, self.cards.perform_genera.setChecked)
+        self.binder.bind(object.properties.perform_genera, self.cards.input_genera.setVisible)
 
-        self.bind(self.cards.input_genera.itemChanged, object.set_genera_file_from_file_item)
-        self.bind(object.properties.input_genera, self.cards.input_genera.setObject)
-        self.bind(self.cards.input_genera.addInputFile, object.add_genera_file)
+        self.binder.bind(self.cards.input_genera.itemChanged, object.set_genera_file_from_file_item)
+        self.binder.bind(object.properties.input_genera, self.cards.input_genera.setObject)
+        self.binder.bind(self.cards.input_genera.addInputFile, object.add_genera_file)
 
-        self.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
-        self.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
-        self.bind(self.cards.alignment_mode.controls.write_pairs.toggled, object.properties.alignment_write_pairs)
-        self.bind(object.properties.alignment_write_pairs, self.cards.alignment_mode.controls.write_pairs.setChecked)
-        self.bind(self.cards.alignment_mode.resetScores, object.pairwise_scores.reset)
+        self.binder.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
+        self.binder.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
+        self.binder.bind(self.cards.alignment_mode.controls.write_pairs.toggled, object.properties.alignment_write_pairs)
+        self.binder.bind(object.properties.alignment_write_pairs, self.cards.alignment_mode.controls.write_pairs.setChecked)
+        self.binder.bind(self.cards.alignment_mode.resetScores, object.pairwise_scores.reset)
         for score in PairwiseScore:
-            self.bind(
+            self.binder.bind(
                 self.cards.alignment_mode.controls.score_fields[score.key].textEditedSafe,
                 object.pairwise_scores.properties[score.key],
                 lambda x: type_convert(x, int, None))
-            self.bind(
+            self.binder.bind(
                 object.pairwise_scores.properties[score.key],
                 self.cards.alignment_mode.controls.score_fields[score.key].setText,
                 lambda x: str(x) if x is not None else '')
 
         for key in (metric.key for metric in DistanceMetric):
-            self.bind(self.cards.distance_metrics.controls.metrics[key].toggled, object.distance_metrics.properties[key])
-            self.bind(object.distance_metrics.properties[key], self.cards.distance_metrics.controls.metrics[key].setChecked)
+            self.binder.bind(self.cards.distance_metrics.controls.metrics[key].toggled, object.distance_metrics.properties[key])
+            self.binder.bind(object.distance_metrics.properties[key], self.cards.distance_metrics.controls.metrics[key].setChecked)
 
-        self.bind(self.cards.distance_metrics.controls.bbc_k.textEditedSafe, object.distance_metrics.properties.bbc_k, lambda x: type_convert(x, int, None))
-        self.bind(object.distance_metrics.properties.bbc_k, self.cards.distance_metrics.controls.bbc_k.setText, lambda x: str(x) if x is not None else '')
-        self.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k.setEnabled)
-        self.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k_label.setEnabled)
+        self.binder.bind(self.cards.distance_metrics.controls.bbc_k.textEditedSafe, object.distance_metrics.properties.bbc_k, lambda x: type_convert(x, int, None))
+        self.binder.bind(object.distance_metrics.properties.bbc_k, self.cards.distance_metrics.controls.bbc_k.setText, lambda x: str(x) if x is not None else '')
+        self.binder.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k.setEnabled)
+        self.binder.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k_label.setEnabled)
 
-        self.bind(self.cards.distance_metrics.controls.write_linear.toggled, object.properties.distance_linear)
-        self.bind(object.properties.distance_linear, self.cards.distance_metrics.controls.write_linear.setChecked)
-        self.bind(self.cards.distance_metrics.controls.write_matricial.toggled, object.properties.distance_matricial)
-        self.bind(object.properties.distance_matricial, self.cards.distance_metrics.controls.write_matricial.setChecked)
+        self.binder.bind(self.cards.distance_metrics.controls.write_linear.toggled, object.properties.distance_linear)
+        self.binder.bind(object.properties.distance_linear, self.cards.distance_metrics.controls.write_linear.setChecked)
+        self.binder.bind(self.cards.distance_metrics.controls.write_matricial.toggled, object.properties.distance_matricial)
+        self.binder.bind(object.properties.distance_matricial, self.cards.distance_metrics.controls.write_matricial.setChecked)
 
-        self.bind(self.cards.distance_metrics.controls.percentile.valueChanged, object.properties.distance_percentile)
-        self.bind(object.properties.distance_percentile, self.cards.distance_metrics.controls.percentile.setValue)
+        self.binder.bind(self.cards.distance_metrics.controls.percentile.valueChanged, object.properties.distance_percentile)
+        self.binder.bind(object.properties.distance_percentile, self.cards.distance_metrics.controls.percentile.setValue)
 
-        self.bind(self.cards.distance_metrics.controls.precision.textEditedSafe, object.properties.distance_precision, lambda x: type_convert(x, int, None))
-        self.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
-        self.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
-        self.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
+        self.binder.bind(self.cards.distance_metrics.controls.precision.textEditedSafe, object.properties.distance_precision, lambda x: type_convert(x, int, None))
+        self.binder.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
+        self.binder.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
+        self.binder.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
 
         for group in StatisticsGroup:
-            self.bind(self.cards.stats_options.controls[group.key].toggled, object.statistics_groups.properties[group.key])
-            self.bind(object.statistics_groups.properties[group.key], self.cards.stats_options.controls[group.key].setChecked)
+            self.binder.bind(self.cards.stats_options.controls[group.key].toggled, object.statistics_groups.properties[group.key])
+            self.binder.bind(object.statistics_groups.properties[group.key], self.cards.stats_options.controls[group.key].setChecked)
 
-        self.bind(object.properties.plot_histograms, self.cards.plot_options.controls.plot.setChecked)
-        self.bind(object.properties.plot_binwidth, self.cards.plot_options.controls.binwidth.setText, lambda x: str(x) if x is not None else '')
-        self.bind(self.cards.plot_options.controls.plot.toggled, object.properties.plot_histograms)
-        self.bind(self.cards.plot_options.controls.binwidth.textEditedSafe, object.properties.plot_binwidth, lambda x: type_convert(x, float, None))
+        self.binder.bind(object.properties.plot_histograms, self.cards.plot_options.controls.plot.setChecked)
+        self.binder.bind(object.properties.plot_binwidth, self.cards.plot_options.controls.binwidth.setText, lambda x: str(x) if x is not None else '')
+        self.binder.bind(self.cards.plot_options.controls.plot.toggled, object.properties.plot_histograms)
+        self.binder.bind(self.cards.plot_options.controls.binwidth.textEditedSafe, object.properties.plot_binwidth, lambda x: type_convert(x, float, None))
 
-        self.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
-        self.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
+        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
+        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
 
     def setBusyMain(self, busy: bool):
         for card in self.cards:

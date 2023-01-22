@@ -376,41 +376,41 @@ class DecontaminateView(ObjectView):
 
         self.object = object
 
-        self.unbind_all()
+        self.binder.unbind_all()
 
-        self.bind(object.properties.name, self.controls.title.setText)
-        self.bind(object.properties.ready, self.controls.run.setEnabled)
-        self.bind(object.properties.busy, self.handleBusy)
+        self.binder.bind(object.properties.name, self.controls.title.setText)
+        self.binder.bind(object.properties.ready, self.controls.run.setEnabled)
+        self.binder.bind(object.properties.busy, self.handleBusy)
 
-        self.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setText, lambda x: f'{x:.2f}')
-        self.bind(self.controls.similarityThreshold.textEditedSafe, object.properties.similarity_threshold, lambda x: float(x))
+        self.binder.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setText, lambda x: f'{x:.2f}')
+        self.binder.bind(self.controls.similarityThreshold.textEditedSafe, object.properties.similarity_threshold, lambda x: float(x))
 
-        self.bind(object.properties.similarity_threshold, self.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
-        self.bind(self.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
+        self.binder.bind(object.properties.similarity_threshold, self.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
+        self.binder.bind(self.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
 
-        self.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
-        self.bind(object.properties.comparison_mode, self.handleMode)
-        self.bind(self.controls.comparisonModeSelector.toggled, self.resetSimilarityThreshold)
-        self.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
-        self.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
+        self.binder.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
+        self.binder.bind(object.properties.comparison_mode, self.handleMode)
+        self.binder.bind(self.controls.comparisonModeSelector.toggled, self.resetSimilarityThreshold)
+        self.binder.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
+        self.binder.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
 
-        self.bind(object.properties.outgroup_weight, self.controls.weightSelector.setOutgroupWeight)
-        self.bind(object.properties.ingroup_weight, self.controls.weightSelector.setIngroupWeight)
-        self.bind(self.controls.weightSelector.edited_outgroup, object.properties.outgroup_weight)
-        self.bind(self.controls.weightSelector.edited_ingroup, object.properties.ingroup_weight)
+        self.binder.bind(object.properties.outgroup_weight, self.controls.weightSelector.setOutgroupWeight)
+        self.binder.bind(object.properties.ingroup_weight, self.controls.weightSelector.setIngroupWeight)
+        self.binder.bind(self.controls.weightSelector.edited_outgroup, object.properties.outgroup_weight)
+        self.binder.bind(self.controls.weightSelector.edited_ingroup, object.properties.ingroup_weight)
 
-        self.bind(object.properties.mode, self.controls.mode.setDecontaminateMode)
-        self.bind(self.controls.mode.toggled, object.properties.mode)
-        self.bind(object.properties.mode, self.handleMode)
+        self.binder.bind(object.properties.mode, self.controls.mode.setDecontaminateMode)
+        self.binder.bind(self.controls.mode.toggled, object.properties.mode)
+        self.binder.bind(object.properties.mode, self.handleMode)
 
-        self.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
-        self.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
+        self.binder.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
+        self.binder.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
 
-        self.bind(object.properties.outgroup_item, self.controls.outgroupItem.setSequenceItem)
-        self.bind(self.controls.outgroupItem.sequenceChanged, object.properties.outgroup_item)
+        self.binder.bind(object.properties.outgroup_item, self.controls.outgroupItem.setSequenceItem)
+        self.binder.bind(self.controls.outgroupItem.sequenceChanged, object.properties.outgroup_item)
 
-        self.bind(object.properties.ingroup_item, self.controls.ingroupItem.setSequenceItem)
-        self.bind(self.controls.ingroupItem.sequenceChanged, object.properties.ingroup_item)
+        self.binder.bind(object.properties.ingroup_item, self.controls.ingroupItem.setSequenceItem)
+        self.binder.bind(self.controls.ingroupItem.sequenceChanged, object.properties.ingroup_item)
 
     def resetSimilarityThreshold(self, mode):
         if mode.type is ComparisonMode.AlignmentFree:

@@ -260,44 +260,55 @@ class Binding:
         signal.disconnect(bind_slot)
 
 
-def bind(
-    source: Union[PropertyRef, QtCore.SignalInstance],
-    destination: Union[PropertyRef, Callable],
-    proxy: Optional[Callable] = None,
-):
+class Binder(set):
 
-    if isinstance(source, PropertyRef):
-        signal = source.notify
-    else:
-        signal = source
+    def bind(
+        self,
+        source: Union[PropertyRef, QtCore.SignalInstance],
+        destination: Union[PropertyRef, Callable],
+        proxy: Optional[Callable] = None,
+    ):
 
-    if isinstance(destination, PropertyRef):
-        slot = destination.set
-    else:
-        slot = destination
+        if isinstance(source, PropertyRef):
+            signal = source.notify
+        else:
+            signal = source
 
-    key = Binding._bind(signal, slot, proxy)
-    if isinstance(source, PropertyRef):
-        source.update()
-    return key
+        if isinstance(destination, PropertyRef):
+            slot = destination.set
+        else:
+            slot = destination
 
+        key = Binding._bind(signal, slot, proxy)
+        if isinstance(source, PropertyRef):
+            source.update()
 
-def unbind(
-    source: Union[PropertyRef, QtCore.SignalInstance],
-    destination: Union[PropertyRef, Callable],
-):
+        self.add(key)
 
-    if isinstance(source, PropertyRef):
-        signal = source.notify
-    else:
-        signal = source
+    def unbind(
+        self,
+        source: Union[PropertyRef, QtCore.SignalInstance],
+        destination: Union[PropertyRef, Callable],
+    ):
 
-    if isinstance(destination, PropertyRef):
-        slot = destination.set
-    else:
-        slot = destination
+        if isinstance(source, PropertyRef):
+            signal = source.notify
+        else:
+            signal = source
 
-    return Binding._unbind(signal, slot)
+        if isinstance(destination, PropertyRef):
+            slot = destination.set
+        else:
+            slot = destination
+
+        key = Binding._unbind(signal, slot)
+
+        self.remove(key)
+
+    def unbind_all(self):
+        for key in self:
+            unbind(key.signal, key.slot)
+        self.clear()
 
 
 class Guard:
