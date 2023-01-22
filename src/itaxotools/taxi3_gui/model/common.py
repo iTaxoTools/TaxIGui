@@ -134,6 +134,14 @@ class Task(Object):
             return
         self.worker.reset()
 
+    def save(self):
+        """Slot for saving results"""
+        pass
+
+    def clear(self):
+        """Slot for discarding results"""
+        pass
+
     def readyTriggers(self) -> List[PropertyRef]:
         """Overload this to set properties as ready triggers"""
         return []

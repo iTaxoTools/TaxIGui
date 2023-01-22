@@ -36,7 +36,7 @@ from .sidebar import SideBar
 
 
 class MainState(PropertyObject):
-    dirty_data = Property(bool, False)
+    dirty_data = Property(bool, True)
     busy = Property(bool, False)
 
 
@@ -82,21 +82,18 @@ class Main(ToolDialog):
         action.setIcon(app.resources.icons.run)
         action.setShortcut('Ctrl+R')
         action.setStatusTip('Run MolD')
-        action.setVisible(False)
         self.actions.start = action
 
         action = QtGui.QAction('S&top', self)
         action.setIcon(app.resources.icons.stop)
         action.setShortcut(QtGui.QKeySequence.Cancel)
         action.setStatusTip('Stop MolD')
-        action.setVisible(False)
         self.actions.stop = action
 
         action = QtGui.QAction('Cl&ear', self)
         action.setIcon(app.resources.icons.clear)
         action.setShortcut('Ctrl+E')
         action.setStatusTip('Stop MolD')
-        action.setVisible(False)
         self.actions.clear = action
 
     def draw(self):

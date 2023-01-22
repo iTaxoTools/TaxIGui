@@ -19,6 +19,7 @@
 from PySide6 import QtCore, QtWidgets
 
 from .. import app
+from ..utility import Binder
 from ..model import (
     BulkSequencesModel, DecontaminateModel, DereplicateModel, Item,
     SequenceModel, Task, VersusAllModel)
@@ -38,10 +39,12 @@ class ScrollArea(QtWidgets.QScrollArea):
 
 class Body(QtWidgets.QStackedWidget):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.actions = parent.actions
         self.activeItem = None
         self.activeIndex = None
+        self.binder = Binder()
         self.areas = dict()
 
         self.dashboard = Dashboard(self)
@@ -53,6 +56,8 @@ class Body(QtWidgets.QStackedWidget):
         self.addView(DereplicateModel, DereplicateView)
         self.addView(DecontaminateModel, DecontaminateView)
         self.addView(VersusAllModel, VersusAllView)
+
+        self.showDashboard()
 
     def addView(self, object_type, view_type, *args, **kwargs):
         view = view_type(parent=self, *args, **kwargs)
@@ -75,10 +80,34 @@ class Body(QtWidgets.QStackedWidget):
         view.setObject(object)
         self.setCurrentWidget(area)
         area.ensureVisible(0, 0)
+        if isinstance(object, Task):
+            self.bindTask(object)
         return True
+
+    def bindTask(self, task: Task):
+        self.binder.unbind_all()
+        self.actions.open.setEnabled(False)
+
+        self.binder.bind(self.actions.save.triggered, task.save)
+        self.binder.bind(self.actions.start.triggered, task.start)
+        self.binder.bind(self.actions.stop.triggered, task.stop)
+        self.binder.bind(self.actions.clear.triggered, task.clear)
+
+        self.binder.bind(task.properties.ready, self.actions.start.setEnabled)
+        self.binder.bind(task.properties.editable, self.actions.start.setVisible)
+        self.binder.bind(task.properties.busy, self.actions.stop.setVisible)
+        self.binder.bind(task.properties.done, self.actions.save.setEnabled)
+        self.binder.bind(task.properties.done, self.actions.clear.setVisible)
 
     def removeActiveItem(self):
         app.model.items.remove_index(self.activeIndex)
 
     def showDashboard(self):
         self.setCurrentWidget(self.dashboard)
+        self.binder.unbind_all()
+        self.actions.stop.setVisible(False)
+        self.actions.clear.setVisible(False)
+        self.actions.start.setVisible(True)
+        self.actions.start.setEnabled(False)
+        self.actions.save.setEnabled(False)
+        self.actions.open.setEnabled(True)

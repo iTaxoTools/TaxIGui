@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Taxi3Gui - GUI for Taxi3
+# MolDGui - Module and Gui for MolD
 # Copyright (C) 2022  Patmanidis Stefanos
 #
 # This program is free software: you can redistribute it and/or modify
@@ -69,15 +69,17 @@ class ToolBar(QtWidgets.QToolBar):
                 background: palette(Window);
                 border: 1px solid transparent;
                 }
+            QToolButton:disabled {
+                color: palette(Mid);
+                }
             QToolButton:pressed {
                 background: palette(Midlight);
                 border: 1px solid palette(Mid);
                 border-radius: 2px;
                 }
             QToolButton[popupMode="2"]:pressed {
-                padding-bottom: 5px;
-                border: 1px solid palette(Dark);
-                margin: 5px 1px 0px 1px;
+                padding: 0px 8px 1px 8px;
+                margin: 0px 0px -1px 0px;
                 border-bottom-right-radius: 0px;
                 border-bottom-left-radius: 0px;
                 }
