@@ -354,9 +354,6 @@ class InputSelector(Card):
 
 
 class SequenceSelector(InputSelector):
-    indexColumnChanged = QtCore.Signal(str)
-    sequenceColumnChanged = QtCore.Signal(str)
-
     def set_model(self, combo, model):
         proxy_model = ItemProxyModel()
         proxy_model.setSourceModel(model, model.files)
@@ -401,9 +398,6 @@ class SequenceSelector(InputSelector):
         index_combo = NoWheelComboBox()
         sequence_combo = NoWheelComboBox()
 
-        index_combo.currentIndexChanged.connect(self.handleIndexColumnChanged)
-        sequence_combo.currentIndexChanged.connect(self.handleSequenceColumnChanged)
-
         layout.addWidget(index_combo, 0, column)
         layout.addWidget(sequence_combo, 1, column)
         layout.setColumnStretch(column, 1)
@@ -441,10 +435,10 @@ class SequenceSelector(InputSelector):
         super().setObject(object)
         if object and isinstance(object, SequenceModel2.Tabfile):
             self.populateCombos(object.file_item.object.info.headers)
-            self.binder.bind(object.properties.index_column, self.setColumnIndex)
-            self.binder.bind(self.indexColumnChanged, object.properties.index_column)
-            self.binder.bind(object.properties.sequence_column, self.setColumnSequence)
-            self.binder.bind(self.sequenceColumnChanged, object.properties.sequence_column)
+            self.binder.bind(object.properties.index_column, self.controls.index_combo.setCurrentIndex)
+            self.binder.bind(self.controls.index_combo.currentIndexChanged, object.properties.index_column)
+            self.binder.bind(object.properties.sequence_column, self.controls.sequence_combo.setCurrentIndex)
+            self.binder.bind(self.controls.sequence_combo.currentIndexChanged, object.properties.sequence_column)
             self.binder.bind(object.properties.index_filter, self.controls.index_filter.setValue)
             self.binder.bind(self.controls.index_filter.valueChanged, object.properties.index_filter)
             self.binder.bind(object.properties.sequence_filter, self.controls.sequence_filter.setValue)
@@ -461,27 +455,8 @@ class SequenceSelector(InputSelector):
             self.controls.index_combo.addItem(header)
             self.controls.sequence_combo.addItem(header)
 
-    def setColumnIndex(self, column: int):
-        print('setColumnIndex', repr(column))
-        self.controls.index_combo.setCurrentIndex(column)
-
-    def setColumnSequence(self, column: int):
-        self.controls.sequence_combo.setCurrentIndex(column)
-
-    def handleIndexColumnChanged(self, column):
-        print('handleIndexColumnChanged', repr(column))
-        value = self.controls.index_combo.currentData() if column >= 0 else -1
-        self.indexColumnChanged.emit(value)
-
-    def handleSequenceColumnChanged(self, column):
-        value = self.controls.sequence_combo.currentData() if column >= 0 else -1
-        self.sequenceColumnChanged.emit(value)
-
 
 class PartitionSelector(InputSelector):
-    subsetColumnChanged = QtCore.Signal(str)
-    individualColumnChanged = QtCore.Signal(str)
-
     def __init__(self, text, subset_text=None, individual_text=None, parent=None, model=app.model.items):
         self._subset_text = subset_text or 'Subsets'
         self._individual_text = individual_text or 'Individuals'
@@ -531,9 +506,6 @@ class PartitionSelector(InputSelector):
         subset_combo = NoWheelComboBox()
         individual_combo = NoWheelComboBox()
 
-        subset_combo.currentIndexChanged.connect(self.handleSubsetColumnChanged)
-        individual_combo.currentIndexChanged.connect(self.handleIndividualColumnChanged)
-
         layout.addWidget(subset_combo, 0, column)
         layout.addWidget(individual_combo, 1, column)
         layout.setColumnStretch(column, 1)
@@ -571,10 +543,10 @@ class PartitionSelector(InputSelector):
         super().setObject(object)
         if object and isinstance(object, PartitionModel.Tabfile):
             self.populateCombos(object.file_item.object.info.headers)
-            self.binder.bind(object.properties.subset_column, self.setColumnSubset)
-            self.binder.bind(self.subsetColumnChanged, object.properties.subset_column)
-            self.binder.bind(object.properties.individual_column, self.setColumnIndividual)
-            self.binder.bind(self.individualColumnChanged, object.properties.individual_column)
+            self.binder.bind(object.properties.subset_column, self.controls.subset_combo.setCurrentIndex)
+            self.binder.bind(self.controls.subset_combo.currentIndexChanged, object.properties.subset_column)
+            self.binder.bind(object.properties.individual_column, self.controls.individual_combo.setCurrentIndex)
+            self.binder.bind(self.controls.individual_combo.currentIndexChanged, object.properties.individual_column)
             self.binder.bind(object.properties.subset_filter, self.controls.subset_filter.setValue)
             self.binder.bind(self.controls.subset_filter.valueChanged, object.properties.subset_filter)
             self.binder.bind(object.properties.individual_filter, self.controls.individual_filter.setValue)
@@ -590,20 +562,6 @@ class PartitionSelector(InputSelector):
         for header in headers:
             self.controls.subset_combo.addItem(header, header)
             self.controls.individual_combo.addItem(header, header)
-
-    def setColumnSubset(self, column: int):
-        self.controls.subset_combo.setCurrentIndex(column)
-
-    def setColumnIndividual(self, column: int):
-        self.controls.individual_combo.setCurrentIndex(column)
-
-    def handleSubsetColumnChanged(self, column: int):
-        value = self.controls.subset_combo.currentData() if column >= 0 else -1
-        self.subsetColumnChanged.emit(value)
-
-    def handleIndividualColumnChanged(self, column: int):
-        value = self.controls.individual_combo.currentData() if column >= 0 else -1
-        self.individualColumnChanged.emit(value)
 
 
 class OptionalCategory(Card):
