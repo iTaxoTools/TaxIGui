@@ -21,7 +21,7 @@ import traceback
 from dataclasses import dataclass
 from typing import Any, NamedTuple, Callable, List, Dict
 
-from itaxotools.common.io import PipeIO
+from .io import PipeWriterIO
 
 import itaxotools
 
@@ -48,9 +48,17 @@ class ReportFail(NamedTuple):
     traceback: str
 
 
-class ReportError(NamedTuple):
+class ReportExit(NamedTuple):
     id: Any
     exit_code: int
+
+
+class ReportStop(NamedTuple):
+    id: Any
+
+
+class ReportQuit:
+    pass
 
 
 class ReportProgress(NamedTuple):
@@ -60,26 +68,20 @@ class ReportProgress(NamedTuple):
     maximum: int = 0
 
 
-def loop(initializer, commands, results, progress, pipeIn, pipeOut, pipeErr):
+def loop(commands, results, progress, pipe_out):
     """Wait for commands, send back results"""
 
-    inp = PipeIO(pipeIn, 'r')
-    out = PipeIO(pipeOut, 'w')
-    err = PipeIO(pipeErr, 'w')
+    out = PipeWriterIO(pipe_out, 1)
+    err = PipeWriterIO(pipe_out, 2)
 
-    sys.stdin = inp
     sys.stdout = out
     sys.stderr = err
 
-    def _progress_handler(*args, **kwargs):
+    def progress_handler(*args, **kwargs):
         report = ReportProgress(*args, **kwargs)
         progress.send(report)
 
-    itaxotools.progress_handler = _progress_handler
-
-    if initializer:
-        initializer()
-    results.send(InitDone())
+    itaxotools.progress_handler = progress_handler
 
     while True:
         id, function, args, kwargs = commands.recv()

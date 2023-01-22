@@ -24,7 +24,7 @@ from typing import Any, Callable, List
 
 from itaxotools.common.utility import override
 
-from ..threading import ReportProgress, ReportDone, ReportFail, ReportError, Worker
+from ..threading import ReportProgress, ReportDone, ReportFail, ReportExit, ReportStop, Worker
 from ..types import Notification, Type
 from ..utility import Property, PropertyObject, PropertyRef
 
@@ -71,7 +71,9 @@ class Task(Object):
         self.ready = False
         self.busy = False
 
-        self.worker = Worker(name=self.name, eager=True, init=init)
+        if init:
+            print('Worker init is temporarily ignored')
+        self.worker = Worker(name=self.name, eager=True)
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
         self.worker.error.connect(self.onError)
@@ -94,13 +96,15 @@ class Task(Object):
         self.progression.emit(report)
 
     def onFail(self, report: ReportFail):
-        print(str(report.exception))
-        print(report.traceback)
         self.notification.emit(Notification.Fail(str(report.exception), report.traceback))
         self.busy = False
 
-    def onError(self, report: ReportError):
+    def onError(self, report: ReportExit):
         self.notification.emit(Notification.Fail(f'Process failed with exit code: {report.exit_code}'))
+        self.busy = False
+
+    def onStop(self, report: ReportStop):
+        self.notification.emit(Notification.Warn('Cancelled by user.'))
         self.busy = False
 
     def onDone(self, report: ReportDone):
