@@ -21,6 +21,8 @@ from PySide6 import QtCore
 import itertools
 from collections import defaultdict
 from typing import Any, Callable, List
+from tempfile import TemporaryDirectory
+from pathlib import Path
 
 from itaxotools.common.utility import override
 
@@ -61,36 +63,44 @@ class Task(Object):
     notification = QtCore.Signal(Notification)
     progression = QtCore.Signal(ReportProgress)
 
-    ready = Property(bool)
-    busy = Property(bool)
+    ready = Property(bool, True)
+    busy = Property(bool, False)
+    done = Property(bool, False)
+    editable = Property(bool, True)
 
     counters = defaultdict(lambda: itertools.count(1, 1))
 
     def __init__(self, name=None, init=None):
         super().__init__(name or self._get_next_name())
-        self.ready = False
-        self.busy = False
 
         if init:
             print('Worker init is temporarily ignored')
-        self.worker = Worker(name=self.name, eager=True)
+
+        self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
+        self.temporary_path = Path(self.temporary_directory.name)
+
+        self.worker = Worker(name=self.name, eager=True, log_path=self.temporary_path)
         self.worker.done.connect(self.onDone)
         self.worker.fail.connect(self.onFail)
         self.worker.error.connect(self.onError)
+        self.worker.stop.connect(self.onStop)
         self.worker.progress.connect(self.onProgress)
 
         for property in self.readyTriggers():
             property.notify.connect(self.checkIfReady)
 
+        for property in [
+            self.properties.busy,
+            self.properties.done,
+        ]:
+            property.notify.connect(self.checkEditable)
+
     @classmethod
     def _get_next_name(cls):
         return f'{cls.task_name} #{next(cls.counters[cls.task_name])}'
 
-    def __str__(self):
-        return f'{self.task_name}({repr(self.name)})'
-
     def __repr__(self):
-        return str(self)
+        return f'{self.task_name}({repr(self.name)})'
 
     def onProgress(self, report: ReportProgress):
         self.progression.emit(report)
@@ -108,13 +118,10 @@ class Task(Object):
         self.busy = False
 
     def onDone(self, report: ReportDone):
-        """Overload this to handle results. Must call done()."""
-        self.done()
-
-    def done(self):
-        """Call this at the bottom of onDone()"""
+        """Overload this to handle results"""
         self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
         self.busy = False
+        self.done = True
 
     def start(self):
         """Slot for starting the task"""
@@ -126,8 +133,6 @@ class Task(Object):
         if self.worker is None:
             return
         self.worker.reset()
-        self.notification.emit(Notification.Warn('Cancelled by user.'))
-        self.busy = False
 
     def readyTriggers(self) -> List[PropertyRef]:
         """Overload this to set properties as ready triggers"""
@@ -140,6 +145,9 @@ class Task(Object):
     def isReady(self) -> bool:
         """Overload this to check if ready"""
         return False
+
+    def checkEditable(self):
+        self.editable = not (self.busy or self.done)
 
     def run(self):
         """Called by start(). Overload this with calls to exec()"""

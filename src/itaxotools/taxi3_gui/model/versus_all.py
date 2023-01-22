@@ -101,9 +101,6 @@ class VersusAllModel(Task):
     def __init__(self, name=None):
         super().__init__(name, init=versus_all.initialize)
 
-        self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
-        self.temporary_path = Path(self.temporary_directory.name)
-
     def readyTriggers(self):
         return [
             self.properties.input_sequences,
