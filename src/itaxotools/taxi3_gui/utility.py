@@ -21,6 +21,7 @@ from PySide6 import QtCore
 from enum import Enum
 from dataclasses import dataclass
 from typing import Callable, ClassVar, Optional, Union, NamedTuple, Type
+from types import UnionType
 
 
 class Instance:
@@ -44,6 +45,8 @@ class Property:
     key_list = '_property_list'
 
     def __init__(self, type=object, default=None):
+        if isinstance(type, UnionType):
+            type = object
         self.type = type
         self.default = default
 

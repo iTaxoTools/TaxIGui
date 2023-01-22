@@ -43,7 +43,7 @@ class DashItem(QtWidgets.QAbstractButton):
 
     @override
     def sizeHint(self):
-        return QtCore.QSize(240, 70)
+        return QtCore.QSize(260, 70)
 
     @override
     def event(self, event):
@@ -118,8 +118,8 @@ class Dashboard(QtWidgets.QFrame):
         layout = QtWidgets.QGridLayout()
         layout.addWidget(DashItem('Versus All', 'Analyze distances within a dataset', self.handleVersusAll, self), 0, 0)
         layout.addWidget(DashItem('Versus Reference', 'Compare distances to another dataset', self.handleVersusReference, self), 0, 1)
-        layout.addWidget(DashItem('Dereplicate', 'Find similar sequences within a dataset', self.handleDereplicate, self), 1, 0)
-        layout.addWidget(DashItem('Decontaminate', 'Find sequences close to another dataset', self.handleDecontaminate, self), 1, 1)
+        layout.addWidget(DashItem('Dereplicate', 'Detect similar sequences within a dataset', self.handleDereplicate, self), 1, 0)
+        layout.addWidget(DashItem('Decontaminate', 'Detect sequences close to another dataset', self.handleDecontaminate, self), 1, 1)
         layout.setSpacing(4)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)

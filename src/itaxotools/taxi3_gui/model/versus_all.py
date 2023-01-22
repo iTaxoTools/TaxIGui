@@ -50,7 +50,7 @@ class PairwiseScores(EnumObject):
 class DistanceMetrics(EnumObject):
     enum = DistanceMetric
 
-    bbc_k = Property(object, 10)
+    bbc_k = Property(int | None, 10)
 
     def as_list(self):
         return [
@@ -80,7 +80,7 @@ class VersusAllModel(Task):
     distance_matricial = Property(bool, True)
 
     distance_percentile = Property(bool, False)
-    distance_precision = Property(object, 4)
+    distance_precision = Property(int | None, 4)
     distance_missing = Property(str, 'NA')
 
     pairwise_scores = Property(PairwiseScores, Instance)
