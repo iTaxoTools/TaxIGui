@@ -31,10 +31,9 @@ from .dashboard import Dashboard
 
 class ScrollArea(QtWidgets.QScrollArea):
 
-    def __init__(self, widget, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
-        self.setWidget(widget)
 
 
 class Body(QtWidgets.QStackedWidget):
@@ -60,8 +59,9 @@ class Body(QtWidgets.QStackedWidget):
         self.showDashboard()
 
     def addView(self, object_type, view_type, *args, **kwargs):
-        view = view_type(parent=self, *args, **kwargs)
-        area = ScrollArea(view, self)
+        area = ScrollArea(self)
+        view = view_type(parent=area, *args, **kwargs)
+        area.setWidget(view)
         self.areas[object_type] = area
         self.addWidget(area)
 

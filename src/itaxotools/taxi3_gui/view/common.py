@@ -30,9 +30,10 @@ from ..utility import Guard, Binder
 
 class ObjectView(QtWidgets.QFrame):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, parent):
+        super().__init__(parent)
         self.setStyleSheet("""ObjectView{background: Palette(Dark);}""")
+        self.container = parent
         self.binder = Binder()
         self.object = None
 
@@ -92,6 +93,7 @@ class ObjectView(QtWidgets.QFrame):
 class TaskView(ObjectView):
 
     def start(self):
+        self.container.ensureVisible(0, 0)
         self.object.start()
 
     def stop(self):
