@@ -26,7 +26,7 @@ from .. import app
 from ..utility import Guard, Binder, type_convert, human_readable_size
 from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
 from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
-from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
+from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):
@@ -101,83 +101,6 @@ class ItemProxyModel(QtCore.QAbstractProxyModel):
         if index.row() == 0:
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
         return super().flags(index)
-
-
-class RichRadioButton(QtWidgets.QRadioButton):
-    def __init__(self, text, desc, parent=None):
-        super().__init__(text, parent)
-        self.desc = desc
-        self.setStyleSheet("""
-            RichRadioButton {
-                letter-spacing: 1px;
-                font-weight: bold;
-            }""")
-        font = self.font()
-        font.setBold(False)
-        font.setLetterSpacing(QtGui.QFont.PercentageSpacing, 0)
-        self.small_font = font
-
-    def event(self, event):
-        if isinstance(event, QtGui.QWheelEvent):
-            # Fix scrolling when hovering disabled button
-            event.ignore()
-            return False
-        return super().event(event)
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        painter = QtGui.QPainter()
-        painter.begin(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        painter.setFont(self.small_font)
-        width = self.size().width()
-        height = self.size().height()
-        sofar = super().sizeHint().width()
-
-        rect = QtCore.QRect(sofar, 0, width - sofar, height)
-        flags = QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
-        painter.drawText(rect, flags, self.desc)
-
-        painter.end()
-
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        x = event.localPos().x()
-        w = self.sizeHint().width()
-        if x < w:
-            self.setChecked(True)
-
-    def sizeHint(self):
-        metrics = QtGui.QFontMetrics(self.small_font)
-        extra = metrics.horizontalAdvance(self.desc)
-        size = super().sizeHint()
-        size += QtCore.QSize(extra, 0)
-        return size
-
-
-class RadioButtonGroup(QtCore.QObject):
-    valueChanged = QtCore.Signal(object)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.members = dict()
-        self.value = None
-
-    def add(self, widget, value):
-        self.members[widget] = value
-        widget.toggled.connect(self.handleToggle)
-
-    def handleToggle(self, checked):
-        if not checked:
-            return
-        self.value = self.members[self.sender()]
-        self.valueChanged.emit(self.value)
-
-    def setValue(self, newValue):
-        self.value = newValue
-        for widget, value in self.members.items():
-            widget.setChecked(value == newValue)
 
 
 class ColumnFilterDelegate(QtWidgets.QStyledItemDelegate):
@@ -1002,7 +925,7 @@ class PlotSelector(Card):
         self.controls.binwidth = binwidth
 
 
-class VersusAllView(ObjectView):
+class VersusAllView(TaskView):
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1050,10 +973,12 @@ class VersusAllView(ObjectView):
         self.binder.bind(self.cards.title.cancel, object.stop)
         self.binder.bind(object.properties.name, self.cards.title.setTitle)
         self.binder.bind(object.properties.ready, self.cards.title.setReady)
-        self.binder.bind(object.properties.busy_main, self.setBusyMain)
-        self.binder.bind(object.properties.busy_sequence, self.setBusySequence)
-        self.binder.bind(object.properties.busy_species, self.setBusySpecies)
-        self.binder.bind(object.properties.busy_genera, self.setBusyGenera)
+        self.binder.bind(object.properties.busy_main, self.cards.title.setBusy)
+        self.binder.bind(object.properties.busy_main, self.cards.progress.setEnabled)
+        self.binder.bind(object.properties.busy_main, self.cards.progress.setVisible)
+        self.binder.bind(object.properties.busy_sequence, self.cards.input_sequences.setBusy)
+        self.binder.bind(object.properties.busy_species, self.cards.input_species.setBusy)
+        self.binder.bind(object.properties.busy_genera, self.cards.input_genera.setBusy)
 
         self.binder.bind(self.cards.input_sequences.itemChanged, object.set_sequence_file_from_file_item)
         self.binder.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
@@ -1124,39 +1049,11 @@ class VersusAllView(ObjectView):
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
 
-    def setBusyMain(self, busy: bool):
+        self.binder.bind(object.properties.editable, self.setEditable)
+
+    def setEditable(self, editable: bool):
         for card in self.cards:
-            card.setEnabled(not busy)
-        self.cards.title.setBusy(busy)
-        self.cards.progress.setEnabled(busy)
-        self.cards.progress.setVisible(busy)
-
-    def setBusySequence(self, busy: bool):
-        for card in self.cards:
-            card.setEnabled(not busy)
-        self.cards.input_sequences.setBusy(busy)
-
-    def setBusySpecies(self, busy: bool):
-        for card in self.cards:
-            card.setEnabled(not busy)
-        self.cards.input_species.setBusy(busy)
-
-    def setBusyGenera(self, busy: bool):
-        for card in self.cards:
-            card.setEnabled(not busy)
-        self.cards.input_genera.setBusy(busy)
-
-    def showNotification(self, notification):
-        icon = {
-            Notification.Info: QtWidgets.QMessageBox.Information,
-            Notification.Warn: QtWidgets.QMessageBox.Warning,
-            Notification.Fail: QtWidgets.QMessageBox.Critical,
-        }[notification.type]
-
-        msgBox = QtWidgets.QMessageBox(self.window())
-        msgBox.setWindowTitle(app.title)
-        msgBox.setIcon(icon)
-        msgBox.setText(notification.text)
-        msgBox.setDetailedText(notification.info)
-        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msgBox.exec()
+            card.setEnabled(editable)
+        self.cards.title.setEnabled(True)
+        self.cards.dummy_results.setEnabled(True)
+        self.cards.progress.setEnabled(True)

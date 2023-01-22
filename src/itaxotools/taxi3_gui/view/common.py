@@ -24,7 +24,7 @@ from itaxotools.common.utility import AttrDict, override
 
 from .. import app
 from ..model import BulkSequencesModel, Item, ItemModel, Object, SequenceModel
-from ..types import ComparisonMode, PairwiseComparisonConfig
+from ..types import ComparisonMode, Notification, PairwiseComparisonConfig
 from ..utility import Guard, Binder
 
 
@@ -94,6 +94,29 @@ class TaskView(ObjectView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setStyleSheet("""TaskView{background: Palette(Shadow);}""")
+
+    def start(self):
+        self.object.start()
+
+    def stop(self):
+        if self.getConfirmation(
+            'Stop diagnosis',
+            'Are you sure you want to stop the ongoing diagnosis?'
+        ):
+            self.object.stop()
+
+    def save(self):
+        path = self.getExistingDirectory(
+            'Save All', str(self.object.suggested_directory))
+        if path:
+            self.object.save_all(path)
+
+    def clear(self):
+        if self.getConfirmation(
+            'Clear results',
+            'Are you sure you want to clear all results and try again?'
+        ):
+            self.object.clear()
 
 
 class Card(QtWidgets.QFrame):

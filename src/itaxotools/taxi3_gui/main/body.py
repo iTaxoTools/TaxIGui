@@ -81,23 +81,23 @@ class Body(QtWidgets.QStackedWidget):
         self.setCurrentWidget(area)
         area.ensureVisible(0, 0)
         if isinstance(object, Task):
-            self.bindTask(object)
+            self.bindTask(object, view)
         return True
 
-    def bindTask(self, task: Task):
+    def bindTask(self, task: Task, view: TaskView):
         self.binder.unbind_all()
         self.actions.open.setEnabled(False)
-
-        self.binder.bind(self.actions.save.triggered, task.save)
-        self.binder.bind(self.actions.start.triggered, task.start)
-        self.binder.bind(self.actions.stop.triggered, task.stop)
-        self.binder.bind(self.actions.clear.triggered, task.clear)
 
         self.binder.bind(task.properties.ready, self.actions.start.setEnabled)
         self.binder.bind(task.properties.editable, self.actions.start.setVisible)
         self.binder.bind(task.properties.busy, self.actions.stop.setVisible)
         self.binder.bind(task.properties.done, self.actions.save.setEnabled)
         self.binder.bind(task.properties.done, self.actions.clear.setVisible)
+
+        self.binder.bind(self.actions.start.triggered, view.start)
+        self.binder.bind(self.actions.stop.triggered, view.stop)
+        self.binder.bind(self.actions.save.triggered, view.save)
+        self.binder.bind(self.actions.clear.triggered, view.clear)
 
     def removeActiveItem(self):
         app.model.items.remove_index(self.activeIndex)

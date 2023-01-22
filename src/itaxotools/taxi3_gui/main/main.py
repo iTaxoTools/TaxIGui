@@ -71,7 +71,7 @@ class Main(ToolDialog):
         action.triggered.connect(self.handleOpen)
         self.actions.open = action
 
-        action = QtGui.QAction('&Save All', self)
+        action = QtGui.QAction('&Save', self)
         action.setIcon(app.resources.icons.save)
         action.setShortcut(QtGui.QKeySequence.Save)
         action.setStatusTip('Save results')

@@ -143,7 +143,7 @@ class VersusAllModel(Task):
         return True
 
     def start(self):
-        self.busy = True
+        super().start()
         self.busy_main = True
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         work_dir = self.temporary_path / timestamp
@@ -198,14 +198,17 @@ class VersusAllModel(Task):
         )
 
     def add_sequence_file(self, path):
+        self.busy = True
         self.busy_sequence = True
         self.exec(VersusAllSubtask.AddSequenceFile, versus_all.get_file_info, path)
 
     def add_species_file(self, path):
+        self.busy = True
         self.busy_species = True
         self.exec(VersusAllSubtask.AddSpeciesFile, versus_all.get_file_info, path)
 
     def add_genera_file(self, path):
+        self.busy = True
         self.busy_genera = True
         self.exec(VersusAllSubtask.AddGeneraFile, versus_all.get_file_info, path)
 
@@ -262,6 +265,7 @@ class VersusAllModel(Task):
             self.dummy_results = report.result.output_directory
             self.dummy_time = report.result.seconds_taken
             self.busy_main = False
+            self.done = True
         if report.id == VersusAllSubtask.AddSequenceFile:
             file_item = self.add_file_item_from_info(report.result)
             self.set_sequence_file_from_file_item(file_item)
@@ -276,12 +280,28 @@ class VersusAllModel(Task):
             self.busy_genera = False
         self.busy = False
 
+    def onStop(self, report):
+        super().onStop(report)
+        self.busy_main = False
+        self.busy_sequence = False
+        self.busy_species = False
+        self.busy_genera = False
+
     def onFail(self, report):
         super().onFail(report)
         self.busy_main = False
         self.busy_sequence = False
+        self.busy_species = False
+        self.busy_genera = False
 
     def onError(self, report):
         super().onError(report)
         self.busy_main = False
         self.busy_sequence = False
+        self.busy_species = False
+        self.busy_genera = False
+
+    def clear(self):
+        self.dummy_results = None
+        self.dummy_time = None
+        self.done = False

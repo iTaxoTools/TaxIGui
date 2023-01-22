@@ -125,8 +125,8 @@ class Task(Object):
 
     def start(self):
         """Slot for starting the task"""
+        self.progression.emit(ReportProgress('Preparing for execution...'))
         self.busy = True
-        self.run()
 
     def stop(self):
         """Slot for interrupting the task"""
@@ -140,7 +140,7 @@ class Task(Object):
 
     def clear(self):
         """Slot for discarding results"""
-        pass
+        self.done = False
 
     def readyTriggers(self) -> List[PropertyRef]:
         """Overload this to set properties as ready triggers"""
@@ -157,12 +157,8 @@ class Task(Object):
     def checkEditable(self):
         self.editable = not (self.busy or self.done)
 
-    def run(self):
-        """Called by start(). Overload this with calls to exec()"""
-        self.exec(lambda *args: None)
-
     def exec(self, id: Any, task: Callable, *args, **kwargs):
-        """Call this from run() to execute tasks"""
+        """Call this from start() to execute tasks"""
         self.worker.exec(id, task, *args, **kwargs)
 
 
