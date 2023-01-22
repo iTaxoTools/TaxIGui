@@ -51,9 +51,6 @@ class DecontaminateModel(Task):
         self.outgroup_item = None
         self.ingroup_item = None
 
-        self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
-        self.temporary_path = Path(self.temporary_directory.name)
-
     def readyTriggers(self):
         return [
             self.properties.mode,

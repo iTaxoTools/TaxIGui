@@ -84,6 +84,7 @@ class DashItem(QtWidgets.QAbstractButton):
 
         font = painter.font()
         font.setPixelSize(16)
+        font.setBold(True)
         font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 1)
         painter.setFont(font)
 

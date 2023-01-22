@@ -236,3 +236,6 @@ class SideBar(QtWidgets.QFrame):
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+    def clearSelection(self):
+        self.view.setCurrentIndex(QtCore.QModelIndex())

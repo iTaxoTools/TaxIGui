@@ -120,6 +120,7 @@ class Main(ToolDialog):
 
     def handleHome(self):
         self.widgets.body.showDashboard()
+        self.widgets.sidebar.clearSelection()
 
     def handleOpen(self):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
