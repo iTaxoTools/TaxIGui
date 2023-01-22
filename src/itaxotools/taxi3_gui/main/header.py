@@ -26,7 +26,7 @@ from .. import app
 class ToolLogo(QtWidgets.QLabel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setFixedWidth(256)
+        self.setFixedWidth(210)
         self.setAlignment(QtCore.Qt.AlignCenter)
         self.setPixmap(app.resources.pixmaps.logo_tool)
 

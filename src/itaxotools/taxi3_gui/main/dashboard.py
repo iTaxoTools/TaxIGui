@@ -26,19 +26,24 @@ from ..model import DecontaminateModel, DereplicateModel, Task, VersusAllModel
 
 class DashItem(QtWidgets.QAbstractButton):
 
-    def __init__(self, text, slot, parent=None):
+    def __init__(self, text, subtext, slot, parent=None):
         super().__init__(parent)
         self.setText(text)
+        self.subtext = subtext
+        self.clicked.connect(slot)
         self.setMouseTracking(True)
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
         self._mouseOver = False
-        self.clicked.connect(slot)
+        self.pad_x = 4
+        self.pad_y = 4
+        self.pad_text = 18
+        self.bookmark_width = 2
 
     @override
     def sizeHint(self):
-        return QtCore.QSize(200, 80)
+        return QtCore.QSize(240, 70)
 
     @override
     def event(self, event):
@@ -55,17 +60,46 @@ class DashItem(QtWidgets.QAbstractButton):
 
     @override
     def paintEvent(self, event):
-        palette = QtGui.QGuiApplication.palette()
         painter = QtGui.QPainter(self)
         rect = QtCore.QRect(0, 0, self.width(), self.height())
+        palette = QtGui.QGuiApplication.palette()
+        self.paintBack(painter, rect, palette)
+        self.paintText(painter, rect, palette)
+        self.paintSubtext(painter, rect, palette)
 
+    def paintBack(self, painter, rect, palette):
         bg = palette.color(QtGui.QPalette.Midlight)
         if self._mouseOver:
             bg = palette.color(QtGui.QPalette.Light)
         painter.fillRect(rect, bg)
 
-        rect.adjust(4, 0, 0, 0)
-        painter.drawText(rect, QtCore.Qt.AlignVCenter, self.text())
+        rect = rect.adjusted(self.pad_x, self.pad_y, 0, -self.pad_y)
+        rect.setWidth(self.bookmark_width)
+        painter.fillRect(rect, palette.color(QtGui.QPalette.Mid))
+
+    def paintText(self, painter, rect, palette):
+        painter.save()
+        rect = rect.adjusted(self.pad_text, self.pad_y, -self.pad_x, -self.pad_y)
+        rect.setHeight(rect.height() / 2)
+
+        font = painter.font()
+        font.setPixelSize(16)
+        font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 1)
+        painter.setFont(font)
+
+        text_color = palette.color(QtGui.QPalette.Text)
+        painter.setPen(text_color)
+
+        painter.drawText(rect, QtCore.Qt.AlignBottom, self.text())
+        painter.restore()
+
+    def paintSubtext(self, painter, rect, palette):
+        text_color = palette.color(QtGui.QPalette.Shadow)
+        painter.setPen(text_color)
+
+        rect = rect.adjusted(self.pad_text, self.pad_y, -self.pad_x, -self.pad_y)
+        rect.setTop(rect.top() + self.pad_y + rect.height() / 2)
+        painter.drawText(rect, QtCore.Qt.AlignTop, self.subtext)
 
 
 class Dashboard(QtWidgets.QFrame):
@@ -82,10 +116,10 @@ class Dashboard(QtWidgets.QFrame):
             """)
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget(DashItem('Dereplicate', self.handleDereplicate, self), 0, 0)
-        layout.addWidget(DashItem('Decontaminate', self.handleDecontaminate, self), 0, 1)
-        layout.addWidget(DashItem('Versus All', self.handleVersusAll, self), 1, 0)
-        layout.addWidget(DashItem('Versus Reference', self.handleVersusReference, self), 1, 1)
+        layout.addWidget(DashItem('Versus All', 'Analyze distances within a dataset', self.handleVersusAll, self), 0, 0)
+        layout.addWidget(DashItem('Versus Reference', 'Compare distances to another dataset', self.handleVersusReference, self), 0, 1)
+        layout.addWidget(DashItem('Dereplicate', 'Find similar sequences within a dataset', self.handleDereplicate, self), 1, 0)
+        layout.addWidget(DashItem('Decontaminate', 'Find sequences close to another dataset', self.handleDecontaminate, self), 1, 1)
         layout.setSpacing(4)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)

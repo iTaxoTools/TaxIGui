@@ -48,7 +48,7 @@ class ItemView(ABC):
 
 class GroupView(ItemView):
 
-    width = 256
+    width = 210
     height = 32
     marginLeft = 4
     marginBottom = 2
@@ -91,13 +91,20 @@ class EntryView(ItemView):
 
     def paint(self, painter, option, index):
         if option.state & QtWidgets.QStyle.State_Selected:
-            painter.fillRect(option.rect, option.palette.highlight())
+            bg_brush = option.palette.highlight()
+            text_color = option.palette.color(QtGui.QPalette.BrightText)
         elif option.state & QtWidgets.QStyle.State_MouseOver:
-            painter.fillRect(option.rect, option.palette.light())
+            bg_brush = option.palette.light()
+            text_color = option.palette.color(QtGui.QPalette.Text)
         else:
-            painter.fillRect(option.rect, option.palette.mid())
+            bg_brush = option.palette.mid()
+            text_color = option.palette.color(QtGui.QPalette.Text)
+
+        painter.setBrush(bg_brush)
+        painter.drawRect(option.rect)
 
         rect = self.textRect(option)
+        painter.setPen(text_color)
         painter.drawText(rect, QtCore.Qt.AlignVCenter, self.item.object.name)
 
         rect = self.iconRect(option)
@@ -217,6 +224,9 @@ class SideBar(QtWidgets.QFrame):
                 border-right: 1px solid palette(Dark);
             }
         """)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Minimum)
 
         self.view = ItemTreeView(self)
         self.view.setModel(app.model.items)
