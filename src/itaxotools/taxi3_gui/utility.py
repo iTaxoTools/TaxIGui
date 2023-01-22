@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from typing import Callable, ClassVar, Optional, Union, NamedTuple, Type
 from types import UnionType
 
+from itaxotools.common.utility import AttrDict
+
 
 class Instance:
     """Pass as type or instance to instantiate a property by default"""
@@ -205,6 +207,12 @@ class PropertyObject(QtCore.QObject, metaclass=PropertyMeta):
     def _set_property_defaults(self):
         for property in self.properties:
             property.set(property.default)
+
+    def as_dict(self):
+        return AttrDict({
+            property.key: property.value
+            for property in self.properties
+        })
 
 
 class EnumObjectMeta(PropertyMeta):

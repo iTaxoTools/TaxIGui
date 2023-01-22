@@ -17,7 +17,7 @@
 # -----------------------------------------------------------------------------
 
 from collections import namedtuple
-from enum import Enum
+from enum import Enum, auto
 
 from ._type import Type
 
@@ -104,3 +104,7 @@ class DecontaminateMode(Enum):
 
     def __str__(self):
         return self.value
+
+
+class FileFormat(Enum):
+    Tabfile = auto()

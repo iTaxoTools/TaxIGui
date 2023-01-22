@@ -157,27 +157,9 @@ class VersusAllModel(Task):
             perform_species=self.perform_species,
             perform_genera=self.perform_genera,
 
-            input_sequences=self.input_sequences.file_item.object.path,
-            input_sequences_index_column=self.input_sequences.index_column,
-            input_sequences_sequence_column=self.input_sequences.sequence_column,
-            input_sequences_index_filter=self.input_sequences.index_filter,
-            input_sequences_sequence_filter=self.input_sequences.sequence_filter,
-
-            **(dict(
-                input_species=self.input_species.file_item.object.path,
-                input_species_subset_column=self.input_species.subset_column,
-                input_species_individual_column=self.input_species.individual_column,
-                input_species_subset_filter=self.input_species.subset_filter,
-                input_species_individual_filter=self.input_species.individual_filter,
-            ) if self.perform_species else {}),
-
-            **(dict(
-                input_genera=self.input_genera.file_item.object.path,
-                input_genera_subset_column=self.input_genera.subset_column,
-                input_genera_individual_column=self.input_genera.individual_column,
-                input_genera_subset_filter=self.input_genera.subset_filter,
-                input_genera_individual_filter=self.input_genera.individual_filter,
-            ) if self.perform_genera else {}),
+            input_sequences=self.input_sequences.as_dict(),
+            input_species=self.input_species.as_dict(),
+            input_genera=self.input_genera.as_dict(),
 
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,

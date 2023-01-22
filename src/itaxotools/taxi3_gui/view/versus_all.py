@@ -462,12 +462,14 @@ class SequenceSelector(InputSelector):
             self.controls.sequence_combo.addItem(header)
 
     def setColumnIndex(self, column: int):
+        print('setColumnIndex', repr(column))
         self.controls.index_combo.setCurrentIndex(column)
 
     def setColumnSequence(self, column: int):
         self.controls.sequence_combo.setCurrentIndex(column)
 
     def handleIndexColumnChanged(self, column):
+        print('handleIndexColumnChanged', repr(column))
         value = self.controls.index_combo.currentData() if column >= 0 else -1
         self.indexColumnChanged.emit(value)
 

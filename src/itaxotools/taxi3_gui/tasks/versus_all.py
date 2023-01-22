@@ -22,7 +22,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple
 
-from ..types import ComparisonMode, ColumnFilter, AlignmentMode, DistanceMetric
+from itaxotools.common.utility import AttrDict
+
+from ..types import ComparisonMode, ColumnFilter, AlignmentMode, DistanceMetric, FileFormat
 
 
 @dataclass
@@ -71,6 +73,53 @@ def get_file_info(path: Path):
     return InputFile.Unknown(path)
 
 
+def sequences_from_model(input: SequenceModel2):
+    from itaxotools.taxi3.sequences import Sequences, SequenceHandler
+    from ..model import SequenceModel2
+
+    if input.type == FileFormat.Tabfile:
+        print(
+            'sequences_from_model',
+            input.path.name,
+            f'id = {input.index_column}, '
+            f'seq = {input.sequence_column}, '
+        )
+        return Sequences.fromPath(
+            input.path,
+            SequenceHandler.Tabfile,
+            hasHeader = True,
+            idColumn=input.index_column,
+            seqColumn=input.sequence_column,
+        )
+    raise Exception(f'Cannot create sequences from input: {input}')
+
+
+def partition_from_model(input: PartitionModel):
+    from itaxotools.taxi3.partitions import Partition, PartitionHandler
+    from ..model import PartitionModel
+
+    if input.type == FileFormat.Tabfile:
+        filter = {
+            ColumnFilter.All: None,
+            ColumnFilter.First: PartitionHandler.subset_first_word,
+        }[input.subset_filter]
+        print(
+            'partition_from_model',
+            input.path.name,
+            f'id = {input.individual_column}, '
+            f'sub = {input.subset_column}, '
+        )
+        return Partition.fromPath(
+            input.path,
+            PartitionHandler.Tabfile,
+            hasHeader = True,
+            idColumn=input.individual_column,
+            subColumn=input.subset_column,
+            filter=filter,
+        )
+    raise Exception(f'Cannot create partition from input: {input}')
+
+
 def versus_all(
 
     work_dir: Path,
@@ -78,9 +127,9 @@ def versus_all(
     perform_species: bool,
     perform_genera: bool,
 
-    input_sequences: Path,
-    # input_species: Path,
-    # input_genera: Path,
+    input_sequences: AttrDict,
+    input_species: AttrDict,
+    input_genera: AttrDict,
 
     alignment_mode: AlignmentMode,
     alignment_write_pairs: bool,
@@ -114,9 +163,9 @@ def versus_all(
     task.work_dir = work_dir
     task.progress_handler = progress_handler
 
-    task.input.sequences = Sequences.fromPath(input_sequences, SequenceHandler.Tabfile, idHeader='seqid', seqHeader='sequence')
-    task.input.species = Partition.fromPath(input_sequences, PartitionHandler.Tabfile, idHeader='seqid', subHeader='organism')
-    task.input.genera = Partition.fromPath(input_sequences, PartitionHandler.Tabfile, idHeader='seqid', subHeader='organism', filter=PartitionHandler.subset_first_word)
+    task.input.sequences = sequences_from_model(input_sequences)
+    task.input.species = partition_from_model(input_species)
+    task.input.genera = partition_from_model(input_genera)
 
     # task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
     task.params.pairs.write = alignment_write_pairs

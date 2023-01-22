@@ -18,7 +18,9 @@
 
 from pathlib import Path
 
-from ..types import Type, SequenceReader, ColumnFilter
+from itaxotools.common.utility import AttrDict
+
+from ..types import Type, SequenceReader, ColumnFilter, FileFormat
 from .common import Object, Property, Item
 from .input_file import InputFileModel
 
@@ -69,3 +71,11 @@ class Tabfile(SequenceModel2):
             return headers.index(field)
         except ValueError:
             return -1
+
+    def as_dict(self):
+        return AttrDict(
+            type = FileFormat.Tabfile,
+            path = self.file_item.object.path,
+            index_column = self.index_column,
+            sequence_column = self.sequence_column,
+        )

@@ -18,7 +18,9 @@
 
 from pathlib import Path
 
-from ..types import ColumnFilter
+from itaxotools.common.utility import AttrDict
+
+from ..types import ColumnFilter, FileFormat
 from .common import Object, Property, Item
 from .input_file import InputFileModel
 
@@ -61,3 +63,13 @@ class Tabfile(PartitionModel):
             return headers.index(field)
         except ValueError:
             return -1
+
+    def as_dict(self):
+        return AttrDict(
+            type = FileFormat.Tabfile,
+            path = self.file_item.object.path,
+            subset_column = self.subset_column,
+            individual_column = self.individual_column,
+            subset_filter = self.subset_filter,
+            individual_filter = self.individual_filter,
+        )

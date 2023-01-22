@@ -91,10 +91,6 @@ class ObjectView(QtWidgets.QFrame):
 
 class TaskView(ObjectView):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setStyleSheet("""TaskView{background: Palette(Shadow);}""")
-
     def start(self):
         self.object.start()
 
