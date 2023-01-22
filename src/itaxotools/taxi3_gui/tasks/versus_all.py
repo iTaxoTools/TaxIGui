@@ -78,12 +78,6 @@ def sequences_from_model(input: SequenceModel2):
     from ..model import SequenceModel2
 
     if input.type == FileFormat.Tabfile:
-        print(
-            'sequences_from_model',
-            input.path.name,
-            f'id = {input.index_column}, '
-            f'seq = {input.sequence_column}, '
-        )
         return Sequences.fromPath(
             input.path,
             SequenceHandler.Tabfile,
@@ -103,12 +97,6 @@ def partition_from_model(input: PartitionModel):
             ColumnFilter.All: None,
             ColumnFilter.First: PartitionHandler.subset_first_word,
         }[input.subset_filter]
-        print(
-            'partition_from_model',
-            input.path.name,
-            f'id = {input.individual_column}, '
-            f'sub = {input.subset_column}, '
-        )
         return Partition.fromPath(
             input.path,
             PartitionHandler.Tabfile,
@@ -158,18 +146,21 @@ def versus_all(
     from itaxotools.taxi3.distances import DistanceMetric as BackendDistanceMetric
     from itaxotools.taxi3.sequences import Sequences, SequenceHandler
     from itaxotools.taxi3.partitions import Partition, PartitionHandler
+    from itaxotools.taxi3.align import Scores
 
     task = VersusAll()
     task.work_dir = work_dir
     task.progress_handler = progress_handler
 
     task.input.sequences = sequences_from_model(input_sequences)
-    task.input.species = partition_from_model(input_species)
-    task.input.genera = partition_from_model(input_genera)
+    if perform_species:
+        task.input.species = partition_from_model(input_species)
+    if perform_genera:
+        task.input.genera = partition_from_model(input_genera)
 
-    # task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
+    task.params.pairs.align = alignment_mode in [AlignmentMode.PairwiseAlignment]
+    task.params.pairs.scores = Scores(**alignment_pairwise_scores)
     task.params.pairs.write = alignment_write_pairs
-    # task.params.pairs.write = alignment_pairwise_scores
 
     metrics_tr = {
         DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
@@ -187,10 +178,10 @@ def versus_all(
     task.params.distances.write_linear = distance_linear
     task.params.distances.write_matricial = distance_matricial
 
-    # task.params.format.float
-    # task.params.format.percentage
-    # task.params.format.missing
-    # task.params.format.percentage_multiply
+    task.params.format.float = f':.{distance_precision}f'
+    task.params.format.percentage = f':.{distance_precision}f'
+    task.params.format.missing = distance_missing
+    task.params.format.percentage_multiply = distance_percentile
 
     task.params.stats.all = statistics_all
     task.params.stats.species = statistics_species
@@ -198,7 +189,7 @@ def versus_all(
 
     task.params.plot.histograms = plot_histograms
     task.params.plot.binwidth = plot_binwidth
-    task.params.plot.formats = ['png', 'pdf']
+    task.params.plot.formats = ['pdf']
 
     results = task.start()
 

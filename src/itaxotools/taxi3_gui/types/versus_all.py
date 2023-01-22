@@ -101,8 +101,8 @@ class StatisticsGroup(PropertyEnum):
 
 
 class AlignmentMode(Enum):
-    NoAlignment = ('No alignment', 'for already aligned sequences or alignment-free metrics')
     PairwiseAlignment = ('Pairwise Alignment', 'align each pair of sequences just before calculating distances')
+    NoAlignment = ('Already aligned', 'the sequences will be compared without further alignment')
     MSA = ('Multiple Sequence Alignment', 'uses MAFFT to align all sequences in advance')
 
     def __init__(self, label, description):

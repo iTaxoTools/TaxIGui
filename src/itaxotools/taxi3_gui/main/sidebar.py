@@ -50,7 +50,7 @@ class GroupView(ItemView):
 
     width = 210
     height = 32
-    marginLeft = 4
+    marginLeft = 6
     marginBottom = 2
 
     def sizeHint(self, option, index):
@@ -75,8 +75,8 @@ class GroupView(ItemView):
 
 class EntryView(ItemView):
 
-    width = 256
-    height = 52
+    width = 210
+    height = 44
     marginLeft = 4
     marginText = 40
     iconSize = 32

@@ -73,7 +73,7 @@ class VersusAllModel(Task):
     input_species = Property(PartitionModel, None)
     input_genera = Property(PartitionModel, None)
 
-    alignment_mode = Property(AlignmentMode, AlignmentMode.NoAlignment)
+    alignment_mode = Property(AlignmentMode, AlignmentMode.PairwiseAlignment)
     alignment_write_pairs = Property(bool, True)
 
     distance_linear = Property(bool, True)
@@ -87,7 +87,7 @@ class VersusAllModel(Task):
     distance_metrics = Property(DistanceMetrics, Instance)
     statistics_groups = Property(StatisticsGroups, Instance)
 
-    plot_histograms = Property(bool, True)
+    plot_histograms = Property(bool, False)
     plot_binwidth = Property(float, 0.05)
 
     busy_main = Property(bool, False)
