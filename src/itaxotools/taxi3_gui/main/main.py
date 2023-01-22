@@ -28,10 +28,16 @@ from itaxotools.common.widgets import ToolDialog
 
 from .. import app
 from ..model import BulkSequencesModel, SequenceModel
+from ..utility import PropertyObject, Property
 from .body import Body
 from .footer import Footer
 from .header import Header
 from .sidebar import SideBar
+
+
+class MainState(PropertyObject):
+    dirty_data = Property(bool, False)
+    busy = Property(bool, False)
 
 
 class Main(ToolDialog):
@@ -39,14 +45,59 @@ class Main(ToolDialog):
 
     def __init__(self, parent=None, files=[]):
         super(Main, self).__init__(parent)
+        self.state = MainState()
 
-        self.setWindowFlags(QtCore.Qt.Window)
         self.setWindowIcon(app.resources.icons.app)
         self.setWindowTitle(app.title)
         self.resize(800, 500)
 
-        self.draw()
         self.act()
+        self.draw()
+
+    def act(self):
+        """Populate dialog actions"""
+        self.actions = AttrDict()
+
+        action = QtGui.QAction('&Home', self)
+        action.setIcon(app.resources.icons.home)
+        action.setStatusTip('Open the dashboard')
+        action.triggered.connect(self.handleHome)
+        self.actions.home = action
+
+        action = QtGui.QAction('&Open', self)
+        action.setIcon(app.resources.icons.open)
+        action.setShortcut(QtGui.QKeySequence.Open)
+        action.setStatusTip('Open an existing file')
+        action.triggered.connect(self.handleOpen)
+        self.actions.open = action
+
+        action = QtGui.QAction('&Save All', self)
+        action.setIcon(app.resources.icons.save)
+        action.setShortcut(QtGui.QKeySequence.Save)
+        action.setStatusTip('Save results')
+        action.triggered.connect(self.handleSave)
+        self.actions.save = action
+
+        action = QtGui.QAction('&Run', self)
+        action.setIcon(app.resources.icons.run)
+        action.setShortcut('Ctrl+R')
+        action.setStatusTip('Run MolD')
+        action.setVisible(False)
+        self.actions.start = action
+
+        action = QtGui.QAction('S&top', self)
+        action.setIcon(app.resources.icons.stop)
+        action.setShortcut(QtGui.QKeySequence.Cancel)
+        action.setStatusTip('Stop MolD')
+        action.setVisible(False)
+        self.actions.stop = action
+
+        action = QtGui.QAction('Cl&ear', self)
+        action.setIcon(app.resources.icons.clear)
+        action.setShortcut('Ctrl+E')
+        action.setStatusTip('Stop MolD')
+        action.setVisible(False)
+        self.actions.clear = action
 
     def draw(self):
         """Draw all contents"""
@@ -56,6 +107,8 @@ class Main(ToolDialog):
         self.widgets.body = Body(self)
         self.widgets.footer = Footer(self)
 
+        for action in self.actions:
+            self.widgets.header.toolBar.addAction(action)
         self.widgets.sidebar.selected.connect(self.widgets.body.showItem)
 
         layout = QtWidgets.QGridLayout()
@@ -67,31 +120,6 @@ class Main(ToolDialog):
         layout.setColumnStretch(1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-
-    def act(self):
-        """Populate dialog actions"""
-        self.actions = {}
-
-        self.actions['home'] = QtGui.QAction('&Home', self)
-        self.actions['home'].setIcon(app.resources.icons.home)
-        self.actions['home'].setStatusTip('Open the dashboard')
-        self.actions['home'].triggered.connect(self.handleHome)
-
-        self.actions['open'] = QtGui.QAction('&Open', self)
-        self.actions['open'].setIcon(app.resources.icons.open)
-        self.actions['open'].setShortcut(QtGui.QKeySequence.Open)
-        self.actions['open'].setStatusTip('Open an existing file')
-        self.actions['open'].triggered.connect(self.handleOpen)
-
-        self.actions['save'] = QtGui.QAction('&Save', self)
-        self.actions['save'].setIcon(app.resources.icons.save)
-        self.actions['save'].setShortcut(QtGui.QKeySequence.Save)
-        self.actions['save'].setStatusTip('Save results')
-        self.actions['save'].triggered.connect(self.handleSave)
-
-        self.widgets.header.toolBar.addAction(self.actions['home'])
-        self.widgets.header.toolBar.addAction(self.actions['open'])
-        self.widgets.header.toolBar.addAction(self.actions['save'])
 
     def handleHome(self):
         self.widgets.body.showDashboard()
@@ -142,3 +170,8 @@ class Main(ToolDialog):
                 shutil.copy(source, destination)
             return
         QtWidgets.QMessageBox.information(self, app.title, 'Please select a sequence and try again.')
+
+    def reject(self):
+        if self.state.dirty_data:
+            return super().reject()
+        return True
