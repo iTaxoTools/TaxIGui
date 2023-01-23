@@ -22,10 +22,10 @@ from .. import app
 from ..utility import Binder
 from ..model import (
     BulkSequencesModel, DecontaminateModel, DereplicateModel, Item,
-    SequenceModel, Task, VersusAllModel)
+    SequenceModel, Task, VersusAllModel, VersusReferenceModel)
 from ..view import (
     BulkSequencesView, DecontaminateView, DereplicateView, SequenceView,
-    TaskView, VersusAllView)
+    TaskView, VersusAllView, VersusReferenceView)
 from .dashboard import Dashboard
 
 
@@ -55,6 +55,7 @@ class Body(QtWidgets.QStackedWidget):
         self.addView(DereplicateModel, DereplicateView)
         self.addView(DecontaminateModel, DecontaminateView)
         self.addView(VersusAllModel, VersusAllView)
+        self.addView(VersusReferenceModel, VersusReferenceView)
 
         self.showDashboard()
 

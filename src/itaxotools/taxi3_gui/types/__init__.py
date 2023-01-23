@@ -19,3 +19,4 @@
 from ._type import *
 from .common import *
 from .versus_all import *
+from .versus_reference import *

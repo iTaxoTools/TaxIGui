@@ -21,7 +21,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from itaxotools.common.utility import override
 
 from .. import app
-from ..model import DecontaminateModel, DereplicateModel, Task, VersusAllModel
+from ..model import DecontaminateModel, DereplicateModel, Task, VersusAllModel, VersusReferenceModel
 
 
 class DashItem(QtWidgets.QAbstractButton):
@@ -138,4 +138,4 @@ class Dashboard(QtWidgets.QFrame):
         app.model.items.add_task(VersusAllModel(), focus=True)
 
     def handleVersusReference(self):
-        app.model.items.add_task(Task('VREF'), focus=True)
+        app.model.items.add_task(VersusReferenceModel(), focus=True)
