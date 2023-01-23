@@ -121,11 +121,11 @@ class Dashboard(QtWidgets.QFrame):
         layout.addWidget(DashItem('Versus Reference', 'Compare distances to another dataset', self.handleVersusReference, self), 0, 1)
         layout.addWidget(DashItem('Dereplicate', 'Detect similar sequences within a dataset', self.handleDereplicate, self), 1, 0)
         layout.addWidget(DashItem('Decontaminate', 'Detect sequences close to another dataset', self.handleDecontaminate, self), 1, 1)
-        layout.setSpacing(4)
+        layout.setSpacing(6)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
         layout.setRowStretch(5, 1)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(6, 6, 6, 6)
         self.setLayout(layout)
 
     def handleDereplicate(self):

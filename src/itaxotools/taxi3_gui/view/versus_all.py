@@ -692,7 +692,7 @@ class DistanceMetricSelector(Card):
         self.draw_format()
 
     def draw_main(self):
-        label = QtWidgets.QLabel('Distance Metrics')
+        label = QtWidgets.QLabel('Distance metrics')
         label.setStyleSheet("""font-size: 16px;""")
 
         description = QtWidgets.QLabel(
@@ -896,19 +896,19 @@ class VersusAllView(TaskView):
         self.cards.title = TitleCard(self)
         self.cards.dummy_results = DummyResultsCard(self)
         self.cards.progress = ProgressCard(self)
-        self.cards.input_sequences = SequenceSelector('Input Sequences', self)
+        self.cards.input_sequences = SequenceSelector('Input sequences', self)
         self.cards.perform_species = OptionalCategory(
-            'Perform Species Analysis',
+            'Perform species analysis',
             'Calculate various metrics betweens all pairs of species (mean/min/max), '
             'based on the distances between their member specimens.',
             self)
-        self.cards.input_species = PartitionSelector('Species Partition', 'Species', 'Individuals', self)
+        self.cards.input_species = PartitionSelector('Species partition', 'Species', 'Individuals', self)
         self.cards.perform_genera = OptionalCategory(
-            'Perform Genus Analysis',
+            'Perform genus analysis',
             'Calculate various metrics betweens all pairs of genera (mean/min/max), '
             'based on the distances between their member specimens.',
             self)
-        self.cards.input_genera = PartitionSelector('Genera Partition', 'Genera', 'Individuals', self)
+        self.cards.input_genera = PartitionSelector('Genera partition', 'Genera', 'Individuals', self)
         self.cards.alignment_mode = AlignmentModeSelector(self)
         self.cards.distance_metrics = DistanceMetricSelector(self)
         self.cards.stats_options = StatisticSelector(self)
@@ -918,8 +918,8 @@ class VersusAllView(TaskView):
         for card in self.cards:
             layout.addWidget(card)
         layout.addStretch(1)
-        layout.setSpacing(8)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
+        layout.setContentsMargins(6, 6, 6, 6)
         self.setLayout(layout)
 
     def setObject(self, object):

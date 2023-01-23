@@ -67,7 +67,7 @@ class VersusAllModel(Task):
     task_name = 'Versus All'
 
     perform_species = Property(bool, True)
-    perform_genera = Property(bool, False)
+    perform_genera = Property(bool, True)
 
     input_sequences = Property(SequenceModel2, None)
     input_species = Property(PartitionModel, None)
