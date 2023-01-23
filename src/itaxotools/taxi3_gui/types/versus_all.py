@@ -89,8 +89,8 @@ class DistanceMetric(PropertyEnum):
     UncorrectedWithGaps = Entry('Uncorrected with gaps', 'pg', True)
     JukesCantor = Entry('Jukes Cantor (jc)', 'jc', True)
     Kimura2Parameter = Entry('Kimura 2-Parameter (k2p)', 'k2p', True)
-    NCD = Entry('Normalized Compression Distance (NCD)', 'ncd', False)
-    BBC = Entry('Base-Base Correlation (BBC)', 'bbc', False)
+    NCD = Entry('Normalized Compression Distance (NCD)', 'ncd', True)
+    BBC = Entry('Base-Base Correlation (BBC)', 'bbc', True)
 
 
 class StatisticsGroup(PropertyEnum):
@@ -101,9 +101,9 @@ class StatisticsGroup(PropertyEnum):
 
 
 class AlignmentMode(Enum):
-    PairwiseAlignment = ('Pairwise alignment', 'align each pair of sequences just before calculating distances')
     NoAlignment = ('Already aligned', 'the sequences will be compared without further alignment')
-    MSA = ('Multiple sequence alignment', 'uses MAFFT to align all sequences in advance')
+    PairwiseAlignment = ('Pairwise alignment', 'align each pair of sequences just before calculating distances')
+    AlignmentFree = ('Alignment-free', 'calculate pairwise distances using alignment-free metrics')
 
     def __init__(self, label, description):
         self.label = label

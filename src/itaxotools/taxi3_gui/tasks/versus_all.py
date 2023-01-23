@@ -158,9 +158,31 @@ def versus_all(
     if perform_genera:
         task.input.genera = partition_from_model(input_genera)
 
-    task.params.pairs.align = alignment_mode in [AlignmentMode.PairwiseAlignment]
+    task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
     task.params.pairs.scores = Scores(**alignment_pairwise_scores)
     task.params.pairs.write = alignment_write_pairs
+
+    metrics_filter = {
+        AlignmentMode.NoAlignment: [
+            DistanceMetric.Uncorrected,
+            DistanceMetric.UncorrectedWithGaps,
+            DistanceMetric.JukesCantor,
+            DistanceMetric.Kimura2Parameter,
+            DistanceMetric.NCD,
+            DistanceMetric.BBC,
+        ],
+        AlignmentMode.PairwiseAlignment: [
+            DistanceMetric.Uncorrected,
+            DistanceMetric.UncorrectedWithGaps,
+            DistanceMetric.JukesCantor,
+            DistanceMetric.Kimura2Parameter,
+        ],
+        AlignmentMode.AlignmentFree: [
+            DistanceMetric.NCD,
+            DistanceMetric.BBC,
+        ],
+    }[alignment_mode]
+    distance_metrics = (metric for metric in distance_metrics if metric in metrics_filter)
 
     metrics_tr = {
         DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),

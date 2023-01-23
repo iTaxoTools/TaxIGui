@@ -623,7 +623,6 @@ class AlignmentModeSelector(Card):
         radios.setSpacing(8)
         for mode in AlignmentMode:
             button = RichRadioButton(f'{mode.label}:', mode.description, self)
-            button.setEnabled(mode != AlignmentMode.MSA)
             radios.addWidget(button)
             group.add(button, mode)
 
@@ -716,10 +715,6 @@ class DistanceMetricSelector(Card):
         metrics.addWidget(metric_k2p, 1, 2)
         metrics.setColumnStretch(2, 2)
 
-        description_free = QtWidgets.QLabel(
-            'The following alignment-free metrics are also available:')
-        description_free.setWordWrap(True)
-
         metric_ncd = QtWidgets.QCheckBox('Normalized Compression Distance (NCD)')
         metric_bbc = QtWidgets.QCheckBox('Base-Base Correlation (BBC)')
 
@@ -745,12 +740,16 @@ class DistanceMetricSelector(Card):
         metrics_free.addLayout(metric_bbc_k, 1, 2)
         metrics_free.setColumnStretch(2, 2)
 
+        metrics_all = QtWidgets.QVBoxLayout()
+        metrics_all.addLayout(metrics)
+        metrics_all.addLayout(metrics_free)
+        metrics_all.setContentsMargins(0, 0, 0, 0)
+        metrics_all.setSpacing(8)
+
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(label)
         layout.addWidget(description)
-        layout.addLayout(metrics)
-        layout.addWidget(description_free)
-        layout.addLayout(metrics_free)
+        layout.addLayout(metrics_all)
         layout.setSpacing(16)
 
         self.controls.metrics = AttrDict()
@@ -818,6 +817,18 @@ class DistanceMetricSelector(Card):
         layout.setColumnStretch(4, 2)
 
         self.addLayout(layout)
+
+    def setAlignmentMode(self, mode):
+        pairwise = bool(mode == AlignmentMode.PairwiseAlignment)
+        self.controls.metrics.ncd.setVisible(not pairwise)
+        self.controls.metrics.bbc.setVisible(not pairwise)
+        self.controls.bbc_k.setVisible(not pairwise)
+        self.controls.bbc_k_label.setVisible(not pairwise)
+        free = bool(mode == AlignmentMode.AlignmentFree)
+        self.controls.metrics.p.setVisible(not free)
+        self.controls.metrics.pg.setVisible(not free)
+        self.controls.metrics.jc.setVisible(not free)
+        self.controls.metrics.k2p.setVisible(not free)
 
 
 class StatisticSelector(Card):
@@ -996,6 +1007,8 @@ class VersusAllView(TaskView):
         self.binder.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
         self.binder.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
         self.binder.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
+
+        self.binder.bind(object.properties.alignment_mode, self.cards.distance_metrics.setAlignmentMode)
 
         for group in StatisticsGroup:
             self.binder.bind(self.cards.stats_options.controls[group.key].toggled, object.statistics_groups.properties[group.key])
