@@ -211,7 +211,7 @@ def versus_all(
 
     task.params.plot.histograms = plot_histograms
     task.params.plot.binwidth = plot_binwidth
-    task.params.plot.formats = ['pdf']
+    task.params.plot.formats = ['pdf', 'svg', 'png']
 
     results = task.start()
 
