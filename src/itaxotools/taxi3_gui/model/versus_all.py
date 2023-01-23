@@ -240,12 +240,11 @@ class VersusAllModel(Task):
 
     def propagate_file_item(self, file_item):
         if file_item and isinstance(file_item.object, InputFileModel.Tabfile):
-            if not self.input_sequences:
-                self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
-            if not self.input_species:
-                self.input_species = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.species)
-            if not self.input_genera:
-                self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.genera)
+            self.perform_species = True
+            self.perform_genera = True
+            self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
+            self.input_species = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.species)
+            self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.genera)
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
