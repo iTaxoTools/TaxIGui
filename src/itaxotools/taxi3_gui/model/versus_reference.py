@@ -165,6 +165,9 @@ class VersusReferenceModel(Task):
                 return
             index = app.model.items.add_file(InputFileModel.Tabfile(info), focus=False)
             return index.data(ItemModel.ItemRole)
+        elif info.type == InputFile.Fasta:
+            index = app.model.items.add_file(InputFileModel.Fasta(info), focus=False)
+            return index.data(ItemModel.ItemRole)
         else:
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
             return None
@@ -176,6 +179,9 @@ class VersusReferenceModel(Task):
             model_type = {
                 InputFileModel.Tabfile: {
                     SequenceModel2: SequenceModel2.Tabfile,
+                },
+                InputFileModel.Fasta: {
+                    SequenceModel2: SequenceModel2.Fasta,
                 },
             }[type(file_item.object)][model_parent]
         except Exception:

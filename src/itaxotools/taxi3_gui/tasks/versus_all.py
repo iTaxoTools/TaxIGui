@@ -70,6 +70,11 @@ def get_file_info(path: Path):
             species = info.header_species,
             genera = info.header_genus,
         )
+    if info.format == FileFormat.Fasta:
+        return InputFile.Fasta(
+            path = path,
+            size = info.size,
+        )
     return InputFile.Unknown(path)
 
 
@@ -84,6 +89,11 @@ def sequences_from_model(input: SequenceModel2):
             hasHeader = True,
             idColumn=input.index_column,
             seqColumn=input.sequence_column,
+        )
+    elif input.type == FileFormat.Fasta:
+        return Sequences.fromPath(
+            input.path,
+            SequenceHandler.Fasta,
         )
     raise Exception(f'Cannot create sequences from input: {input}')
 

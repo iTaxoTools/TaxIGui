@@ -52,6 +52,14 @@ class SequenceModel2(Object):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
 
 
+class Fasta(SequenceModel2):
+    def as_dict(self):
+        return AttrDict(
+            type = FileFormat.Fasta,
+            path = self.file_item.object.path,
+        )
+
+
 class Tabfile(SequenceModel2):
     index_column = Property(int, -1)
     sequence_column = Property(int, -1)

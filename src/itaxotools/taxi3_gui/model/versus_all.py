@@ -66,8 +66,8 @@ class StatisticsGroups(EnumObject):
 class VersusAllModel(Task):
     task_name = 'Versus All'
 
-    perform_species = Property(bool, True)
-    perform_genera = Property(bool, True)
+    perform_species = Property(bool, False)
+    perform_genera = Property(bool, False)
 
     input_sequences = Property(SequenceModel2, None)
     input_species = Property(PartitionModel, None)
@@ -158,8 +158,8 @@ class VersusAllModel(Task):
             perform_genera=self.perform_genera,
 
             input_sequences=self.input_sequences.as_dict(),
-            input_species=self.input_species.as_dict(),
-            input_genera=self.input_genera.as_dict(),
+            input_species=self.input_species.as_dict() if self.input_species else None,
+            input_genera=self.input_genera.as_dict() if self.input_genera else None,
 
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
@@ -201,6 +201,9 @@ class VersusAllModel(Task):
                 return
             index = app.model.items.add_file(InputFileModel.Tabfile(info), focus=False)
             return index.data(ItemModel.ItemRole)
+        elif info.type == InputFile.Fasta:
+            index = app.model.items.add_file(InputFileModel.Fasta(info), focus=False)
+            return index.data(ItemModel.ItemRole)
         else:
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
             return None
@@ -213,6 +216,9 @@ class VersusAllModel(Task):
                 InputFileModel.Tabfile: {
                     SequenceModel2: SequenceModel2.Tabfile,
                     PartitionModel: PartitionModel.Tabfile,
+                },
+                InputFileModel.Fasta: {
+                    SequenceModel2: SequenceModel2.Fasta,
                 },
             }[type(file_item.object)][model_parent]
         except Exception:

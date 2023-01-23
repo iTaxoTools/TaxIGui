@@ -46,6 +46,11 @@ class Unknown(InputFile):
 
 
 @dataclass
+class Fasta(InputFile):
+    pass
+
+
+@dataclass
 class Tabfile(InputFile):
     headers: list[str]
     individuals: str = None

@@ -37,6 +37,14 @@ class InputFileModel(Object):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
 
 
+class Fasta(InputFileModel):
+    info = Property(InputFile.Fasta, None)
+
+    def __init__(self, info: InputFile.Fasta):
+        super().__init__(info.path, info.size)
+        self.info = info
+
+
 class Tabfile(InputFileModel):
     info = Property(InputFile.Tabfile, None)
 
