@@ -24,7 +24,7 @@ from .. import app
 from ..tasks import versus_all
 from ..model import Item, ItemModel, Object
 from ..types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, VersusAllSubtask
-from ..utility import EnumObject, Property, Instance
+from ..utility import EnumObject, Property, Instance, human_readable_seconds
 from .common import Task
 from .sequence import SequenceModel2
 from .input_file import InputFileModel
@@ -248,7 +248,8 @@ class VersusAllModel(Task):
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:
-            self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
+            time_taken = human_readable_seconds(report.result.seconds_taken)
+            self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
             self.dummy_results = report.result.output_directory
             self.dummy_time = report.result.seconds_taken
             self.busy_main = False

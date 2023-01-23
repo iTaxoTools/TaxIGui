@@ -349,3 +349,16 @@ def human_readable_size(size):
             break
         size /= 1000.0
     return f'{size:.2f} {unit}'
+
+
+def human_readable_seconds(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+
+    segments = [
+        f'{int(h)} hour{"s" if h >= 2 else ""}' if h else None,
+        f'{int(m)} minute{"s" if m >= 2 else ""}' if m else None,
+        f'{s:.2f} seconds' if s else None,
+    ]
+    segments = (x for x in segments if x)
+    return ', '.join(segments)
