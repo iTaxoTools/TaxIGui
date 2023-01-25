@@ -68,7 +68,7 @@ class Main(ToolDialog):
         action.setIcon(app.resources.icons.open)
         action.setShortcut(QtGui.QKeySequence.Open)
         action.setStatusTip('Open an existing file')
-        action.triggered.connect(self.handleOpen)
+        # action.triggered.connect(self.handleOpen)
         action.setVisible(False)
         self.actions.open = action
 
@@ -76,7 +76,7 @@ class Main(ToolDialog):
         action.setIcon(app.resources.icons.save)
         action.setShortcut(QtGui.QKeySequence.Save)
         action.setStatusTip('Save results')
-        action.triggered.connect(self.handleSave)
+        # action.triggered.connect(self.handleSave)
         self.actions.save = action
 
         action = QtGui.QAction('&Run', self)

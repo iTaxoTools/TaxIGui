@@ -19,6 +19,7 @@
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from shutil import copytree
 
 from .. import app
 from ..tasks import versus_reference
@@ -235,3 +236,6 @@ class VersusReferenceModel(Task):
         self.dummy_results = None
         self.dummy_time = None
         self.done = False
+
+    def save(self, destination: Path):
+        copytree(self.dummy_results, destination, dirs_exist_ok=True)

@@ -1080,3 +1080,8 @@ class VersusAllView(TaskView):
         self.cards.title.setEnabled(True)
         self.cards.dummy_results.setEnabled(True)
         self.cards.progress.setEnabled(True)
+
+    def save(self):
+        path = self.getExistingDirectory('Save All')
+        if path:
+            self.object.save(path)
