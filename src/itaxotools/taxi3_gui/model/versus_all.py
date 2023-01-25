@@ -88,7 +88,7 @@ class VersusAllModel(Task):
     distance_metrics = Property(DistanceMetrics, Instance)
     statistics_groups = Property(StatisticsGroups, Instance)
 
-    plot_histograms = Property(bool, False)
+    plot_histograms = Property(bool, True)
     plot_binwidth = Property(float, 0.05)
 
     busy_main = Property(bool, False)
@@ -232,11 +232,11 @@ class VersusAllModel(Task):
         self.propagate_file_item(file_item)
 
     def set_species_file_from_file_item(self, file_item):
-        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.species)
+        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
         # self.propagate_file_item(file_item)
 
     def set_genera_file_from_file_item(self, file_item):
-        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.genera)
+        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
         # self.propagate_file_item(file_item)
 
     def propagate_file_item(self, file_item):
@@ -244,8 +244,8 @@ class VersusAllModel(Task):
             self.perform_species = True
             self.perform_genera = True
             self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
-            self.input_species = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.species)
-            self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.genera)
+            self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+            self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:

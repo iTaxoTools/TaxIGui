@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
@@ -44,17 +46,22 @@ class Tabfile(PartitionModel):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
     individual_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(self, file_item, subset: str):
+    def __init__(self, file_item, preference: 'species' | 'genera' = None):
         assert isinstance(file_item.object, InputFileModel.Tabfile)
         super().__init__(file_item)
         info = file_item.object.info
 
+        subset = {
+            'species': info.species,
+            'genera': info.genera,
+            None: info.organism,
+        }[preference]
         self.individual_column = self._header_get(info.headers, info.individuals)
         self.subset_column = self._header_get(info.headers, subset)
 
         if self.subset_column < 0:
             self.subset_column = self._header_get(info.headers, info.organism)
-            if self.subset_column >= 0 and subset == 'genera':
+            if self.subset_column >= 0 and preference == 'genera':
                 self.subset_filter = ColumnFilter.First
 
     @staticmethod
