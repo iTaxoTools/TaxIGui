@@ -229,6 +229,10 @@ class ItemModel(QtCore.QAbstractItemModel):
         return self._add_entry(self.sequences, sequence, focus)
 
     def add_file(self, file, focus=False):
+        for row, file_item in enumerate(self.files.children):
+            if file_item.object.path == file.path:
+                parent = self.createIndex(self.files.row, 0, self.files)
+                return self.index(row, 0, parent)
         return self._add_entry(self.files, file, focus)
 
     def focus(self, index):
