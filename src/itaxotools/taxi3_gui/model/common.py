@@ -232,8 +232,18 @@ class ItemModel(QtCore.QAbstractItemModel):
         for row, file_item in enumerate(self.files.children):
             if file_item.object.path == file.path:
                 parent = self.createIndex(self.files.row, 0, self.files)
-                return self.index(row, 0, parent)
+                index = self.index(row, 0, parent)
+                if focus:
+                    self.focus(index)
+                return index
         return self._add_entry(self.files, file, focus)
+
+    def find_task(self, task_type):
+        for row, task_item in enumerate(self.tasks.children):
+            if type(task_item.object) == task_type:
+                parent = self.createIndex(self.tasks.row, 0, self.tasks)
+                return self.index(row, 0, parent)
+        return None
 
     def focus(self, index):
         self.focused.emit(index)

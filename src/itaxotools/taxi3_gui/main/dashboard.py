@@ -128,14 +128,20 @@ class Dashboard(QtWidgets.QFrame):
         layout.setContentsMargins(6, 6, 6, 6)
         self.setLayout(layout)
 
+    def addTaskIfNew(self, type: Task):
+        index = app.model.items.find_task(type)
+        if index is None:
+            index = app.model.items.add_task(type())
+        app.model.items.focus(index)
+
     def handleDereplicate(self):
-        app.model.items.add_task(DereplicateModel(), focus=True)
+        self.addTaskIfNew(DereplicateModel)
 
     def handleDecontaminate(self):
-        app.model.items.add_task(DecontaminateModel(), focus=True)
+        self.addTaskIfNew(DecontaminateModel)
 
     def handleVersusAll(self):
-        app.model.items.add_task(VersusAllModel(), focus=True)
+        self.addTaskIfNew(VersusAllModel)
 
     def handleVersusReference(self):
-        app.model.items.add_task(VersusReferenceModel(), focus=True)
+        self.addTaskIfNew(VersusReferenceModel)
