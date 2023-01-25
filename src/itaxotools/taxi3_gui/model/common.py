@@ -97,7 +97,8 @@ class Task(Object):
 
     @classmethod
     def _get_next_name(cls):
-        return f'{cls.task_name} #{next(cls.counters[cls.task_name])}'
+        # return f'{cls.task_name} #{next(cls.counters[cls.task_name])}'
+        return cls.task_name
 
     def __repr__(self):
         return f'{self.task_name}({repr(self.name)})'

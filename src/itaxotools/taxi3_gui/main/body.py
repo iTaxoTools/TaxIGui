@@ -92,6 +92,7 @@ class Body(QtWidgets.QStackedWidget):
         self.binder.bind(task.properties.ready, self.actions.start.setEnabled)
         self.binder.bind(task.properties.editable, self.actions.start.setVisible)
         self.binder.bind(task.properties.busy, self.actions.stop.setVisible)
+        self.binder.bind(task.properties.busy, self.actions.home.setEnabled, lambda busy: not busy)
         self.binder.bind(task.properties.done, self.actions.save.setEnabled)
         self.binder.bind(task.properties.done, self.actions.clear.setVisible)
 

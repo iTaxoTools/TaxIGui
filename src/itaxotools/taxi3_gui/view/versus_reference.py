@@ -165,12 +165,15 @@ class TitleCard(Card):
 
         run = QtWidgets.QPushButton('Run')
         run.clicked.connect(self.handleRun)
+        run.setVisible(False)
 
         cancel = QtWidgets.QPushButton('Cancel')
         cancel.clicked.connect(self.handleCancel)
+        cancel.setVisible(False)
 
         remove = QtWidgets.QPushButton('Remove')
         remove.setEnabled(False)
+        remove.setVisible(False)
 
         contents = QtWidgets.QVBoxLayout()
         contents.addWidget(title)
@@ -204,12 +207,13 @@ class TitleCard(Card):
         self.controls.title.setText(text)
 
     def setReady(self, ready: bool):
-        self.controls.run.setEnabled(ready)
+        # self.controls.run.setEnabled(ready)
+        pass
 
     def setBusy(self, busy: bool):
         self.setEnabled(True)
-        self.controls.run.setVisible(not busy)
-        self.controls.cancel.setVisible(busy)
+        # self.controls.run.setVisible(not busy)
+        # self.controls.cancel.setVisible(busy)
 
 
 class DummyResultsCard(Card):

@@ -43,7 +43,7 @@ class DashItem(QtWidgets.QAbstractButton):
 
     @override
     def sizeHint(self):
-        return QtCore.QSize(260, 70)
+        return QtCore.QSize(260, 90)
 
     @override
     def event(self, event):
@@ -83,7 +83,7 @@ class DashItem(QtWidgets.QAbstractButton):
         rect.setHeight(rect.height() / 2)
 
         font = painter.font()
-        font.setPixelSize(16)
+        font.setPixelSize(18)
         font.setBold(True)
         font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 1)
         painter.setFont(font)

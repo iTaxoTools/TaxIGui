@@ -49,7 +49,7 @@ class Main(ToolDialog):
 
         self.setWindowIcon(app.resources.icons.app)
         self.setWindowTitle(app.title)
-        self.resize(800, 500)
+        self.resize(680, 500)
 
         self.act()
         self.draw()
@@ -69,6 +69,7 @@ class Main(ToolDialog):
         action.setShortcut(QtGui.QKeySequence.Open)
         action.setStatusTip('Open an existing file')
         action.triggered.connect(self.handleOpen)
+        action.setVisible(False)
         self.actions.open = action
 
         action = QtGui.QAction('&Save', self)
@@ -103,6 +104,8 @@ class Main(ToolDialog):
         self.widgets.sidebar = SideBar(self)
         self.widgets.body = Body(self)
         self.widgets.footer = Footer(self)
+
+        self.widgets.sidebar.setVisible(False)
 
         for action in self.actions:
             self.widgets.header.toolBar.addAction(action)
