@@ -26,7 +26,7 @@ from .. import app
 from ..utility import Guard, Binder, type_convert, human_readable_size
 from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
 from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
-from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, SequenceSelector as SequenceSelectorLegacy, ComparisonModeSelector as ComparisonModeSelectorLegacy
+from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):
@@ -360,6 +360,12 @@ class SequenceSelector(InputSelector):
         combo.setModel(proxy_model)
 
     def draw_config(self):
+        self.controls.config = MinimumStackedWidget()
+        self.addWidget(self.controls.config)
+        self.draw_config_tabfile()
+        self.draw_config_fasta()
+
+    def draw_config_tabfile(self):
         layout = QtWidgets.QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
@@ -416,44 +422,80 @@ class SequenceSelector(InputSelector):
         column += 1
 
         view = QtWidgets.QPushButton('View')
+        view.setEnabled(False)
 
         layout.addWidget(view, 0, column)
         column += 1
 
         widget = QtWidgets.QWidget()
         widget.setLayout(layout)
-        self.addWidget(widget)
 
-        self.controls.config = widget
-        self.controls.index_combo = index_combo
-        self.controls.sequence_combo = sequence_combo
-        self.controls.index_filter = index_filter
-        self.controls.sequence_filter = sequence_filter
-        self.controls.file_size = size_label_value
+        self.controls.tabfile = AttrDict()
+        self.controls.tabfile.widget = widget
+        self.controls.tabfile.index_combo = index_combo
+        self.controls.tabfile.sequence_combo = sequence_combo
+        self.controls.tabfile.index_filter = index_filter
+        self.controls.tabfile.sequence_filter = sequence_filter
+        self.controls.tabfile.file_size = size_label_value
+        self.controls.config.addWidget(widget)
+
+    def draw_config_fasta(self):
+        type_label = QtWidgets.QLabel('File format:')
+        size_label = QtWidgets.QLabel('File size:')
+
+        type_label_value = QtWidgets.QLabel('Fasta')
+        size_label_value = QtWidgets.QLabel('42 MB')
+
+        view = QtWidgets.QPushButton('View')
+        view.setEnabled(False)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        layout.addWidget(type_label)
+        layout.addWidget(type_label_value)
+        layout.addSpacing(40)
+        layout.addWidget(size_label)
+        layout.addWidget(size_label_value)
+        layout.addStretch(1)
+        layout.addWidget(view)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+
+        self.controls.fasta = AttrDict()
+        self.controls.fasta.widget = widget
+        self.controls.fasta.file_size = size_label_value
+        self.controls.config.addWidget(widget)
 
     def setObject(self, object):
         super().setObject(object)
         if object and isinstance(object, SequenceModel2.Tabfile):
             self.populateCombos(object.file_item.object.info.headers)
-            self.binder.bind(object.properties.index_column, self.controls.index_combo.setCurrentIndex)
-            self.binder.bind(self.controls.index_combo.currentIndexChanged, object.properties.index_column)
-            self.binder.bind(object.properties.sequence_column, self.controls.sequence_combo.setCurrentIndex)
-            self.binder.bind(self.controls.sequence_combo.currentIndexChanged, object.properties.sequence_column)
-            self.binder.bind(object.properties.index_filter, self.controls.index_filter.setValue)
-            self.binder.bind(self.controls.index_filter.valueChanged, object.properties.index_filter)
-            self.binder.bind(object.properties.sequence_filter, self.controls.sequence_filter.setValue)
-            self.binder.bind(self.controls.sequence_filter.valueChanged, object.properties.sequence_filter)
-            self.binder.bind(object.file_item.object.properties.size, self.controls.file_size.setText, lambda x: human_readable_size(x))
+            self.binder.bind(object.properties.index_column, self.controls.tabfile.index_combo.setCurrentIndex)
+            self.binder.bind(self.controls.tabfile.index_combo.currentIndexChanged, object.properties.index_column)
+            self.binder.bind(object.properties.sequence_column, self.controls.tabfile.sequence_combo.setCurrentIndex)
+            self.binder.bind(self.controls.tabfile.sequence_combo.currentIndexChanged, object.properties.sequence_column)
+            self.binder.bind(object.properties.index_filter, self.controls.tabfile.index_filter.setValue)
+            self.binder.bind(self.controls.tabfile.index_filter.valueChanged, object.properties.index_filter)
+            self.binder.bind(object.properties.sequence_filter, self.controls.tabfile.sequence_filter.setValue)
+            self.binder.bind(self.controls.tabfile.sequence_filter.valueChanged, object.properties.sequence_filter)
+            self.binder.bind(object.file_item.object.properties.size, self.controls.tabfile.file_size.setText, lambda x: human_readable_size(x))
+            self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
+            self.controls.config.setVisible(True)
+        elif object and isinstance(object, SequenceModel2.Fasta):
+            self.binder.bind(object.file_item.object.properties.size, self.controls.fasta.file_size.setText, lambda x: human_readable_size(x))
+            self.controls.config.setCurrentWidget(self.controls.fasta.widget)
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)
 
     def populateCombos(self, headers):
-        self.controls.index_combo.clear()
-        self.controls.sequence_combo.clear()
+        self.controls.tabfile.index_combo.clear()
+        self.controls.tabfile.sequence_combo.clear()
         for header in headers:
-            self.controls.index_combo.addItem(header)
-            self.controls.sequence_combo.addItem(header)
+            self.controls.tabfile.index_combo.addItem(header)
+            self.controls.tabfile.sequence_combo.addItem(header)
 
 
 class AlignmentModeSelector(Card):

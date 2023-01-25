@@ -232,11 +232,11 @@ class VersusAllModel(Task):
 
     def set_species_file_from_file_item(self, file_item):
         self.input_species = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.species)
-        self.propagate_file_item(file_item)
+        # self.propagate_file_item(file_item)
 
     def set_genera_file_from_file_item(self, file_item):
         self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, file_item.object.info.genera)
-        self.propagate_file_item(file_item)
+        # self.propagate_file_item(file_item)
 
     def propagate_file_item(self, file_item):
         if file_item and isinstance(file_item.object, InputFileModel.Tabfile):

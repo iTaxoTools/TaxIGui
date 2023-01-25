@@ -635,3 +635,11 @@ class CategoryButton(QtWidgets.QAbstractButton):
         painter.restore()
 
         painter.end()
+
+
+class MinimumStackedWidget(QtWidgets.QStackedWidget):
+    def sizeHint(self):
+        return self.currentWidget().sizeHint()
+
+    def minimumSizeHint(self):
+        return self.currentWidget().sizeHint()

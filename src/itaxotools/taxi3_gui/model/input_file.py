@@ -30,7 +30,7 @@ class InputFileModel(Object):
     def __init__(self, path, size):
         super().__init__()
         self.path = path
-        self.name = path.name
+        self.name = f'{path.parent.name}/{path.name}'
         self.size = size  # bytes
 
     def __repr__(self):
