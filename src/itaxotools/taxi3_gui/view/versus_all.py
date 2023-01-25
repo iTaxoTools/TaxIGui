@@ -224,6 +224,7 @@ class DummyResultsCard(Card):
 
         title = QtWidgets.QLabel('Results: ')
         title.setStyleSheet("""font-size: 16px;""")
+        title.setMinimumWidth(120)
 
         path = QtWidgets.QLineEdit()
         path.setReadOnly(True)
@@ -235,7 +236,7 @@ class DummyResultsCard(Card):
         layout.addWidget(title)
         layout.addWidget(path, 1)
         layout.addWidget(browse)
-        layout.setSpacing(12)
+        layout.setSpacing(16)
         self.addLayout(layout)
 
         self.controls.path = path
@@ -280,6 +281,7 @@ class InputSelector(Card):
     def draw_main(self, text, model):
         label = QtWidgets.QLabel(text + ':')
         label.setStyleSheet("""font-size: 16px;""")
+        label.setMinimumWidth(120)
 
         combo = NoWheelComboBox()
         combo.currentIndexChanged.connect(self.handleItemChanged)
@@ -299,11 +301,11 @@ class InputSelector(Card):
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(label)
-        layout.addSpacing(8)
         layout.addWidget(combo, 1)
         layout.addWidget(wait, 1)
         layout.addWidget(browse)
         layout.addWidget(loading)
+        layout.setSpacing(16)
         self.addLayout(layout)
 
         self.controls.label = label
@@ -430,7 +432,7 @@ class SequenceSelector(InputSelector):
         view.setVisible(False)
 
         layout.addWidget(view, 0, column)
-        layout.setColumnMinimumWidth(column, 90)
+        layout.setColumnMinimumWidth(column, 80)
         column += 1
 
         widget = QtWidgets.QWidget()
@@ -575,7 +577,7 @@ class PartitionSelector(InputSelector):
         view.setVisible(False)
 
         layout.addWidget(view, 0, column)
-        layout.setColumnMinimumWidth(column, 90)
+        layout.setColumnMinimumWidth(column, 80)
         column += 1
 
         widget = QtWidgets.QWidget()

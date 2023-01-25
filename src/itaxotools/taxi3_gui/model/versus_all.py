@@ -297,3 +297,4 @@ class VersusAllModel(Task):
 
     def save(self, destination: Path):
         copytree(self.dummy_results, destination, dirs_exist_ok=True)
+        self.notification.emit(Notification.Info('Saved files successfully!'))
