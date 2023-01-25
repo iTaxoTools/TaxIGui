@@ -95,7 +95,7 @@ class DistanceMetric(PropertyEnum):
     JukesCantor = Entry('Jukes Cantor (jc)', 'jc', True)
     Kimura2Parameter = Entry('Kimura 2-Parameter (k2p)', 'k2p', True)
     NCD = Entry('Normalized Compression Distance (NCD)', 'ncd', True)
-    BBC = Entry('Base-Base Correlation (BBC)', 'bbc', True)
+    BBC = Entry('Base-Base Correlation (BBC)', 'bbc', False)
 
 
 class StatisticsGroup(PropertyEnum):

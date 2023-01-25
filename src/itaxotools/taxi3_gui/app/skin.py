@@ -54,7 +54,7 @@ colormap_icon = {
     '#000': colors['black'],
     '#f00': colors['red'],
     '#f88': colors['pink'],
-    '#ccc': colors['beige'],
+    '#ccc': colors['iron'],
 }
 
 colormap_icon_light = {

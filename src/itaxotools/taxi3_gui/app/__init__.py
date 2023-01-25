@@ -20,4 +20,4 @@
 
 from . import model, resources, skin
 
-title = 'TaxI3'
+title = 'TaxI2.1'
