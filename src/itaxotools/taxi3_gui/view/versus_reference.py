@@ -179,7 +179,7 @@ class TitleCard(Card):
         contents.addWidget(title)
         contents.addWidget(description)
         contents.addStretch(1)
-        contents.setSpacing(12)
+        contents.setSpacing(6)
 
         buttons = QtWidgets.QVBoxLayout()
         buttons.addWidget(run)
@@ -189,6 +189,7 @@ class TitleCard(Card):
         buttons.setSpacing(8)
 
         layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 10, 0, 10)
         layout.addLayout(contents, 1)
         layout.addLayout(buttons, 0)
         self.addLayout(layout)
@@ -426,7 +427,7 @@ class SequenceSelector(InputSelector):
         column += 1
 
         view = QtWidgets.QPushButton('View')
-        view.setEnabled(False)
+        view.setVisible(False)
 
         layout.addWidget(view, 0, column)
         column += 1
@@ -451,18 +452,19 @@ class SequenceSelector(InputSelector):
         size_label_value = QtWidgets.QLabel('42 MB')
 
         view = QtWidgets.QPushButton('View')
-        view.setEnabled(False)
+        view.setVisible(False)
 
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
         layout.addWidget(type_label)
         layout.addWidget(type_label_value)
-        layout.addSpacing(40)
+        layout.addSpacing(48)
         layout.addWidget(size_label)
         layout.addWidget(size_label_value)
         layout.addStretch(1)
         layout.addWidget(view)
+        layout.addSpacing(100)
 
         widget = QtWidgets.QWidget()
         widget.setLayout(layout)
