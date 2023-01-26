@@ -951,13 +951,20 @@ class DereplicateView(TaskView):
         self.binder.bind(object.properties.length_threshold, self.cards.length.controls.lengthThreshold.setText, lambda x: str(x) if x is not None else '')
         self.binder.bind(self.cards.length.controls.lengthThreshold.textEditedSafe, object.properties.length_threshold, lambda x: type_convert(x, int, 0))
 
-        self.binder.bind(object.properties.alignment_mode, self.cards.similarity.setVisible, lambda x: x == AlignmentMode.AlignmentFree)
-        self.binder.bind(object.properties.alignment_mode, self.cards.identity.setVisible, lambda x: x != AlignmentMode.AlignmentFree)
-
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
 
+        self.binder.bind(object.properties.distance_metric, self.update_visible_cards)
+
         self.binder.bind(object.properties.editable, self.setEditable)
+
+    def update_visible_cards(self, *args, **kwargs):
+        uncorrected = any((
+            self.object.distance_metric == DistanceMetric.Uncorrected,
+            self.object.distance_metric == DistanceMetric.UncorrectedWithGaps,
+        ))
+        self.cards.identity.setVisible(uncorrected)
+        self.cards.similarity.setVisible(not uncorrected)
 
     def setEditable(self, editable: bool):
         for card in self.cards:

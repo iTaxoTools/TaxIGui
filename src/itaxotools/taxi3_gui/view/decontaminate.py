@@ -977,12 +977,12 @@ class DecontaminateView(TaskView):
         self.cards.input_sequences = SequenceSelector('Input sequence', self)
         self.cards.mode_selector = DecontaminateModeSelector(self)
         self.cards.outgroup_sequences = SequenceSelector('Outgroup reference', self)
-        self.cards.similarity = SimilarityThresholdCard(self)
-        self.cards.identity = IdentityThresholdCard(self)
         self.cards.ingroup_sequences = SequenceSelector('Ingroup reference', self)
         self.cards.weight_selector = ReferenceWeightSelector(self)
         self.cards.alignment_mode = AlignmentModeSelector(self)
         self.cards.distance_metrics = DistanceMetricSelector(self)
+        self.cards.similarity = SimilarityThresholdCard(self)
+        self.cards.identity = IdentityThresholdCard(self)
 
         layout = QtWidgets.QVBoxLayout()
         for card in self.cards:
@@ -1072,27 +1072,29 @@ class DecontaminateView(TaskView):
         self.binder.bind(self.cards.weight_selector.edited_outgroup, object.properties.outgroup_weight)
         self.binder.bind(self.cards.weight_selector.edited_ingroup, object.properties.ingroup_weight)
 
-        self.binder.bind(object.properties.alignment_mode, self.update_visible_cards)
-        self.binder.bind(object.properties.decontaminate_mode, self.update_visible_cards)
-
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
+
+        self.binder.bind(object.properties.distance_metric, self.update_visible_cards)
+        self.binder.bind(object.properties.decontaminate_mode, self.update_visible_cards)
 
         self.binder.bind(object.properties.editable, self.setEditable)
 
     def update_visible_cards(self, *args, **kwargs):
-        free = bool(self.object.alignment_mode == AlignmentMode.AlignmentFree)
+        uncorrected = any((
+            self.object.distance_metric == DistanceMetric.Uncorrected,
+            self.object.distance_metric == DistanceMetric.UncorrectedWithGaps,
+        ))
         if self.object.decontaminate_mode == DecontaminateMode.DECONT:
             self.cards.ingroup_sequences.setVisible(False)
             self.cards.weight_selector.setVisible(False)
-            self.cards.similarity.setVisible(free)
-            self.cards.identity.setVisible(not free)
+            self.cards.identity.setVisible(uncorrected)
+            self.cards.similarity.setVisible(not uncorrected)
         elif self.object.decontaminate_mode == DecontaminateMode.DECONT2:
             self.cards.ingroup_sequences.setVisible(True)
             self.cards.weight_selector.setVisible(True)
-            self.cards.similarity.setVisible(False)
             self.cards.identity.setVisible(False)
-
+            self.cards.similarity.setVisible(False)
 
     def setEditable(self, editable: bool):
         for card in self.cards:
