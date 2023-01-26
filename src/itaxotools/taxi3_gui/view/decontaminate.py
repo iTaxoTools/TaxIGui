@@ -18,10 +18,17 @@
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from itaxotools.common.utility import AttrDict
+from pathlib import Path
+
+from itaxotools.common.utility import AttrDict, override
 
 from .. import app
-from ..types import ComparisonMode, DecontaminateMode, Notification
+from ..utility import Guard, Binder, type_convert, human_readable_size
+from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
+from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
+from .common import Item, Card, NoWheelRadioButton, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget
+
+from ..types import ComparisonMode, DecontaminateMode, Notification, DecontaminateMode
 from .common import (
     Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
     SequenceSelector)
@@ -161,121 +168,735 @@ class ReferenceWeightSelector(Card):
         return self.locale.toString(number, 'f', 2)
 
 
-class DecontaminateView(ObjectView):
+class ItemProxyModel(QtCore.QAbstractProxyModel):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.root = None
+        self.unselected = '---'
+
+    def sourceDataChanged(self, topLeft, bottomRight):
+        self.dataChanged.emit(self.mapFromSource(topLeft), self.mapFromSource(bottomRight))
+
+    @override
+    def setSourceModel(self, model, root):
+        super().setSourceModel(model)
+        self.root = root
+        model.dataChanged.connect(self.sourceDataChanged)
+
+    @override
+    def mapFromSource(self, sourceIndex):
+        item = sourceIndex.internalPointer()
+        if not item or item.parent != self.root:
+            return QtCore.QModelIndex()
+        return self.createIndex(item.row + 1, 0, item)
+
+    @override
+    def mapToSource(self, proxyIndex):
+        if not proxyIndex.isValid():
+            return QtCore.QModelIndex()
+        if proxyIndex.row() == 0:
+            return QtCore.QModelIndex()
+        item = proxyIndex.internalPointer()
+        source = self.sourceModel()
+        return source.createIndex(item.row, 0, item)
+
+    @override
+    def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
+        if parent.isValid() or column != 0:
+            return QtCore.QModelIndex()
+        if row < 0 or row > len(self.root.children):
+            return QtCore.QModelIndex()
+        if row == 0:
+            return self.createIndex(0, 0)
+        return self.createIndex(row, 0, self.root.children[row - 1])
+
+    @override
+    def parent(self, index=QtCore.QModelIndex()) -> QtCore.QModelIndex:
+        return QtCore.QModelIndex()
+
+    @override
+    def rowCount(self, parent=QtCore.QModelIndex()) -> int:
+        return len(self.root.children) + 1
+
+    @override
+    def columnCount(self, parent=QtCore.QModelIndex()) -> int:
+        return 1
+
+    @override
+    def data(self, index: QtCore.QModelIndex, role: QtCore.Qt.ItemDataRole):
+        if not index.isValid():
+            return None
+        if index.row() == 0:
+            if role == QtCore.Qt.DisplayRole:
+                return self.unselected
+            return None
+        return super().data(index, role)
+
+    @override
+    def flags(self, index: QtCore.QModelIndex):
+        if not index.isValid():
+            return QtCore.Qt.NoItemFlags
+        if index.row() == 0:
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        return super().flags(index)
+
+
+class ColumnFilterDelegate(QtWidgets.QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        if not index.isValid():
+            return
+
+        self.initStyleOption(option, index)
+        option.text = index.data(ColumnFilterCombobox.LabelRole)
+        QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, painter)
+
+    def sizeHint(self, option, index):
+        height = self.parent().sizeHint().height()
+        return QtCore.QSize(100, height)
+
+
+class ColumnFilterCombobox(NoWheelComboBox):
+    valueChanged = QtCore.Signal(ColumnFilter)
+
+    DataRole = QtCore.Qt.UserRole
+    LabelRole = QtCore.Qt.UserRole + 1
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        model = QtGui.QStandardItemModel()
+        for filter in ColumnFilter:
+            item = QtGui.QStandardItem()
+            item.setData(filter.abr, QtCore.Qt.DisplayRole)
+            item.setData(filter.label, self.LabelRole)
+            item.setData(filter, self.DataRole)
+            model.appendRow(item)
+        self.setModel(model)
+
+        delegate = ColumnFilterDelegate(self)
+        self.setItemDelegate(delegate)
+
+        self.view().setMinimumWidth(100)
+
+        self.currentIndexChanged.connect(self.handleIndexChanged)
+
+    def handleIndexChanged(self, index):
+        self.valueChanged.emit(self.itemData(index, self.DataRole))
+
+    def setValue(self, value):
+        index = self.findData(value, self.DataRole)
+        self.setCurrentIndex(index)
+
+
+class TitleCard(Card):
+    run = QtCore.Signal()
+    cancel = QtCore.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.controls = AttrDict()
-        self.draw()
-
-    def draw(self):
-        self.cards = AttrDict()
-        self.cards.title = self.draw_title_card()
-        self.cards.input = self.draw_input_card()
-        self.cards.mode = self.draw_mode_card()
-        self.cards.outgroup = self.draw_outgroup_card()
-        self.cards.ingroup = self.draw_ingroup_card()
-        self.cards.comparison = self.draw_comparison_card()
-        self.cards.similarity = self.draw_similarity_card()
-        self.cards.identity = self.draw_identity_card()
-        self.cards.weights = self.draw_weights_card()
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.cards.title)
-        layout.addWidget(self.cards.input)
-        layout.addWidget(self.cards.mode)
-        layout.addWidget(self.cards.outgroup)
-        layout.addWidget(self.cards.ingroup)
-        layout.addWidget(self.cards.similarity)
-        layout.addWidget(self.cards.identity)
-        layout.addWidget(self.cards.weights)
-        layout.addWidget(self.cards.comparison)
-        layout.addStretch(1)
-        layout.setSpacing(8)
-        layout.setContentsMargins(8, 8, 8, 8)
-        self.setLayout(layout)
-
-    def draw_title_card(self):
-        card = Card(self)
 
         title = QtWidgets.QLabel('Decontaminate')
         title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
 
         description = QtWidgets.QLabel(
-            'Compare input sequences to one or several reference databases '
-            'and remove sequences matching possible contaminants.')
+            'For each sequence in the input dataset, find the closest match in the reference database.')
         description.setWordWrap(True)
 
-        progress = QtWidgets.QProgressBar()
-        progress.setMaximum(0)
-        progress.setMinimum(0)
-        progress.setValue(0)
-
         run = QtWidgets.QPushButton('Run')
-        cancel = QtWidgets.QPushButton('Cancel')
-        results = QtWidgets.QPushButton('Results')
-        remove = QtWidgets.QPushButton('Remove')
-
         run.clicked.connect(self.handleRun)
-        cancel.clicked.connect(self.handleCancel)
+        run.setVisible(False)
 
-        results.setEnabled(False)
+        cancel = QtWidgets.QPushButton('Cancel')
+        cancel.clicked.connect(self.handleCancel)
+        cancel.setVisible(False)
+
+        remove = QtWidgets.QPushButton('Remove')
         remove.setEnabled(False)
+        remove.setVisible(False)
 
         contents = QtWidgets.QVBoxLayout()
         contents.addWidget(title)
         contents.addWidget(description)
         contents.addStretch(1)
-        contents.addWidget(progress)
+        contents.setSpacing(6)
 
         buttons = QtWidgets.QVBoxLayout()
         buttons.addWidget(run)
         buttons.addWidget(cancel)
-        buttons.addWidget(results)
         buttons.addWidget(remove)
         buttons.addStretch(1)
         buttons.setSpacing(8)
 
         layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 10, 0, 10)
         layout.addLayout(contents, 1)
         layout.addLayout(buttons, 0)
-        card.addLayout(layout)
+        self.addLayout(layout)
 
-        self.controls.title = title
-        self.controls.description = description
-        self.controls.progress = progress
         self.controls.run = run
         self.controls.cancel = cancel
-        self.controls.results = results
-        self.controls.remove = remove
-        return card
+        self.controls.title = title
 
-    def draw_input_card(self):
-        card = SequenceSelector('Input Sequence(s):', self)
-        self.controls.inputItem = card
-        return card
+    def handleRun(self):
+        self.run.emit()
 
-    def draw_mode_card(self):
-        card = DecontaminateModeSelector(self)
-        self.controls.mode = card
-        return card
+    def handleCancel(self):
+        self.cancel.emit()
 
-    def draw_outgroup_card(self):
-        card = SequenceSelector('Outgroup Reference:', self)
-        self.controls.outgroupItem = card
-        return card
+    def setTitle(self, text):
+        self.controls.title.setText(text)
 
-    def draw_ingroup_card(self):
-        card = SequenceSelector('Ingroup Reference:', self)
-        self.controls.ingroupItem = card
-        return card
+    def setReady(self, ready: bool):
+        # self.controls.run.setEnabled(ready)
+        pass
 
-    def draw_comparison_card(self):
-        card = ComparisonModeSelector(self)
-        self.controls.comparisonModeSelector = card
-        return card
+    def setBusy(self, busy: bool):
+        self.setEnabled(True)
+        # self.controls.run.setVisible(not busy)
+        # self.controls.cancel.setVisible(busy)
 
-    def draw_similarity_card(self):
-        card = Card(self)
+
+class DummyResultsCard(Card):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.path = Path()
+
+        title = QtWidgets.QLabel('Results: ')
+        title.setStyleSheet("""font-size: 16px;""")
+        title.setMinimumWidth(120)
+
+        path = QtWidgets.QLineEdit()
+        path.setReadOnly(True)
+
+        browse = QtWidgets.QPushButton('Browse')
+        browse.clicked.connect(self.handleBrowse)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(title)
+        layout.addWidget(path, 1)
+        layout.addWidget(browse)
+        layout.setSpacing(16)
+        self.addLayout(layout)
+
+        self.controls.path = path
+        self.controls.browse = browse
+
+    def handleBrowse(self):
+        url = QtCore.QUrl.fromLocalFile(str(self.path))
+        QtGui.QDesktopServices.openUrl(url)
+
+    def setPath(self, path: Path):
+        if path is None:
+            path = Path()
+        self.path = path
+        self.controls.path.setText(str(path))
+
+
+class ProgressCard(QtWidgets.QProgressBar):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMaximum(0)
+        self.setMinimum(0)
+        self.setValue(0)
+        self.setVisible(False)
+
+    def showProgress(self, report):
+        self.setMaximum(report.maximum)
+        self.setMinimum(report.minimum)
+        self.setValue(report.value)
+
+
+class InputSelector(Card):
+    itemChanged = QtCore.Signal(Item)
+    addInputFile = QtCore.Signal(Path)
+
+    def __init__(self, text, parent=None, model=app.model.items):
+        super().__init__(parent)
+        self.binder = Binder()
+        self._guard = Guard()
+        self.draw_main(text, model)
+        self.draw_config()
+
+    def draw_main(self, text, model):
+        label = QtWidgets.QLabel(text + ':')
+        label.setStyleSheet("""font-size: 16px;""")
+        label.setMinimumWidth(120)
+
+        combo = NoWheelComboBox()
+        combo.currentIndexChanged.connect(self.handleItemChanged)
+        self.set_model(combo, model)
+
+        wait = NoWheelComboBox()
+        wait.addItem('Scanning file, please wait...')
+        wait.setEnabled(False)
+        wait.setVisible(False)
+
+        browse = QtWidgets.QPushButton('Import')
+        browse.clicked.connect(self.handleBrowse)
+
+        loading = QtWidgets.QPushButton('Loading')
+        loading.setEnabled(False)
+        loading.setVisible(False)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(combo, 1)
+        layout.addWidget(wait, 1)
+        layout.addWidget(browse)
+        layout.addWidget(loading)
+        layout.setSpacing(16)
+        self.addLayout(layout)
+
+        self.controls.label = label
+        self.controls.combo = combo
+        self.controls.wait = wait
+        self.controls.browse = browse
+        self.controls.loading = loading
+
+    def draw_config(self):
+        self.controls.config = None
+
+    def set_model(self, combo, model):
+        combo.setModel(model)
+
+    def handleItemChanged(self, row):
+        if self._guard:
+            return
+        if row > 0:
+            item = self.controls.combo.itemData(row, ItemModel.ItemRole)
+        else:
+            item = None
+        self.itemChanged.emit(item)
+
+    def handleBrowse(self, *args):
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self.window(), f'{app.title} - Import Sequence File')
+        if not filename:
+            return
+        self.addInputFile.emit(Path(filename))
+
+    def setObject(self, object):
+        # Workaround to repaint bugged card line
+        QtCore.QTimer.singleShot(10, self.update)
+
+        if object is None:
+            row = 0
+        else:
+            file_item = object.file_item
+            row = file_item.row + 1 if file_item else 0
+        with self._guard:
+            self.controls.combo.setCurrentIndex(row)
+
+        self.binder.unbind_all()
+
+    def setBusy(self, busy: bool):
+        self.setEnabled(True)
+        self.controls.combo.setVisible(not busy)
+        self.controls.wait.setVisible(busy)
+        self.controls.browse.setVisible(not busy)
+        self.controls.loading.setVisible(busy)
+        self.controls.label.setEnabled(not busy)
+        self.controls.config.setEnabled(not busy)
+
+
+class SequenceSelector(InputSelector):
+    def set_model(self, combo, model):
+        proxy_model = ItemProxyModel()
+        proxy_model.setSourceModel(model, model.files)
+        combo.setModel(proxy_model)
+
+    def draw_config(self):
+        self.controls.config = MinimumStackedWidget()
+        self.addWidget(self.controls.config)
+        self.draw_config_tabfile()
+        self.draw_config_fasta()
+
+    def draw_config_tabfile(self):
+        layout = QtWidgets.QGridLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        column = 0
+
+        type_label = QtWidgets.QLabel('File format:')
+        size_label = QtWidgets.QLabel('File size:')
+
+        layout.addWidget(type_label, 0, column)
+        layout.addWidget(size_label, 1, column)
+        column += 1
+
+        layout.setColumnMinimumWidth(column, 8)
+        column += 1
+
+        type_label_value = QtWidgets.QLabel('Tabfile')
+        size_label_value = QtWidgets.QLabel('42 MB')
+
+        layout.addWidget(type_label_value, 0, column)
+        layout.addWidget(size_label_value, 1, column)
+        column += 1
+
+        layout.setColumnMinimumWidth(column, 32)
+        column += 1
+
+        index_label = QtWidgets.QLabel('Indices:')
+        sequence_label = QtWidgets.QLabel('Sequences:')
+
+        layout.addWidget(index_label, 0, column)
+        layout.addWidget(sequence_label, 1, column)
+        column += 1
+
+        layout.setColumnMinimumWidth(column, 8)
+        column += 1
+
+        index_combo = NoWheelComboBox()
+        sequence_combo = NoWheelComboBox()
+
+        layout.addWidget(index_combo, 0, column)
+        layout.addWidget(sequence_combo, 1, column)
+        layout.setColumnStretch(column, 1)
+        column += 1
+
+        index_filter = ColumnFilterCombobox()
+        index_filter.setFixedWidth(40)
+        sequence_filter = ColumnFilterCombobox()
+        sequence_filter.setFixedWidth(40)
+
+        layout.addWidget(index_filter, 0, column)
+        layout.addWidget(sequence_filter, 1, column)
+        column += 1
+
+        layout.setColumnMinimumWidth(column, 16)
+        column += 1
+
+        view = QtWidgets.QPushButton('View')
+        view.setVisible(False)
+
+        layout.addWidget(view, 0, column)
+        layout.setColumnMinimumWidth(column, 80)
+        column += 1
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+
+        self.controls.tabfile = AttrDict()
+        self.controls.tabfile.widget = widget
+        self.controls.tabfile.index_combo = index_combo
+        self.controls.tabfile.sequence_combo = sequence_combo
+        self.controls.tabfile.index_filter = index_filter
+        self.controls.tabfile.sequence_filter = sequence_filter
+        self.controls.tabfile.file_size = size_label_value
+        self.controls.config.addWidget(widget)
+
+    def draw_config_fasta(self):
+        type_label = QtWidgets.QLabel('File format:')
+        size_label = QtWidgets.QLabel('File size:')
+
+        type_label_value = QtWidgets.QLabel('Fasta')
+        size_label_value = QtWidgets.QLabel('42 MB')
+
+        view = QtWidgets.QPushButton('View')
+        view.setVisible(False)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        layout.addWidget(type_label)
+        layout.addWidget(type_label_value)
+        layout.addSpacing(48)
+        layout.addWidget(size_label)
+        layout.addWidget(size_label_value)
+        layout.addStretch(1)
+        layout.addWidget(view)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+
+        self.controls.fasta = AttrDict()
+        self.controls.fasta.widget = widget
+        self.controls.fasta.file_size = size_label_value
+        self.controls.config.addWidget(widget)
+
+    def setObject(self, object):
+        super().setObject(object)
+        if object and isinstance(object, SequenceModel2.Tabfile):
+            self.populateCombos(object.file_item.object.info.headers)
+            self.binder.bind(object.properties.index_column, self.controls.tabfile.index_combo.setCurrentIndex)
+            self.binder.bind(self.controls.tabfile.index_combo.currentIndexChanged, object.properties.index_column)
+            self.binder.bind(object.properties.sequence_column, self.controls.tabfile.sequence_combo.setCurrentIndex)
+            self.binder.bind(self.controls.tabfile.sequence_combo.currentIndexChanged, object.properties.sequence_column)
+            self.binder.bind(object.properties.index_filter, self.controls.tabfile.index_filter.setValue)
+            self.binder.bind(self.controls.tabfile.index_filter.valueChanged, object.properties.index_filter)
+            self.binder.bind(object.properties.sequence_filter, self.controls.tabfile.sequence_filter.setValue)
+            self.binder.bind(self.controls.tabfile.sequence_filter.valueChanged, object.properties.sequence_filter)
+            self.binder.bind(object.file_item.object.properties.size, self.controls.tabfile.file_size.setText, lambda x: human_readable_size(x))
+            self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
+            self.controls.config.setVisible(True)
+        elif object and isinstance(object, SequenceModel2.Fasta):
+            self.binder.bind(object.file_item.object.properties.size, self.controls.fasta.file_size.setText, lambda x: human_readable_size(x))
+            self.controls.config.setCurrentWidget(self.controls.fasta.widget)
+            self.controls.config.setVisible(True)
+        else:
+            self.controls.config.setVisible(False)
+
+    def populateCombos(self, headers):
+        self.controls.tabfile.index_combo.clear()
+        self.controls.tabfile.sequence_combo.clear()
+        for header in headers:
+            self.controls.tabfile.index_combo.addItem(header)
+            self.controls.tabfile.sequence_combo.addItem(header)
+
+
+class AlignmentModeSelector(Card):
+    resetScores = QtCore.Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.draw_main()
+        self.draw_pairwise_config()
+
+    def draw_main(self):
+        label = QtWidgets.QLabel('Sequence alignment')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        description = QtWidgets.QLabel(
+            'You may optionally align sequences before calculating distances.')
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(description)
+        layout.setSpacing(16)
+
+        group = RadioButtonGroup()
+        group.valueChanged.connect(self.handleModeChanged)
+        self.controls.mode = group
+
+        radios = QtWidgets.QVBoxLayout()
+        radios.setSpacing(8)
+        for mode in AlignmentMode:
+            button = RichRadioButton(f'{mode.label}:', mode.description, self)
+            radios.addWidget(button)
+            group.add(button, mode)
+
+        layout.addLayout(radios)
+        self.addLayout(layout)
+
+    def draw_pairwise_config(self):
+        write_pairs = QtWidgets.QCheckBox('Write file with all aligned sequence pairs')
+        self.controls.write_pairs = write_pairs
+
+        self.controls.score_fields = dict()
+        scores = QtWidgets.QGridLayout()
+        validator = QtGui.QIntValidator()
+        for i, score in enumerate(PairwiseScore):
+            label = QtWidgets.QLabel(f'{score.label}:')
+            field = GLineEdit()
+            field.setValidator(validator)
+            field.scoreKey = score.key
+            scores.addWidget(label, i // 2, (i % 2) * 4)
+            scores.addWidget(field, i // 2, (i % 2) * 4 + 2)
+            self.controls.score_fields[score.key] = field
+        scores.setColumnMinimumWidth(1, 16)
+        scores.setColumnMinimumWidth(2, 80)
+        scores.setColumnMinimumWidth(5, 16)
+        scores.setColumnMinimumWidth(6, 80)
+        scores.setColumnStretch(2, 2)
+        scores.setColumnStretch(3, 1)
+        scores.setColumnStretch(6, 2)
+        scores.setContentsMargins(0, 0, 0, 0)
+        scores.setSpacing(8)
+
+        layout = QtWidgets.QVBoxLayout()
+        label = QtWidgets.QLabel('You may configure the pairwise comparison scores below:')
+        reset = QtWidgets.QPushButton('Reset to default scores')
+        reset.clicked.connect(self.resetScores)
+        layout.addWidget(write_pairs)
+        layout.addWidget(label)
+        layout.addLayout(scores)
+        layout.addWidget(reset)
+        layout.setSpacing(16)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+        self.addWidget(widget)
+
+        self.controls.pairwise_config = widget
+
+    def handleToggle(self, checked):
+        if not checked:
+            return
+        for button in self.controls.radio_buttons:
+            if button.isChecked():
+                self.toggled.emit(button.alignmentMode)
+
+    def handleModeChanged(self, mode):
+        self.controls.pairwise_config.setVisible(mode == AlignmentMode.PairwiseAlignment)
+
+
+class DistanceMetricSelector(Card):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.draw_main()
+        self.draw_file_type()
+        self.draw_format()
+
+    def draw_main(self):
+        label = QtWidgets.QLabel('Distance metric')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        description = QtWidgets.QLabel(
+            'Select the type of distances that should be calculated for each pair of sequences:')
+        description.setWordWrap(True)
+
+        metrics = QtWidgets.QGridLayout()
+        metrics.setContentsMargins(0, 0, 0, 0)
+        metrics.setSpacing(8)
+
+        metric_p = NoWheelRadioButton('Uncorrected (p-distance)')
+        metric_pg = NoWheelRadioButton('Uncorrected with gaps')
+        metric_jc = NoWheelRadioButton('Jukes Cantor (jc)')
+        metric_k2p = NoWheelRadioButton('Kimura 2-Parameter (k2p)')
+        metrics.addWidget(metric_p, 0, 0)
+        metrics.addWidget(metric_pg, 1, 0)
+        metrics.setColumnStretch(0, 2)
+        metrics.setColumnMinimumWidth(1, 16)
+        metrics.setColumnStretch(1, 0)
+        metrics.addWidget(metric_jc, 0, 2)
+        metrics.addWidget(metric_k2p, 1, 2)
+        metrics.setColumnStretch(2, 2)
+
+        metric_ncd = NoWheelRadioButton('Normalized Compression Distance (NCD)')
+        metric_bbc = NoWheelRadioButton('Base-Base Correlation (BBC)')
+
+        metric_bbc_k_label = QtWidgets.QLabel('BBC k parameter:')
+        metric_bbc_k_field = GLineEdit('10')
+
+        metric_bbc_k = QtWidgets.QHBoxLayout()
+        metric_bbc_k.setContentsMargins(0, 0, 0, 0)
+        metric_bbc_k.setSpacing(8)
+        metric_bbc_k.addWidget(metric_bbc_k_label)
+        metric_bbc_k.addSpacing(16)
+        metric_bbc_k.addWidget(metric_bbc_k_field, 1)
+
+        metrics_free = QtWidgets.QGridLayout()
+        metrics_free.setContentsMargins(0, 0, 0, 0)
+        metrics_free.setSpacing(8)
+
+        metrics_free.addWidget(metric_ncd, 0, 0)
+        metrics_free.addWidget(metric_bbc, 1, 0)
+        metrics_free.setColumnStretch(0, 2)
+        metrics_free.setColumnMinimumWidth(1, 16)
+        metrics_free.setColumnStretch(1, 0)
+        metrics_free.addLayout(metric_bbc_k, 1, 2)
+        metrics_free.setColumnStretch(2, 2)
+
+        metrics_all = QtWidgets.QVBoxLayout()
+        metrics_all.addLayout(metrics)
+        metrics_all.addLayout(metrics_free)
+        metrics_all.setContentsMargins(0, 0, 0, 0)
+        metrics_all.setSpacing(8)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(description)
+        layout.addLayout(metrics_all)
+        layout.setSpacing(16)
+
+        group = RadioButtonGroup()
+        group.add(metric_p, DistanceMetric.Uncorrected)
+        group.add(metric_pg, DistanceMetric.UncorrectedWithGaps)
+        group.add(metric_jc, DistanceMetric.JukesCantor)
+        group.add(metric_k2p, DistanceMetric.Kimura2Parameter)
+        group.add(metric_ncd, DistanceMetric.NCD)
+        group.add(metric_bbc, DistanceMetric.BBC)
+
+        self.controls.group = group
+        self.controls.metrics = AttrDict()
+        self.controls.metrics.p = metric_p
+        self.controls.metrics.pg = metric_pg
+        self.controls.metrics.jc = metric_jc
+        self.controls.metrics.k2p = metric_k2p
+        self.controls.metrics.ncd = metric_ncd
+        self.controls.metrics.bbc = metric_bbc
+
+        self.controls.bbc_k = metric_bbc_k_field
+        self.controls.bbc_k_label = metric_bbc_k_label
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+        self.addWidget(widget)
+
+    def draw_file_type(self):
+        write_linear = QtWidgets.QCheckBox('Write distances in linear format (all metrics in the same file)')
+        write_matricial = QtWidgets.QCheckBox('Write distances in matricial format (one metric per matrix file)')
+
+        self.controls.write_linear = write_linear
+        self.controls.write_matricial = write_matricial
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(write_linear)
+        layout.addWidget(write_matricial)
+        layout.setSpacing(8)
+        self.addLayout(layout)
+
+    def draw_format(self):
+        layout = QtWidgets.QGridLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        unit_radio = QtWidgets.QRadioButton('Distances from 0.0 to 1.0')
+        percent_radio = QtWidgets.QRadioButton('Distances as percentages (%)')
+
+        percentile = RadioButtonGroup()
+        percentile.add(unit_radio, False)
+        percentile.add(percent_radio, True)
+
+        layout.addWidget(unit_radio, 0, 0)
+        layout.addWidget(percent_radio, 1, 0)
+        layout.setColumnStretch(0, 2)
+
+        layout.setColumnMinimumWidth(1, 16)
+        layout.setColumnStretch(1, 0)
+
+        precision_label = QtWidgets.QLabel('Decimal precision:')
+        missing_label = QtWidgets.QLabel('Not-Available symbol:')
+
+        layout.addWidget(precision_label, 0, 2)
+        layout.addWidget(missing_label, 1, 2)
+
+        layout.setColumnMinimumWidth(3, 16)
+
+        precision = GLineEdit('4')
+        missing = GLineEdit('NA')
+
+        self.controls.percentile = percentile
+        self.controls.precision = precision
+        self.controls.missing = missing
+
+        layout.addWidget(precision, 0, 4)
+        layout.addWidget(missing, 1, 4)
+        layout.setColumnStretch(4, 2)
+
+        self.addLayout(layout)
+
+    def setAlignmentMode(self, mode):
+        pairwise = bool(mode == AlignmentMode.PairwiseAlignment)
+        self.controls.metrics.ncd.setVisible(not pairwise)
+        self.controls.metrics.bbc.setVisible(not pairwise)
+        self.controls.bbc_k.setVisible(not pairwise)
+        self.controls.bbc_k_label.setVisible(not pairwise)
+        free = bool(mode == AlignmentMode.AlignmentFree)
+        self.controls.metrics.p.setVisible(not free)
+        self.controls.metrics.pg.setVisible(not free)
+        self.controls.metrics.jc.setVisible(not free)
+        self.controls.metrics.k2p.setVisible(not free)
+
+
+class SimilarityThresholdCard(Card):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         label = QtWidgets.QLabel('Similarity Threshold')
         label.setStyleSheet("""font-size: 16px;""")
@@ -293,8 +914,8 @@ class DecontaminateView(ObjectView):
         threshold.setValidator(validator)
 
         description = QtWidgets.QLabel(
-            'Input sequences for which the calculated distance to any member of the reference database is below this threshold '
-            'will be considered contaminants and will be removed from the decontaminated output file.')
+            'Sequence pairs for which the computed distance is below '
+            'this threshold will be considered similar and will be truncated.')
         description.setWordWrap(True)
 
         layout = QtWidgets.QGridLayout()
@@ -304,13 +925,15 @@ class DecontaminateView(ObjectView):
         layout.setColumnStretch(0, 1)
         layout.setHorizontalSpacing(20)
         layout.setSpacing(8)
-        card.addLayout(layout)
+        self.addLayout(layout)
 
         self.controls.similarityThreshold = threshold
-        return card
 
-    def draw_identity_card(self):
-        card = Card(self)
+
+class IdentityThresholdCard(Card):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         label = QtWidgets.QLabel('Identity Threshold')
         label.setStyleSheet("""font-size: 16px;""")
@@ -324,8 +947,8 @@ class DecontaminateView(ObjectView):
         threshold.setFixedWidth(80)
 
         description = QtWidgets.QLabel(
-            'Input sequences for which the identity to any member of the reference database is above this threshold '
-            'will be considered contaminants and will be removed from the decontaminated output file.')
+            'Sequence pairs with an identity above '
+            'this threshold will be considered similar and will be truncated.')
         description.setWordWrap(True)
 
         layout = QtWidgets.QGridLayout()
@@ -335,112 +958,154 @@ class DecontaminateView(ObjectView):
         layout.setColumnStretch(0, 1)
         layout.setHorizontalSpacing(20)
         layout.setSpacing(8)
-        card.addLayout(layout)
+        self.addLayout(layout)
 
         self.controls.identityThreshold = threshold
-        return card
 
-    def draw_weights_card(self):
-        card = ReferenceWeightSelector(self)
-        self.controls.weightSelector = card
-        return card
 
-    def handleBusy(self, busy):
-        self.controls.cancel.setVisible(busy)
-        self.controls.progress.setVisible(busy)
-        self.controls.run.setVisible(not busy)
-        self.cards.input.setEnabled(not busy)
-        self.cards.mode.setEnabled(not busy)
-        self.cards.outgroup.setEnabled(not busy)
-        self.cards.ingroup.setEnabled(not busy)
-        self.cards.comparison.setEnabled(not busy)
-        self.cards.similarity.setEnabled(not busy)
-        self.cards.identity.setEnabled(not busy)
-        self.cards.weights.setEnabled(not busy)
+class DecontaminateView(TaskView):
 
-    def handleMode(self, *args):
-        single_reference = bool(self.object.mode == DecontaminateMode.DECONT)
-        similarity_over_identity = bool(self.object.comparison_mode.type is ComparisonMode.AlignmentFree)
-        self.cards.similarity.setVisible(single_reference and similarity_over_identity)
-        self.cards.identity.setVisible(single_reference and not similarity_over_identity)
-        self.cards.ingroup.setVisible(not single_reference)
-        self.cards.weights.setVisible(not single_reference)
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.draw()
+
+    def draw(self):
+        self.cards = AttrDict()
+        self.cards.title = TitleCard(self)
+        self.cards.dummy_results = DummyResultsCard(self)
+        self.cards.progress = ProgressCard(self)
+        self.cards.input_sequences = SequenceSelector('Input sequence', self)
+        self.cards.mode_selector = DecontaminateModeSelector(self)
+        self.cards.outgroup_sequences = SequenceSelector('Outgroup reference', self)
+        self.cards.similarity = SimilarityThresholdCard(self)
+        self.cards.identity = IdentityThresholdCard(self)
+        self.cards.ingroup_sequences = SequenceSelector('Ingroup reference', self)
+        self.cards.weight_selector = ReferenceWeightSelector(self)
+        self.cards.alignment_mode = AlignmentModeSelector(self)
+        self.cards.distance_metrics = DistanceMetricSelector(self)
+
+        layout = QtWidgets.QVBoxLayout()
+        for card in self.cards:
+            layout.addWidget(card)
+        layout.addStretch(1)
+        layout.setSpacing(6)
+        layout.setContentsMargins(6, 6, 6, 6)
+        self.setLayout(layout)
 
     def setObject(self, object):
-
-        if self.object:
-            self.object.notification.disconnect(self.showNotification)
-            self.object.progression.disconnect(self.showProgress)
-        object.notification.connect(self.showNotification)
-        object.progression.connect(self.showProgress)
-
         self.object = object
-
         self.binder.unbind_all()
 
-        self.binder.bind(object.properties.name, self.controls.title.setText)
-        self.binder.bind(object.properties.ready, self.controls.run.setEnabled)
-        self.binder.bind(object.properties.busy, self.handleBusy)
+        self.binder.bind(object.notification, self.showNotification)
+        self.binder.bind(object.progression, self.cards.progress.showProgress)
 
-        self.binder.bind(object.properties.similarity_threshold, self.controls.similarityThreshold.setText, lambda x: f'{x:.2f}')
-        self.binder.bind(self.controls.similarityThreshold.textEditedSafe, object.properties.similarity_threshold, lambda x: float(x))
+        self.binder.bind(object.properties.name, self.cards.title.setTitle)
+        self.binder.bind(object.properties.ready, self.cards.title.setReady)
+        self.binder.bind(object.properties.busy_main, self.cards.title.setBusy)
+        self.binder.bind(object.properties.busy_main, self.cards.progress.setEnabled)
+        self.binder.bind(object.properties.busy_main, self.cards.progress.setVisible)
+        self.binder.bind(object.properties.busy_input, self.cards.input_sequences.setBusy)
+        self.binder.bind(object.properties.busy_outgroup, self.cards.outgroup_sequences.setBusy)
+        self.binder.bind(object.properties.busy_ingroup, self.cards.ingroup_sequences.setBusy)
 
-        self.binder.bind(object.properties.similarity_threshold, self.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
-        self.binder.bind(self.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
+        self.binder.bind(self.cards.mode_selector.toggled, self.object.properties.decontaminate_mode)
+        self.binder.bind(self.object.properties.decontaminate_mode, self.cards.mode_selector.setDecontaminateMode)
 
-        self.binder.bind(object.properties.comparison_mode, self.controls.comparisonModeSelector.setComparisonMode)
-        self.binder.bind(object.properties.comparison_mode, self.handleMode)
-        self.binder.bind(self.controls.comparisonModeSelector.toggled, self.resetSimilarityThreshold)
-        self.binder.bind(self.controls.comparisonModeSelector.toggled, object.properties.comparison_mode)
-        self.binder.bind(self.controls.comparisonModeSelector.edited, object.checkIfReady)
+        self.binder.bind(self.cards.input_sequences.itemChanged, object.set_input_file_from_file_item)
+        self.binder.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
+        self.binder.bind(self.cards.input_sequences.addInputFile, object.add_input_file)
 
-        self.binder.bind(object.properties.outgroup_weight, self.controls.weightSelector.setOutgroupWeight)
-        self.binder.bind(object.properties.ingroup_weight, self.controls.weightSelector.setIngroupWeight)
-        self.binder.bind(self.controls.weightSelector.edited_outgroup, object.properties.outgroup_weight)
-        self.binder.bind(self.controls.weightSelector.edited_ingroup, object.properties.ingroup_weight)
+        self.binder.bind(self.cards.outgroup_sequences.itemChanged, object.set_outgroup_file_from_file_item)
+        self.binder.bind(object.properties.outgroup_sequences, self.cards.outgroup_sequences.setObject)
+        self.binder.bind(self.cards.outgroup_sequences.addInputFile, object.add_outgroup_file)
 
-        self.binder.bind(object.properties.mode, self.controls.mode.setDecontaminateMode)
-        self.binder.bind(self.controls.mode.toggled, object.properties.mode)
-        self.binder.bind(object.properties.mode, self.handleMode)
+        self.binder.bind(self.cards.ingroup_sequences.itemChanged, object.set_ingroup_file_from_file_item)
+        self.binder.bind(object.properties.ingroup_sequences, self.cards.ingroup_sequences.setObject)
+        self.binder.bind(self.cards.ingroup_sequences.addInputFile, object.add_ingroup_file)
 
-        self.binder.bind(object.properties.input_item, self.controls.inputItem.setSequenceItem)
-        self.binder.bind(self.controls.inputItem.sequenceChanged, object.properties.input_item)
+        self.binder.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
+        self.binder.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
+        self.binder.bind(self.cards.alignment_mode.controls.write_pairs.toggled, object.properties.alignment_write_pairs)
+        self.binder.bind(object.properties.alignment_write_pairs, self.cards.alignment_mode.controls.write_pairs.setChecked)
+        self.binder.bind(self.cards.alignment_mode.resetScores, object.pairwise_scores.reset)
+        for score in PairwiseScore:
+            self.binder.bind(
+                self.cards.alignment_mode.controls.score_fields[score.key].textEditedSafe,
+                object.pairwise_scores.properties[score.key],
+                lambda x: type_convert(x, int, None))
+            self.binder.bind(
+                object.pairwise_scores.properties[score.key],
+                self.cards.alignment_mode.controls.score_fields[score.key].setText,
+                lambda x: str(x) if x is not None else '')
 
-        self.binder.bind(object.properties.outgroup_item, self.controls.outgroupItem.setSequenceItem)
-        self.binder.bind(self.controls.outgroupItem.sequenceChanged, object.properties.outgroup_item)
+        self.binder.bind(object.properties.distance_metric, self.cards.distance_metrics.controls.group.setValue)
+        self.binder.bind(self.cards.distance_metrics.controls.group.valueChanged, object.properties.distance_metric)
 
-        self.binder.bind(object.properties.ingroup_item, self.controls.ingroupItem.setSequenceItem)
-        self.binder.bind(self.controls.ingroupItem.sequenceChanged, object.properties.ingroup_item)
+        self.binder.bind(self.cards.distance_metrics.controls.bbc_k.textEditedSafe, object.properties.distance_metric_bbc_k, lambda x: type_convert(x, int, None))
+        self.binder.bind(object.properties.distance_metric_bbc_k, self.cards.distance_metrics.controls.bbc_k.setText, lambda x: str(x) if x is not None else '')
+        self.binder.bind(object.properties.distance_metric, self.cards.distance_metrics.controls.bbc_k.setEnabled, lambda x: x == DistanceMetric.BBC)
+        self.binder.bind(object.properties.distance_metric, self.cards.distance_metrics.controls.bbc_k_label.setEnabled, lambda x: x == DistanceMetric.BBC)
 
-    def resetSimilarityThreshold(self, mode):
-        if mode.type is ComparisonMode.AlignmentFree:
-            self.object.similarity_threshold = 0.07
-        else:
-            self.object.similarity_threshold = 0.03
+        self.binder.bind(self.cards.distance_metrics.controls.write_linear.toggled, object.properties.distance_linear)
+        self.binder.bind(object.properties.distance_linear, self.cards.distance_metrics.controls.write_linear.setChecked)
+        self.binder.bind(self.cards.distance_metrics.controls.write_matricial.toggled, object.properties.distance_matricial)
+        self.binder.bind(object.properties.distance_matricial, self.cards.distance_metrics.controls.write_matricial.setChecked)
 
-    def handleRun(self):
-        self.object.start()
+        self.binder.bind(self.cards.distance_metrics.controls.percentile.valueChanged, object.properties.distance_percentile)
+        self.binder.bind(object.properties.distance_percentile, self.cards.distance_metrics.controls.percentile.setValue)
 
-    def handleCancel(self):
-        self.object.stop()
+        self.binder.bind(self.cards.distance_metrics.controls.precision.textEditedSafe, object.properties.distance_precision, lambda x: type_convert(x, int, None))
+        self.binder.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
+        self.binder.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
+        self.binder.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
 
-    def showNotification(self, notification):
-        icon = {
-            Notification.Info: QtWidgets.QMessageBox.Information,
-            Notification.Warn: QtWidgets.QMessageBox.Warning,
-            Notification.Fail: QtWidgets.QMessageBox.Critical,
-        }[notification.type]
+        self.binder.bind(object.properties.alignment_mode, self.cards.distance_metrics.setAlignmentMode)
 
-        msgBox = QtWidgets.QMessageBox(self.window())
-        msgBox.setWindowTitle(app.title)
-        msgBox.setIcon(icon)
-        msgBox.setText(notification.text)
-        msgBox.setDetailedText(notification.info)
-        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msgBox.exec()
+        self.binder.bind(object.properties.similarity_threshold, self.cards.similarity.controls.similarityThreshold.setText, lambda x: f'{x:.2f}')
+        self.binder.bind(self.cards.similarity.controls.similarityThreshold.textEditedSafe, object.properties.similarity_threshold, lambda x: type_convert(x, float, None))
 
-    def showProgress(self, report):
-        progress = self.controls.progress
-        progress.setMaximum(report.maximum)
-        progress.setMinimum(report.minimum)
-        progress.setValue(report.value)
+        self.binder.bind(object.properties.similarity_threshold, self.cards.identity.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
+        self.binder.bind(self.cards.identity.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
+
+        self.binder.bind(object.properties.outgroup_weight, self.cards.weight_selector.setOutgroupWeight)
+        self.binder.bind(object.properties.ingroup_weight, self.cards.weight_selector.setIngroupWeight)
+        self.binder.bind(self.cards.weight_selector.edited_outgroup, object.properties.outgroup_weight)
+        self.binder.bind(self.cards.weight_selector.edited_ingroup, object.properties.ingroup_weight)
+
+        self.binder.bind(object.properties.alignment_mode, self.update_visible_cards)
+        self.binder.bind(object.properties.decontaminate_mode, self.update_visible_cards)
+
+        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
+        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
+
+        self.binder.bind(object.properties.editable, self.setEditable)
+
+    def update_visible_cards(self, *args, **kwargs):
+        free = bool(self.object.alignment_mode == AlignmentMode.AlignmentFree)
+        if self.object.decontaminate_mode == DecontaminateMode.DECONT:
+            self.cards.ingroup_sequences.setVisible(False)
+            self.cards.weight_selector.setVisible(False)
+            self.cards.similarity.setVisible(free)
+            self.cards.identity.setVisible(not free)
+        elif self.object.decontaminate_mode == DecontaminateMode.DECONT2:
+            self.cards.ingroup_sequences.setVisible(True)
+            self.cards.weight_selector.setVisible(True)
+            self.cards.similarity.setVisible(False)
+            self.cards.identity.setVisible(False)
+
+
+    def setEditable(self, editable: bool):
+        for card in self.cards:
+            card.setEnabled(editable)
+        self.cards.title.setEnabled(True)
+        self.cards.dummy_results.setEnabled(True)
+        self.cards.progress.setEnabled(True)
+
+    def save(self):
+        path = self.getExistingDirectory('Save All')
+        if path:
+            self.object.save(path)
+
+    def handleMode(self, mode):
+        self.cards.similarity.setVisible(mode.type is ComparisonMode.AlignmentFree)
+        self.cards.identity.setVisible(mode.type is not ComparisonMode.AlignmentFree)

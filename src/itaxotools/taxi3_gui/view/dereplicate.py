@@ -871,7 +871,7 @@ class DereplicateView(TaskView):
         self.cards.title = TitleCard(self)
         self.cards.dummy_results = DummyResultsCard(self)
         self.cards.progress = ProgressCard(self)
-        self.cards.input_sequences = SequenceSelector('Input data', self)
+        self.cards.input_sequences = SequenceSelector('Input sequence', self)
         self.cards.alignment_mode = AlignmentModeSelector(self)
         self.cards.distance_metrics = DistanceMetricSelector(self)
         self.cards.similarity = SimilarityThresholdCard(self)
@@ -951,8 +951,8 @@ class DereplicateView(TaskView):
         self.binder.bind(object.properties.length_threshold, self.cards.length.controls.lengthThreshold.setText, lambda x: str(x) if x is not None else '')
         self.binder.bind(self.cards.length.controls.lengthThreshold.textEditedSafe, object.properties.length_threshold, lambda x: type_convert(x, int, 0))
 
-        self.binder.bind(object.properties.alignment_mode, self.cards.similarity.setVisible, lambda x: x != AlignmentMode.AlignmentFree)
-        self.binder.bind(object.properties.alignment_mode, self.cards.identity.setVisible, lambda x: x == AlignmentMode.AlignmentFree)
+        self.binder.bind(object.properties.alignment_mode, self.cards.similarity.setVisible, lambda x: x == AlignmentMode.AlignmentFree)
+        self.binder.bind(object.properties.alignment_mode, self.cards.identity.setVisible, lambda x: x != AlignmentMode.AlignmentFree)
 
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)

@@ -16,26 +16,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from ..types import ComparisonMode, SequenceReader
+from ..types import ComparisonMode, ColumnFilter, AlignmentMode, DistanceMetric, FileFormat, DecontaminateMode
 
 
 @dataclass
 class DecontaminateResults:
-    decontaminated: Path
-    contaminants: Path
-    summary: Path
+    pass
 
 
-def progress_handler(progress):
+def progress_handler(caption, index, total):
     import itaxotools
     itaxotools.progress_handler(
-        text=progress.operation,
-        value=progress.current_step,
-        maximum=progress.total_steps,
+        text=caption,
+        value=index,
+        maximum=total,
     )
 
 
@@ -48,170 +48,130 @@ def initialize():
     from itaxotools.taxi3.library import task  # noqa
 
 
+def get_file_info(path: Path):
+
+    from itaxotools.taxi3.files import FileInfo, FileFormat
+    from ..types import InputFile
+
+    def get_index(items, item):
+        return items.index(item) if item else None
+
+    info = FileInfo.from_path(path)
+    if info.format == FileFormat.Tabfile:
+        return InputFile.Tabfile(
+            path = path,
+            size = info.size,
+            headers = info.headers,
+            individuals = info.header_individuals,
+            sequences = info.header_sequences,
+            organism = info.header_organism,
+            species = info.header_species,
+            genera = info.header_genus,
+        )
+    if info.format == FileFormat.Fasta:
+        return InputFile.Fasta(
+            path = path,
+            size = info.size,
+        )
+    return InputFile.Unknown(path)
+
+
+def sequences_from_model(input: SequenceModel2) -> Sequences:
+    from itaxotools.taxi3.sequences import Sequences, SequenceHandler
+    from ..model import SequenceModel2
+
+    if input.type == FileFormat.Tabfile:
+        return Sequences.fromPath(
+            input.path,
+            SequenceHandler.Tabfile,
+            hasHeader = True,
+            idColumn=input.index_column,
+            seqColumn=input.sequence_column,
+        )
+    elif input.type == FileFormat.Fasta:
+        return Sequences.fromPath(
+            input.path,
+            SequenceHandler.Fasta,
+        )
+    raise Exception(f'Cannot create sequences from input: {input}')
+
+
 def decontaminate(
+
     work_dir: Path,
-    inputs: List[Path],
-    input_reader_type: SequenceReader,
-    reference_path: Path,
-    reference_reader_type: SequenceReader,
-    comparison_mode: ComparisonMode,
+
+    decontaminate_mode: DecontaminateMode,
+
+    input_sequences: AttrDict,
+    outgroup_sequences: AttrDict,
+    ingroup_sequences: AttrDict,
+
+    alignment_mode: AlignmentMode,
+    alignment_write_pairs: bool,
+    alignment_pairwise_scores: dict,
+
+    distance_metric: DistanceMetric,
+    distance_metric_bbc_k: int,
+    distance_linear: bool,
+    distance_matricial: bool,
+    distance_percentile: bool,
+    distance_precision: int,
+    distance_missing: str,
+
     similarity_threshold: float,
-) -> Dict[Path, Tuple[Path, Path]]:
+    outgroup_weight: int,
+    ingroup_weight: int,
 
-    import itaxotools
-    itaxotools.progress_handler('Decontaminating...')
+    **kwargs
 
-    from itaxotools.taxi3.library.config import AlignmentScores, Config
-    from itaxotools.taxi3.library.datatypes import (
-        CompleteData, FastaReader, GenbankReader, Metric, SequenceData,
-        TabfileReader, ValidFilePath, XlsxReader)
-    from itaxotools.taxi3.library.task import Alignment, Decontaminate
+) -> tuple[Path, float]:
 
-    readers = {
-        SequenceReader.TabfileReader: TabfileReader,
-        SequenceReader.GenbankReader: GenbankReader,
-        SequenceReader.XlsxReader: XlsxReader,
-        SequenceReader.FastaReader: FastaReader,
+    from itaxotools.taxi3.tasks.decontaminate import Decontaminate
+    from itaxotools.taxi3.tasks.decontaminate2 import Decontaminate2
+    from itaxotools.taxi3.distances import DistanceMetric as BackendDistanceMetric
+    from itaxotools.taxi3.sequences import Sequences, SequenceHandler
+    from itaxotools.taxi3.partitions import Partition, PartitionHandler
+    from itaxotools.taxi3.align import Scores
+
+    if decontaminate_mode == DecontaminateMode.DECONT:
+        task = Decontaminate()
+        task.params.thresholds.similarity = similarity_threshold
+    elif decontaminate_mode == DecontaminateMode.DECONT2:
+        task = Decontaminate2()
+        task.ingroup = sequences_from_model(ingroup_sequences)
+        task.params.weights.outgroup = outgroup_weight
+        task.params.weights.ingroup = ingroup_weight
+
+    task.work_dir = work_dir
+    task.progress_handler = progress_handler
+
+    task.input = sequences_from_model(input_sequences)
+    task.set_output_format_from_path(input_sequences.path)
+    task.outgroup = sequences_from_model(outgroup_sequences)
+
+    task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
+    task.params.pairs.scores = Scores(**alignment_pairwise_scores)
+    task.params.pairs.write = alignment_write_pairs
+
+    metrics_tr = {
+        DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
+        DistanceMetric.UncorrectedWithGaps: (BackendDistanceMetric.UncorrectedWithGaps, []),
+        DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
+        DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
+        DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
+        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metric_bbc_k]),
     }
-    input_reader = readers[input_reader_type]
-    reference_reader = readers[reference_reader_type]
+    metric = metrics_tr[distance_metric][0](*metrics_tr[distance_metric][1])
 
-    alignment = {
-        ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
-        ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
-        ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
-    }[comparison_mode.type]
+    task.params.distances.metric = metric
+    task.params.distances.write_linear = distance_linear
+    task.params.distances.write_matricial = distance_matricial
 
-    config = None
-    if comparison_mode.type is ComparisonMode.PairwiseAlignment:
-        scores = AlignmentScores._from_scores_dict(comparison_mode.config)
-        config = Config(scores)
+    task.params.format.float = f'{{:.{distance_precision}f}}'
+    task.params.format.percentage = f'{{:.{distance_precision}f}}%'
+    task.params.format.missing = distance_missing
+    task.params.format.percentage_multiply = distance_percentile
 
-    reference = SequenceData.from_path(ValidFilePath(reference_path), reference_reader)
-
-    decontaminated_dir = work_dir / 'decontaminated'
-    decontaminated_dir.mkdir()
-    contaminants_dir = work_dir / 'contaminants'
-    contaminants_dir.mkdir()
-    summary_dir = work_dir / 'summary'
-    summary_dir.mkdir()
-
-    results = dict()
-
-    for input in inputs:
-        decontaminated = decontaminated_dir / f'{input.stem}.decontaminated.tsv'
-        contaminants = contaminants_dir / f'{input.stem}.contaminants.tsv'
-        summary = summary_dir / f'{input.stem}.summary.txt'
-
-        decontaminated.unlink(missing_ok=True)
-        contaminants.unlink(missing_ok=True)
-        summary.unlink(missing_ok=True)
-
-        sequence = CompleteData.from_path(ValidFilePath(input), input_reader)
-
-        print(f'Decontaminating {input.name}')
-        task = Decontaminate(warn=print)
-        task.progress_handler = progress_handler
-        task.similarity = similarity_threshold
-        task.alignment = alignment
-        task._calculate_distances.config = config
-        task._calculate_distances.metrics = [Metric.Uncorrected]
-        task.data = sequence
-        task.reference = reference
-        task.start()
-
-        for output in task.result:
-            output.decontaminated.append_to_file(decontaminated)
-            output.contaminates.append_to_file(contaminants)
-            output.summary.append_to_file(summary)
-
-        results[input] = DecontaminateResults(decontaminated, contaminants, summary)
-
-    return results
-
-
-def decontaminate2(
-    work_dir: Path,
-    inputs: List[Path],
-    input_reader_type: SequenceReader,
-    reference_outgroup_path: Path,
-    reference_outgroup_reader_type: SequenceReader,
-    reference_ingroup_path: Path,
-    reference_ingroup_reader_type: SequenceReader,
-    outgroup_weight: float,
-    comparison_mode: ComparisonMode,
-) -> Dict[Path, Tuple[Path, Path]]:
-
-    import itaxotools
-    itaxotools.progress_handler('Decontaminating...')
-
-    from itaxotools.taxi3.library.config import AlignmentScores, Config
-    from itaxotools.taxi3.library.datatypes import (
-        CompleteData, FastaReader, GenbankReader, Metric, SequenceData,
-        TabfileReader, ValidFilePath, XlsxReader)
-    from itaxotools.taxi3.library.task import Alignment, Decontaminate2
-
-    readers = {
-        SequenceReader.TabfileReader: TabfileReader,
-        SequenceReader.GenbankReader: GenbankReader,
-        SequenceReader.XlsxReader: XlsxReader,
-        SequenceReader.FastaReader: FastaReader,
-    }
-    input_reader = readers[input_reader_type]
-    reference_outgroup_reader = readers[reference_outgroup_reader_type]
-    reference_ingroup_reader = readers[reference_ingroup_reader_type]
-
-    alignment = {
-        ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
-        ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
-        ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
-    }[type(comparison_mode)]
-
-    config = None
-    if comparison_mode.type is ComparisonMode.PairwiseAlignment:
-        scores = AlignmentScores._from_scores_dict(comparison_mode.config)
-        config = Config(scores)
-
-    reference_outgroup = SequenceData.from_path(ValidFilePath(reference_outgroup_path), reference_outgroup_reader)
-    reference_ingroup = SequenceData.from_path(ValidFilePath(reference_ingroup_path), reference_ingroup_reader)
-
-    decontaminated_dir = work_dir / 'decontaminated'
-    decontaminated_dir.mkdir()
-    contaminants_dir = work_dir / 'contaminants'
-    contaminants_dir.mkdir()
-    summary_dir = work_dir / 'summary'
-    summary_dir.mkdir()
-
-    results = dict()
-
-    for input in inputs:
-        decontaminated = decontaminated_dir / f'{input.stem}.decontaminated.tsv'
-        contaminants = contaminants_dir / f'{input.stem}.contaminants.tsv'
-        summary = summary_dir / f'{input.stem}.summary.txt'
-
-        decontaminated.unlink(missing_ok=True)
-        contaminants.unlink(missing_ok=True)
-        summary.unlink(missing_ok=True)
-
-        sequence = CompleteData.from_path(ValidFilePath(input), input_reader)
-
-        print(f'Decontaminating {input.name}')
-        task = Decontaminate2(warn=print)
-        task.progress_handler = progress_handler
-        task.alignment = alignment
-        task.outgroup_weight = outgroup_weight
-        task._calculate_distances.config = config
-        task._calculate_distances.metrics = [Metric.Uncorrected]
-        task.data = sequence
-        task.outgroup = reference_outgroup
-        task.ingroup = reference_ingroup
-        task.start()
-
-        for output in task.result:
-            output.decontaminated.append_to_file(decontaminated)
-            output.contaminates.append_to_file(contaminants)
-            output.summary.append_to_file(summary)
-
-        results[input] = DecontaminateResults(decontaminated, contaminants, summary)
+    results = task.start()
 
     return results

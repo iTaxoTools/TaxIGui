@@ -134,6 +134,9 @@ def dereplicate(
     task.input = sequences_from_model(input_sequences)
     task.set_output_format_from_path(input_sequences.path)
 
+    task.params.thresholds.similarity = similarity_threshold
+    task.params.thresholds.length = length_threshold
+
     task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
     task.params.pairs.scores = Scores(**alignment_pairwise_scores)
     task.params.pairs.write = alignment_write_pairs

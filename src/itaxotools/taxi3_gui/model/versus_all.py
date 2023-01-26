@@ -165,6 +165,7 @@ class VersusAllModel(Task):
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
             alignment_pairwise_scores = self.pairwise_scores.as_dict(),
+
             distance_metrics=self.distance_metrics.as_list(),
             distance_metrics_bbc_k=self.distance_metrics.bbc_k,
             distance_linear=self.distance_linear,
@@ -172,6 +173,7 @@ class VersusAllModel(Task):
             distance_percentile=self.distance_percentile,
             distance_precision=self.distance_precision,
             distance_missing=self.distance_missing,
+
             statistics_all=self.statistics_groups.for_all,
             statistics_species=self.statistics_groups.per_species,
             statistics_genus=self.statistics_groups.per_genus,

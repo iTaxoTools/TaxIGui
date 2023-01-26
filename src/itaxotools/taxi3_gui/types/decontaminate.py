@@ -16,9 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from ._type import *
-from .common import *
-from .dereplicate import *
-from .decontaminate import *
-from .versus_all import *
-from .versus_reference import *
+from enum import Enum, auto
+from typing import NamedTuple
+from dataclasses import dataclass, asdict
+from pathlib import Path
+
+from ._type import Type
+
+
+class DecontaminateSubtask(Enum):
+    Main = auto()
+    AddInputFile = auto()
+    AddOutgroupFile = auto()
+    AddIngroupFile = auto()
