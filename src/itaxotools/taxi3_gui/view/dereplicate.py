@@ -31,7 +31,7 @@ from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, TaskView
 from ..types import ComparisonMode, Notification
 from .common import (
     Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
-    SequenceSelector)
+    SequenceSelector, NoWheelRadioButton, RadioButtonGroup)
 
 
 
@@ -609,21 +609,21 @@ class DistanceMetricSelector(Card):
         self.draw_format()
 
     def draw_main(self):
-        label = QtWidgets.QLabel('Distance metrics')
+        label = QtWidgets.QLabel('Distance metric')
         label.setStyleSheet("""font-size: 16px;""")
 
         description = QtWidgets.QLabel(
-            'Select the types of distances that should be calculated for each pair of sequences:')
+            'Select the type of distances that should be calculated for each pair of sequences:')
         description.setWordWrap(True)
 
         metrics = QtWidgets.QGridLayout()
         metrics.setContentsMargins(0, 0, 0, 0)
         metrics.setSpacing(8)
 
-        metric_p = QtWidgets.QCheckBox('Uncorrected (p-distance)')
-        metric_pg = QtWidgets.QCheckBox('Uncorrected with gaps')
-        metric_jc = QtWidgets.QCheckBox('Jukes Cantor (jc)')
-        metric_k2p = QtWidgets.QCheckBox('Kimura 2-Parameter (k2p)')
+        metric_p = NoWheelRadioButton('Uncorrected (p-distance)')
+        metric_pg = NoWheelRadioButton('Uncorrected with gaps')
+        metric_jc = NoWheelRadioButton('Jukes Cantor (jc)')
+        metric_k2p = NoWheelRadioButton('Kimura 2-Parameter (k2p)')
         metrics.addWidget(metric_p, 0, 0)
         metrics.addWidget(metric_pg, 1, 0)
         metrics.setColumnStretch(0, 2)
@@ -633,8 +633,8 @@ class DistanceMetricSelector(Card):
         metrics.addWidget(metric_k2p, 1, 2)
         metrics.setColumnStretch(2, 2)
 
-        metric_ncd = QtWidgets.QCheckBox('Normalized Compression Distance (NCD)')
-        metric_bbc = QtWidgets.QCheckBox('Base-Base Correlation (BBC)')
+        metric_ncd = NoWheelRadioButton('Normalized Compression Distance (NCD)')
+        metric_bbc = NoWheelRadioButton('Base-Base Correlation (BBC)')
 
         metric_bbc_k_label = QtWidgets.QLabel('BBC k parameter:')
         metric_bbc_k_field = GLineEdit('10')
@@ -670,6 +670,15 @@ class DistanceMetricSelector(Card):
         layout.addLayout(metrics_all)
         layout.setSpacing(16)
 
+        group = RadioButtonGroup()
+        group.add(metric_p, DistanceMetric.Uncorrected)
+        group.add(metric_pg, DistanceMetric.UncorrectedWithGaps)
+        group.add(metric_jc, DistanceMetric.JukesCantor)
+        group.add(metric_k2p, DistanceMetric.Kimura2Parameter)
+        group.add(metric_ncd, DistanceMetric.NCD)
+        group.add(metric_bbc, DistanceMetric.BBC)
+
+        self.controls.group = group
         self.controls.metrics = AttrDict()
         self.controls.metrics.p = metric_p
         self.controls.metrics.pg = metric_pg
@@ -681,7 +690,9 @@ class DistanceMetricSelector(Card):
         self.controls.bbc_k = metric_bbc_k_field
         self.controls.bbc_k_label = metric_bbc_k_label
 
-        self.addLayout(layout)
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+        self.addWidget(widget)
 
     def draw_file_type(self):
         write_linear = QtWidgets.QCheckBox('Write distances in linear format (all metrics in the same file)')
@@ -908,14 +919,13 @@ class DereplicateView(TaskView):
                 self.cards.alignment_mode.controls.score_fields[score.key].setText,
                 lambda x: str(x) if x is not None else '')
 
-        for key in (metric.key for metric in DistanceMetric):
-            self.binder.bind(self.cards.distance_metrics.controls.metrics[key].toggled, object.distance_metrics.properties[key])
-            self.binder.bind(object.distance_metrics.properties[key], self.cards.distance_metrics.controls.metrics[key].setChecked)
+        self.binder.bind(object.properties.distance_metric, self.cards.distance_metrics.controls.group.setValue)
+        self.binder.bind(self.cards.distance_metrics.controls.group.valueChanged, object.properties.distance_metric)
 
-        self.binder.bind(self.cards.distance_metrics.controls.bbc_k.textEditedSafe, object.distance_metrics.properties.bbc_k, lambda x: type_convert(x, int, None))
-        self.binder.bind(object.distance_metrics.properties.bbc_k, self.cards.distance_metrics.controls.bbc_k.setText, lambda x: str(x) if x is not None else '')
-        self.binder.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k.setEnabled)
-        self.binder.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k_label.setEnabled)
+        self.binder.bind(self.cards.distance_metrics.controls.bbc_k.textEditedSafe, object.properties.distance_metric_bbc_k, lambda x: type_convert(x, int, None))
+        self.binder.bind(object.properties.distance_metric_bbc_k, self.cards.distance_metrics.controls.bbc_k.setText, lambda x: str(x) if x is not None else '')
+        self.binder.bind(object.properties.distance_metric, self.cards.distance_metrics.controls.bbc_k.setEnabled, lambda x: x == DistanceMetric.BBC)
+        self.binder.bind(object.properties.distance_metric, self.cards.distance_metrics.controls.bbc_k_label.setEnabled, lambda x: x == DistanceMetric.BBC)
 
         self.binder.bind(self.cards.distance_metrics.controls.write_linear.toggled, object.properties.distance_linear)
         self.binder.bind(object.properties.distance_linear, self.cards.distance_metrics.controls.write_linear.setChecked)

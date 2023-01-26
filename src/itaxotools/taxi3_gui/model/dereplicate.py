@@ -48,18 +48,6 @@ class PairwiseScores(EnumObject):
         )
 
 
-class DistanceMetrics(EnumObject):
-    enum = DistanceMetric
-
-    bbc_k = Property(int | None, 10)
-
-    def as_list(self):
-        return [
-            field for field in self.enum
-            if self.properties[field.key].value
-        ]
-
-
 class StatisticsGroups(EnumObject):
     enum = StatisticsGroup
 
@@ -72,15 +60,17 @@ class DereplicateModel(Task):
     alignment_mode = Property(AlignmentMode, AlignmentMode.PairwiseAlignment)
     alignment_write_pairs = Property(bool, True)
 
+    pairwise_scores = Property(PairwiseScores, Instance)
+
+    distance_metric = Property(DistanceMetric, DistanceMetric.Uncorrected)
+    distance_metric_bbc_k = Property(int | None, 10)
+
     distance_linear = Property(bool, True)
     distance_matricial = Property(bool, True)
 
     distance_percentile = Property(bool, False)
     distance_precision = Property(int | None, 4)
     distance_missing = Property(str, 'NA')
-
-    pairwise_scores = Property(PairwiseScores, Instance)
-    distance_metrics = Property(DistanceMetrics, Instance)
 
     similarity_threshold = Property(float | None, 0.03)
     length_threshold = Property(int, 0)
@@ -94,7 +84,14 @@ class DereplicateModel(Task):
     def __init__(self, name=None):
         super().__init__(name, init=dereplicate.initialize)
         self.binder = Binder()
+        self.binder.bind(self.properties.alignment_mode, self.set_metric_from_mode)
         self.binder.bind(self.properties.alignment_mode, self.set_similarity_from_mode)
+
+    def set_metric_from_mode(self, mode: AlignmentMode):
+        if mode == AlignmentMode.AlignmentFree:
+            self.distance_metric = DistanceMetric.NCD
+        else:
+            self.distance_metric = DistanceMetric.Uncorrected
 
     def set_similarity_from_mode(self, mode: AlignmentMode):
         if mode == AlignmentMode.AlignmentFree:
@@ -107,8 +104,8 @@ class DereplicateModel(Task):
             self.properties.input_sequences,
             self.properties.alignment_mode,
             *(property for property in self.pairwise_scores.properties),
-            self.distance_metrics.properties.bbc,
-            self.distance_metrics.properties.bbc_k,
+            self.properties.distance_metric,
+            self.properties.distance_metric_bbc_k,
             self.properties.distance_precision,
         ]
 
@@ -122,8 +119,8 @@ class DereplicateModel(Task):
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
                 return False
-        if self.distance_metrics.bbc:
-            if self.distance_metrics.bbc_k is None:
+        if self.distance_metric == DistanceMetric.BBC:
+            if self.distance_metric_bbc_k is None:
                 return False
         if self.distance_precision is None:
             return False
@@ -147,8 +144,8 @@ class DereplicateModel(Task):
             alignment_write_pairs=self.alignment_write_pairs,
             alignment_pairwise_scores = self.pairwise_scores.as_dict(),
 
-            distance_metric=self.distance_metrics.as_list()[0],
-            distance_metrics_bbc_k=self.distance_metrics.bbc_k,
+            distance_metric=self.distance_metric,
+            distance_metric_bbc_k=self.distance_metric_bbc_k,
             distance_linear=self.distance_linear,
             distance_matricial=self.distance_matricial,
             distance_percentile=self.distance_percentile,

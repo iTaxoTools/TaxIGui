@@ -107,7 +107,7 @@ def dereplicate(
     alignment_pairwise_scores: dict,
 
     distance_metric: DistanceMetric,
-    distance_metrics_bbc_k: int,
+    distance_metric_bbc_k: int,
     distance_linear: bool,
     distance_matricial: bool,
     distance_percentile: bool,
@@ -144,7 +144,7 @@ def dereplicate(
         DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
         DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
         DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
-        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metrics_bbc_k]),
+        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metric_bbc_k]),
     }
     metric = metrics_tr[distance_metric][0](*metrics_tr[distance_metric][1])
 
