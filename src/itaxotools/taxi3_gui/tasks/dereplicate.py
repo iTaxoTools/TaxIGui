@@ -16,25 +16,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from ..types import ComparisonMode, SequenceReader
+from ..types import ComparisonMode, ColumnFilter, AlignmentMode, DistanceMetric, FileFormat
 
 
 @dataclass
 class DereplicateResults:
-    dereplicated: Path
-    excluded: Path
+    pass
 
 
-def progress_handler(progress):
+def progress_handler(caption, index, total):
     import itaxotools
     itaxotools.progress_handler(
-        text=progress.operation,
-        value=progress.current_step,
-        maximum=progress.total_steps,
+        text=caption,
+        value=index,
+        maximum=total,
     )
 
 
@@ -47,73 +48,115 @@ def initialize():
     from itaxotools.taxi3.library import task  # noqa
 
 
+def get_file_info(path: Path):
+
+    from itaxotools.taxi3.files import FileInfo, FileFormat
+    from ..types import InputFile
+
+    def get_index(items, item):
+        return items.index(item) if item else None
+
+    info = FileInfo.from_path(path)
+    if info.format == FileFormat.Tabfile:
+        return InputFile.Tabfile(
+            path = path,
+            size = info.size,
+            headers = info.headers,
+            individuals = info.header_individuals,
+            sequences = info.header_sequences,
+            organism = info.header_organism,
+            species = info.header_species,
+            genera = info.header_genus,
+        )
+    if info.format == FileFormat.Fasta:
+        return InputFile.Fasta(
+            path = path,
+            size = info.size,
+        )
+    return InputFile.Unknown(path)
+
+
+def sequences_from_model(input: SequenceModel2):
+    from itaxotools.taxi3.sequences import Sequences, SequenceHandler
+    from ..model import SequenceModel2
+
+    if input.type == FileFormat.Tabfile:
+        return Sequences.fromPath(
+            input.path,
+            SequenceHandler.Tabfile,
+            hasHeader = True,
+            idColumn=input.index_column,
+            seqColumn=input.sequence_column,
+        )
+    elif input.type == FileFormat.Fasta:
+        return Sequences.fromPath(
+            input.path,
+            SequenceHandler.Fasta,
+        )
+    raise Exception(f'Cannot create sequences from input: {input}')
+
+
 def dereplicate(
+
     work_dir: Path,
-    inputs: List[Path],
-    reader_type: SequenceReader,
-    comparison_mode: ComparisonMode,
+
+    input_sequences: AttrDict,
+
+    alignment_mode: AlignmentMode,
+    alignment_write_pairs: bool,
+    alignment_pairwise_scores: dict,
+
+    distance_metric: DistanceMetric,
+    distance_metrics_bbc_k: int,
+    distance_linear: bool,
+    distance_matricial: bool,
+    distance_percentile: bool,
+    distance_precision: int,
+    distance_missing: str,
+
     similarity_threshold: float,
-    length_threshold: Optional[int],
-) -> Dict[Path, Tuple[Path, Path]]:
+    length_threshold: int,
 
-    import itaxotools
-    itaxotools.progress_handler('Dereplicating...')
+    **kwargs
 
-    from itaxotools.taxi3.library.config import AlignmentScores, Config
-    from itaxotools.taxi3.library.datatypes import (
-        CompleteData, FastaReader, GenbankReader, Metric, TabfileReader,
-        ValidFilePath, XlsxReader)
-    from itaxotools.taxi3.library.task import Alignment, Dereplicate
+) -> tuple[Path, float]:
 
-    reader = {
-        SequenceReader.TabfileReader: TabfileReader,
-        SequenceReader.GenbankReader: GenbankReader,
-        SequenceReader.XlsxReader: XlsxReader,
-        SequenceReader.FastaReader: FastaReader,
-    }[reader_type]
+    from itaxotools.taxi3.tasks.dereplicate import Dereplicate
+    from itaxotools.taxi3.distances import DistanceMetric as BackendDistanceMetric
+    from itaxotools.taxi3.sequences import Sequences, SequenceHandler
+    from itaxotools.taxi3.partitions import Partition, PartitionHandler
+    from itaxotools.taxi3.align import Scores
 
-    alignment = {
-        ComparisonMode.AlignmentFree: Alignment.AlignmentFree,
-        ComparisonMode.PairwiseAlignment: Alignment.Pairwise,
-        ComparisonMode.AlreadyAligned: Alignment.AlreadyAligned,
-    }[comparison_mode.type]
+    task = Dereplicate()
+    task.work_dir = work_dir
+    task.progress_handler = progress_handler
 
-    config = None
-    if comparison_mode.type is ComparisonMode.PairwiseAlignment:
-        scores = AlignmentScores._from_scores_dict(comparison_mode.config)
-        config = Config(scores)
+    task.input = sequences_from_model(input_sequences)
+    task.set_output_format_from_path(input_sequences.path)
 
-    excluded_dir = work_dir / 'excluded'
-    excluded_dir.mkdir()
-    dereplicated_dir = work_dir / 'dereplicated'
-    dereplicated_dir.mkdir()
+    task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
+    task.params.pairs.scores = Scores(**alignment_pairwise_scores)
+    task.params.pairs.write = alignment_write_pairs
 
-    results = dict()
+    metrics_tr = {
+        DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
+        DistanceMetric.UncorrectedWithGaps: (BackendDistanceMetric.UncorrectedWithGaps, []),
+        DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
+        DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
+        DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
+        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metrics_bbc_k]),
+    }
+    metric = metrics_tr[distance_metric][0](*metrics_tr[distance_metric][1])
 
-    for input in inputs:
-        dereplicated = dereplicated_dir / f'{input.stem}.dereplicated.tsv'
-        excluded = excluded_dir / f'{input.stem}.excluded.tsv'
+    task.params.distances.metric = metric
+    task.params.distances.write_linear = distance_linear
+    task.params.distances.write_matricial = distance_matricial
 
-        dereplicated.unlink(missing_ok=True)
-        excluded.unlink(missing_ok=True)
+    task.params.format.float = f'{{:.{distance_precision}f}}'
+    task.params.format.percentage = f'{{:.{distance_precision}f}}%'
+    task.params.format.missing = distance_missing
+    task.params.format.percentage_multiply = distance_percentile
 
-        sequence = CompleteData.from_path(ValidFilePath(input), reader)
-
-        print(f'Dereplicating {input.name}')
-        task = Dereplicate(warn=print)
-        task.progress_handler = progress_handler
-        task.similarity = similarity_threshold
-        task.length_threshold = length_threshold
-        task._calculate_distances.config = config
-        task._calculate_distances.alignment = alignment
-        task._calculate_distances.metrics = [Metric.Uncorrected]
-        task.data = sequence
-        task.start()
-
-        for output in task.result:
-            output.included.append_to_file(dereplicated)
-            output.excluded.append_to_file(excluded)
-
-        results[input] = DereplicateResults(dereplicated, excluded)
+    results = task.start()
 
     return results

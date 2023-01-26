@@ -120,6 +120,7 @@ class PropertiesRef:
     def __getattr__(self, attr):
         if attr in self._list():
             return PropertyRef(self._parent, attr)
+        raise AttributeError(f'{repr(type(self._parent).__name__)} has no property: {repr(attr)}')
 
     def __getitem__(self, key):
         return self.__getattr__(key)
