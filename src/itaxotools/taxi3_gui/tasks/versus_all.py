@@ -74,6 +74,7 @@ def get_file_info(path: Path):
         return InputFile.Fasta(
             path = path,
             size = info.size,
+            has_subsets = info.has_subsets,
         )
     return InputFile.Unknown(path)
 
@@ -94,6 +95,7 @@ def sequences_from_model(input: SequenceModel2):
         return Sequences.fromPath(
             input.path,
             SequenceHandler.Fasta,
+            parse_organism=True,
         )
     raise Exception(f'Cannot create sequences from input: {input}')
 
@@ -113,6 +115,16 @@ def partition_from_model(input: PartitionModel):
             hasHeader = True,
             idColumn=input.individual_column,
             subColumn=input.subset_column,
+            filter=filter,
+        )
+    elif input.type == FileFormat.Fasta:
+        filter = {
+            ColumnFilter.All: None,
+            ColumnFilter.First: PartitionHandler.subset_first_word,
+        }[input.subset_filter]
+        return Partition.fromPath(
+            input.path,
+            PartitionHandler.Fasta,
             filter=filter,
         )
     raise Exception(f'Cannot create partition from input: {input}')

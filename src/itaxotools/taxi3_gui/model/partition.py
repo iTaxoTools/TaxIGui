@@ -40,6 +40,25 @@ class PartitionModel(Object):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
 
 
+class Fasta(PartitionModel):
+    subset_filter = Property(ColumnFilter, ColumnFilter.All)
+
+    def __init__(self, file_item, preference: 'species' | 'genera' = None):
+        assert isinstance(file_item.object, InputFileModel.Fasta)
+        super().__init__(file_item)
+        info = file_item.object.info
+        assert info.has_subsets
+        if preference == 'genera':
+            self.subset_filter = ColumnFilter.First
+
+    def as_dict(self):
+        return AttrDict(
+            type = FileFormat.Fasta,
+            path = self.file_item.object.path,
+            subset_filter = self.subset_filter,
+        )
+
+
 class Tabfile(PartitionModel):
     subset_column = Property(int, -1)
     individual_column = Property(int, -1)

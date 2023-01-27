@@ -222,6 +222,7 @@ class VersusAllModel(Task):
                 },
                 InputFileModel.Fasta: {
                     SequenceModel2: SequenceModel2.Fasta,
+                    PartitionModel: PartitionModel.Fasta,
                 },
             }[type(file_item.object)][model_parent]
         except Exception:
@@ -235,19 +236,19 @@ class VersusAllModel(Task):
 
     def set_species_file_from_file_item(self, file_item):
         self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
-        # self.propagate_file_item(file_item)
 
     def set_genera_file_from_file_item(self, file_item):
         self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
-        # self.propagate_file_item(file_item)
 
     def propagate_file_item(self, file_item):
-        if file_item and isinstance(file_item.object, InputFileModel.Tabfile):
-            self.perform_species = True
-            self.perform_genera = True
-            self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
-            self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
-            self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+        if not file_item:
+            return
+        if isinstance(file_item.object, InputFileModel.Fasta) and not file_item.object.info.has_subsets:
+            return
+        self.perform_species = True
+        self.perform_genera = True
+        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Main:

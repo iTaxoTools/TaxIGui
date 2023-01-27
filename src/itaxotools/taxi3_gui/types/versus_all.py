@@ -47,7 +47,7 @@ class Unknown(InputFile):
 
 @dataclass
 class Fasta(InputFile):
-    pass
+    has_subsets: bool
 
 
 @dataclass
