@@ -228,17 +228,29 @@ class VersusAllModel(Task):
         except Exception:
             self.notification.emit(Notification.Warn('Unexpected file type.'))
             return None
-        return model_type(file_item, *args, **kwargs)
+        model = model_type(file_item, *args, **kwargs)
+        if model_type == SequenceModel2.Fasta:
+            model.parse_organism = model.has_subsets
+        return model
 
     def set_sequence_file_from_file_item(self, file_item):
         self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
         self.propagate_file_item(file_item)
 
     def set_species_file_from_file_item(self, file_item):
-        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+        try:
+            self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+        except Exception:
+            self.notification.emit(Notification.Warn('No partition information found in file.'))
+            self.input_species = None
+            self.properties.input_species.update()
 
     def set_genera_file_from_file_item(self, file_item):
-        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+        try:
+            self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+        except Exception:
+            self.notification.emit(Notification.Warn('No partition information found in file.'))
+            self.properties.input_genera.update()
 
     def propagate_file_item(self, file_item):
         if not file_item:

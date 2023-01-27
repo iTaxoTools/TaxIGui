@@ -74,6 +74,7 @@ def get_file_info(path: Path):
         return InputFile.Fasta(
             path = path,
             size = info.size,
+            has_subsets = info.has_subsets,
         )
     return InputFile.Unknown(path)
 

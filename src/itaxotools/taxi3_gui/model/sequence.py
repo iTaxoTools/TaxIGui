@@ -56,11 +56,12 @@ class Fasta(SequenceModel2):
     has_subsets = Property(bool, False)
     parse_organism = Property(bool, False)
 
-    def __init__(self, file_item):
+    def __init__(self, file_item, parse_organism=False):
         assert isinstance(file_item.object, InputFileModel.Fasta)
         super().__init__(file_item)
         info = file_item.object.info
         self.has_subsets = info.has_subsets
+        self.parse_organism = parse_organism
 
     def as_dict(self):
         return AttrDict(

@@ -454,6 +454,8 @@ class SequenceSelector(InputSelector):
         type_label_value = QtWidgets.QLabel('Fasta')
         size_label_value = QtWidgets.QLabel('42 MB')
 
+        parse_organism = QtWidgets.QCheckBox('Parse identifiers as "sequence|taxon"')
+
         view = QtWidgets.QPushButton('View')
         view.setVisible(False)
 
@@ -465,6 +467,8 @@ class SequenceSelector(InputSelector):
         layout.addSpacing(48)
         layout.addWidget(size_label)
         layout.addWidget(size_label_value)
+        layout.addSpacing(48)
+        layout.addWidget(parse_organism)
         layout.addStretch(1)
         layout.addWidget(view)
 
@@ -474,6 +478,7 @@ class SequenceSelector(InputSelector):
         self.controls.fasta = AttrDict()
         self.controls.fasta.widget = widget
         self.controls.fasta.file_size = size_label_value
+        self.controls.fasta.parse_organism = parse_organism
         self.controls.config.addWidget(widget)
 
     def setObject(self, object):
@@ -493,6 +498,8 @@ class SequenceSelector(InputSelector):
             self.controls.config.setVisible(True)
         elif object and isinstance(object, SequenceModel2.Fasta):
             self.binder.bind(object.file_item.object.properties.size, self.controls.fasta.file_size.setText, lambda x: human_readable_size(x))
+            self.binder.bind(object.properties.parse_organism, self.controls.fasta.parse_organism.setChecked)
+            self.binder.bind(self.controls.fasta.parse_organism.toggled, object.properties.parse_organism)
             self.controls.config.setCurrentWidget(self.controls.fasta.widget)
             self.controls.config.setVisible(True)
         else:
@@ -518,6 +525,12 @@ class PartitionSelector(InputSelector):
         combo.setModel(proxy_model)
 
     def draw_config(self):
+        self.controls.config = MinimumStackedWidget()
+        self.addWidget(self.controls.config)
+        self.draw_config_tabfile()
+        self.draw_config_fasta()
+
+    def draw_config_tabfile(self):
         layout = QtWidgets.QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
@@ -582,38 +595,80 @@ class PartitionSelector(InputSelector):
 
         widget = QtWidgets.QWidget()
         widget.setLayout(layout)
-        self.addWidget(widget)
 
-        self.controls.config = widget
-        self.controls.subset_combo = subset_combo
-        self.controls.individual_combo = individual_combo
-        self.controls.subset_filter = subset_filter
-        self.controls.individual_filter = individual_filter
-        self.controls.file_size = size_label_value
+        self.controls.tabfile = AttrDict()
+        self.controls.tabfile.widget = widget
+        self.controls.tabfile.subset_combo = subset_combo
+        self.controls.tabfile.individual_combo = individual_combo
+        self.controls.tabfile.subset_filter = subset_filter
+        self.controls.tabfile.individual_filter = individual_filter
+        self.controls.tabfile.file_size = size_label_value
+        self.controls.config.addWidget(widget)
+
+    def draw_config_fasta(self):
+        type_label = QtWidgets.QLabel('File format:')
+        size_label = QtWidgets.QLabel('File size:')
+
+        type_label_value = QtWidgets.QLabel('Fasta')
+        size_label_value = QtWidgets.QLabel('42 MB')
+
+        filter_first = QtWidgets.QCheckBox('Only keep first word')
+
+        view = QtWidgets.QPushButton('View')
+        view.setVisible(False)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        layout.addWidget(type_label)
+        layout.addWidget(type_label_value)
+        layout.addSpacing(48)
+        layout.addWidget(size_label)
+        layout.addWidget(size_label_value)
+        layout.addSpacing(48)
+        layout.addWidget(filter_first)
+        layout.addStretch(1)
+        layout.addWidget(view)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+
+        self.controls.fasta = AttrDict()
+        self.controls.fasta.widget = widget
+        self.controls.fasta.file_size = size_label_value
+        self.controls.fasta.filter_first = filter_first
+        self.controls.config.addWidget(widget)
 
     def setObject(self, object):
         super().setObject(object)
         if object and isinstance(object, PartitionModel.Tabfile):
             self.populateCombos(object.file_item.object.info.headers)
-            self.binder.bind(object.properties.subset_column, self.controls.subset_combo.setCurrentIndex)
-            self.binder.bind(self.controls.subset_combo.currentIndexChanged, object.properties.subset_column)
-            self.binder.bind(object.properties.individual_column, self.controls.individual_combo.setCurrentIndex)
-            self.binder.bind(self.controls.individual_combo.currentIndexChanged, object.properties.individual_column)
-            self.binder.bind(object.properties.subset_filter, self.controls.subset_filter.setValue)
-            self.binder.bind(self.controls.subset_filter.valueChanged, object.properties.subset_filter)
-            self.binder.bind(object.properties.individual_filter, self.controls.individual_filter.setValue)
-            self.binder.bind(self.controls.individual_filter.valueChanged, object.properties.individual_filter)
-            self.binder.bind(object.file_item.object.properties.size, self.controls.file_size.setText, lambda x: human_readable_size(x))
+            self.binder.bind(object.properties.subset_column, self.controls.tabfile.subset_combo.setCurrentIndex)
+            self.binder.bind(self.controls.tabfile.subset_combo.currentIndexChanged, object.properties.subset_column)
+            self.binder.bind(object.properties.individual_column, self.controls.tabfile.individual_combo.setCurrentIndex)
+            self.binder.bind(self.controls.tabfile.individual_combo.currentIndexChanged, object.properties.individual_column)
+            self.binder.bind(object.properties.subset_filter, self.controls.tabfile.subset_filter.setValue)
+            self.binder.bind(self.controls.tabfile.subset_filter.valueChanged, object.properties.subset_filter)
+            self.binder.bind(object.properties.individual_filter, self.controls.tabfile.individual_filter.setValue)
+            self.binder.bind(self.controls.tabfile.individual_filter.valueChanged, object.properties.individual_filter)
+            self.binder.bind(object.file_item.object.properties.size, self.controls.tabfile.file_size.setText, lambda x: human_readable_size(x))
+            self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
+            self.controls.config.setVisible(True)
+        elif object and isinstance(object, PartitionModel.Fasta):
+            self.binder.bind(object.file_item.object.properties.size, self.controls.fasta.file_size.setText, lambda x: human_readable_size(x))
+            self.binder.bind(object.properties.subset_filter, self.controls.fasta.filter_first.setChecked, lambda x: x == ColumnFilter.First)
+            self.binder.bind(self.controls.fasta.filter_first.toggled, object.properties.subset_filter, lambda x: ColumnFilter.First if x else ColumnFilter.All)
+            self.controls.config.setCurrentWidget(self.controls.fasta.widget)
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)
 
     def populateCombos(self, headers):
-        self.controls.subset_combo.clear()
-        self.controls.individual_combo.clear()
+        self.controls.tabfile.subset_combo.clear()
+        self.controls.tabfile.individual_combo.clear()
         for header in headers:
-            self.controls.subset_combo.addItem(header, header)
-            self.controls.individual_combo.addItem(header, header)
+            self.controls.tabfile.subset_combo.addItem(header)
+            self.controls.tabfile.individual_combo.addItem(header)
 
 
 class OptionalCategory(Card):
