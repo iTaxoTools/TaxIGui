@@ -359,6 +359,7 @@ class TitleCard(Card):
 class DummyResultsCard(Card):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setVisible(False)
         self.path = Path()
 
         title = QtWidgets.QLabel('Results: ')
@@ -1073,7 +1074,7 @@ class DecontaminateView(TaskView):
         self.binder.bind(self.cards.weight_selector.edited_ingroup, object.properties.ingroup_weight)
 
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
-        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
+        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.roll_animation.setAnimatedVisible,  lambda x: x is not None)
 
         self.binder.bind(object.properties.distance_metric, self.update_visible_cards)
         self.binder.bind(object.properties.decontaminate_mode, self.update_visible_cards)
@@ -1086,15 +1087,15 @@ class DecontaminateView(TaskView):
             self.object.distance_metric == DistanceMetric.UncorrectedWithGaps,
         ))
         if self.object.decontaminate_mode == DecontaminateMode.DECONT:
-            self.cards.ingroup_sequences.setVisible(False)
-            self.cards.weight_selector.setVisible(False)
-            self.cards.identity.setVisible(uncorrected)
-            self.cards.similarity.setVisible(not uncorrected)
+            self.cards.ingroup_sequences.roll_animation.setAnimatedVisible(False)
+            self.cards.weight_selector.roll_animation.setAnimatedVisible(False)
+            self.cards.identity.roll_animation.setAnimatedVisible(uncorrected)
+            self.cards.similarity.roll_animation.setAnimatedVisible(not uncorrected)
         elif self.object.decontaminate_mode == DecontaminateMode.DECONT2:
-            self.cards.ingroup_sequences.setVisible(True)
-            self.cards.weight_selector.setVisible(True)
-            self.cards.identity.setVisible(False)
-            self.cards.similarity.setVisible(False)
+            self.cards.ingroup_sequences.roll_animation.setAnimatedVisible(True)
+            self.cards.weight_selector.roll_animation.setAnimatedVisible(True)
+            self.cards.identity.roll_animation.setAnimatedVisible(False)
+            self.cards.similarity.roll_animation.setAnimatedVisible(False)
 
     def setEditable(self, editable: bool):
         for card in self.cards:

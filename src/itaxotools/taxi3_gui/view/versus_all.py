@@ -220,6 +220,7 @@ class TitleCard(Card):
 class DummyResultsCard(Card):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setVisible(False)
         self.path = Path()
 
         title = QtWidgets.QLabel('Results: ')
@@ -1064,7 +1065,7 @@ class VersusAllView(TaskView):
 
         self.binder.bind(self.cards.perform_species.toggled, object.properties.perform_species)
         self.binder.bind(object.properties.perform_species, self.cards.perform_species.setChecked)
-        self.binder.bind(object.properties.perform_species, self.cards.input_species.setVisible)
+        self.binder.bind(object.properties.perform_species, self.cards.input_species.roll_animation.setAnimatedVisible)
 
         self.binder.bind(self.cards.input_species.itemChanged, object.set_species_file_from_file_item)
         self.binder.bind(object.properties.input_species, self.cards.input_species.setObject)
@@ -1072,7 +1073,7 @@ class VersusAllView(TaskView):
 
         self.binder.bind(self.cards.perform_genera.toggled, object.properties.perform_genera)
         self.binder.bind(object.properties.perform_genera, self.cards.perform_genera.setChecked)
-        self.binder.bind(object.properties.perform_genera, self.cards.input_genera.setVisible)
+        self.binder.bind(object.properties.perform_genera, self.cards.input_genera.roll_animation.setAnimatedVisible)
 
         self.binder.bind(self.cards.input_genera.itemChanged, object.set_genera_file_from_file_item)
         self.binder.bind(object.properties.input_genera, self.cards.input_genera.setObject)
@@ -1127,7 +1128,7 @@ class VersusAllView(TaskView):
         self.binder.bind(self.cards.plot_options.controls.binwidth.textEditedSafe, object.properties.plot_binwidth, lambda x: type_convert(x, float, None))
 
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
-        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
+        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.roll_animation.setAnimatedVisible,  lambda x: x is not None)
 
         self.binder.bind(object.properties.editable, self.setEditable)
 
