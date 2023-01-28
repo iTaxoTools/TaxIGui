@@ -198,12 +198,8 @@ class CardLayout(QtWidgets.QBoxLayout):
         width = 0
         height = 0
         visible = 0
-        if type(self.parent()).__name__ == 'PlotSelector':
-            print('FAFA')
         for index in range(self.count()):
             item = self.itemAt(index)
-            if type(self.parent()).__name__ == 'PlotSelector':
-                print('TYPA', index, item)
             if isinstance(item, QtWidgets.QWidget) and not item.isVisible():
                 continue
             if isinstance(item, QtWidgets.QWidgetItem) and not item.widget().isVisible():
@@ -211,8 +207,6 @@ class CardLayout(QtWidgets.QBoxLayout):
             visible += 1
             width = max(width, item.sizeHint().width())
             height += item.sizeHint().height()
-            if type(self.parent()).__name__ == 'PlotSelector':
-                print('HEIGHT', index, height)
         if visible > 1:
             height += (visible - 1) * self.spacing()
         size = QtCore.QSize(width, height)
