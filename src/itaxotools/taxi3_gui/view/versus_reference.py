@@ -535,6 +535,8 @@ class AlignmentModeSelector(Card):
         radios.setSpacing(8)
         for mode in AlignmentMode:
             button = RichRadioButton(f'{mode.label}:', mode.description, self)
+            if mode == AlignmentMode.NoAlignment:
+                button.hide()
             radios.addWidget(button)
             group.add(button, mode)
 
