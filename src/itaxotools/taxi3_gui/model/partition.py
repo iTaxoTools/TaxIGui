@@ -99,3 +99,24 @@ class Tabfile(PartitionModel):
             subset_filter = self.subset_filter,
             individual_filter = self.individual_filter,
         )
+
+
+class Spart(PartitionModel):
+    spartition = Property(str, None)
+    is_xml = Property(bool, None)
+
+    def __init__(self, file_item, *args, **kwargs):
+        assert isinstance(file_item.object, InputFileModel.Spart)
+        super().__init__(file_item)
+        info = file_item.object.info
+        assert len(info.spartitions) > 0
+        self.spartition = info.spartitions[0]
+        self.is_xml = info.is_xml
+
+    def as_dict(self):
+        return AttrDict(
+            type = FileFormat.Spart,
+            path = self.file_item.object.path,
+            spartition = self.spartition,
+            is_xml = self.is_xml,
+        )

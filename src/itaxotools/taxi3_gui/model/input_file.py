@@ -52,3 +52,11 @@ class Tabfile(InputFileModel):
         assert len(info.headers) >= 2
         super().__init__(info.path, info.size)
         self.info = info
+
+
+class Spart(InputFileModel):
+    info = Property(InputFile.Spart, None)
+
+    def __init__(self, info: InputFile.Spart):
+        super().__init__(info.path, info.size)
+        self.info = info

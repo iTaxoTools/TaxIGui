@@ -60,6 +60,13 @@ class Tabfile(InputFile):
     genera: str = None
 
 
+@dataclass
+class Spart(InputFile):
+    spartitions: list[str]
+    is_matricial: bool
+    is_xml: bool
+
+
 class Entry(NamedTuple):
     label: str
     key: str

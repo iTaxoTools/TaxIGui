@@ -530,6 +530,7 @@ class PartitionSelector(InputSelector):
         self.addWidget(self.controls.config)
         self.draw_config_tabfile()
         self.draw_config_fasta()
+        self.draw_config_spart()
 
     def draw_config_tabfile(self):
         layout = QtWidgets.QGridLayout()
@@ -640,8 +641,45 @@ class PartitionSelector(InputSelector):
         self.controls.fasta.filter_first = filter_first
         self.controls.config.addWidget(widget)
 
+    def draw_config_spart(self):
+        type_label = QtWidgets.QLabel('File format:')
+        size_label = QtWidgets.QLabel('File size:')
+
+        type_label_value = QtWidgets.QLabel('Spart-???')
+        size_label_value = QtWidgets.QLabel('42 MB')
+
+        spartition_label = QtWidgets.QLabel('Spartition:')
+        spartition = NoWheelComboBox()
+
+        view = QtWidgets.QPushButton('View')
+        view.setVisible(False)
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        layout.addWidget(type_label)
+        layout.addWidget(type_label_value)
+        layout.addSpacing(48)
+        layout.addWidget(size_label)
+        layout.addWidget(size_label_value)
+        layout.addSpacing(48)
+        layout.addWidget(spartition_label)
+        layout.addWidget(spartition, 1)
+        layout.addWidget(view)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+
+        self.controls.spart = AttrDict()
+        self.controls.spart.widget = widget
+        self.controls.spart.file_type = type_label_value
+        self.controls.spart.file_size = size_label_value
+        self.controls.spart.spartition = spartition
+        self.controls.config.addWidget(widget)
+
     def setObject(self, object):
         super().setObject(object)
+        self.object = object
         if object and isinstance(object, PartitionModel.Tabfile):
             self.populateCombos(object.file_item.object.info.headers)
             self.binder.bind(object.properties.subset_column, self.controls.tabfile.subset_combo.setCurrentIndex)
@@ -661,6 +699,14 @@ class PartitionSelector(InputSelector):
             self.binder.bind(self.controls.fasta.filter_first.toggled, object.properties.subset_filter, lambda x: ColumnFilter.First if x else ColumnFilter.All)
             self.controls.config.setCurrentWidget(self.controls.fasta.widget)
             self.controls.config.setVisible(True)
+        elif object and isinstance(object, PartitionModel.Spart):
+            self.binder.bind(object.file_item.object.properties.size, self.controls.spart.file_size.setText, lambda x: human_readable_size(x))
+            self.binder.bind(object.properties.is_xml, self.controls.spart.file_type.setText, lambda x: 'Spart-XML' if x else 'Spart')
+            self.binder.bind(self.controls.spart.spartition.currentIndexChanged, object.properties.spartition, lambda x: self.controls.spart.spartition.itemData(x))
+            self.binder.bind(object.properties.spartition, self.controls.spart.spartition.setCurrentIndex, lambda x: self.controls.spart.spartition.findText(x))
+            self.populateSpartitions(object.file_item.object.info.spartitions)
+            self.controls.config.setCurrentWidget(self.controls.spart.widget)
+            self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)
 
@@ -670,6 +716,11 @@ class PartitionSelector(InputSelector):
         for header in headers:
             self.controls.tabfile.subset_combo.addItem(header)
             self.controls.tabfile.individual_combo.addItem(header)
+
+    def populateSpartitions(self, spartitions: list[str]):
+        self.controls.spart.spartition.clear()
+        for spartition in spartitions:
+            self.controls.spart.spartition.addItem(spartition, spartition)
 
 
 class OptionalCategory(Card):

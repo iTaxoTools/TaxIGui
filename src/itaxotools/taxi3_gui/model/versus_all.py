@@ -207,6 +207,9 @@ class VersusAllModel(Task):
         elif info.type == InputFile.Fasta:
             index = app.model.items.add_file(InputFileModel.Fasta(info), focus=False)
             return index.data(ItemModel.ItemRole)
+        elif info.type == InputFile.Spart:
+            index = app.model.items.add_file(InputFileModel.Spart(info), focus=False)
+            return index.data(ItemModel.ItemRole)
         else:
             self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
             return None
@@ -223,6 +226,9 @@ class VersusAllModel(Task):
                 InputFileModel.Fasta: {
                     SequenceModel2: SequenceModel2.Fasta,
                     PartitionModel: PartitionModel.Fasta,
+                },
+                InputFileModel.Spart: {
+                    PartitionModel: PartitionModel.Spart,
                 },
             }[type(file_item.object)][model_parent]
         except Exception:
@@ -254,6 +260,8 @@ class VersusAllModel(Task):
 
     def propagate_file_item(self, file_item):
         if not file_item:
+            return
+        if isinstance(file_item.object, InputFileModel.Spart):
             return
         if isinstance(file_item.object, InputFileModel.Fasta) and not file_item.object.info.has_subsets:
             return

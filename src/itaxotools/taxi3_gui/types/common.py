@@ -109,3 +109,4 @@ class DecontaminateMode(Enum):
 class FileFormat(Enum):
     Tabfile = auto()
     Fasta = auto()
+    Spart = auto()

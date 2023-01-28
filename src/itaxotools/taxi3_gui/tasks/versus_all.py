@@ -76,6 +76,14 @@ def get_file_info(path: Path):
             size = info.size,
             has_subsets = info.has_subsets,
         )
+    if info.format == FileFormat.Spart:
+        return InputFile.Spart(
+            path = path,
+            size = info.size,
+            spartitions = info.spartitions,
+            is_matricial = info.is_matricial,
+            is_xml = info.is_xml,
+        )
     return InputFile.Unknown(path)
 
 
@@ -126,6 +134,12 @@ def partition_from_model(input: PartitionModel):
             input.path,
             PartitionHandler.Fasta,
             filter=filter,
+        )
+    elif input.type == FileFormat.Spart:
+        return Partition.fromPath(
+            input.path,
+            PartitionHandler.Spart,
+            spartition=input.spartition,
         )
     raise Exception(f'Cannot create partition from input: {input}')
 
