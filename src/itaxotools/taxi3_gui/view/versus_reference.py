@@ -26,7 +26,7 @@ from .. import app
 from ..utility import Guard, Binder, type_convert, human_readable_size
 from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
 from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
-from .common import Item, Card, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget
+from .common import Item, Card, CardCustom, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, VerticalRollAnimation
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):
@@ -506,7 +506,7 @@ class SequenceSelector(InputSelector):
             self.controls.tabfile.sequence_combo.addItem(header)
 
 
-class AlignmentModeSelector(Card):
+class AlignmentModeSelector(CardCustom):
     resetScores = QtCore.Signal()
 
     def __init__(self, parent=None):
@@ -525,7 +525,7 @@ class AlignmentModeSelector(Card):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(label)
         layout.addWidget(description)
-        layout.setSpacing(16)
+        layout.setSpacing(8)
 
         group = RadioButtonGroup()
         group.valueChanged.connect(self.handleModeChanged)
@@ -539,8 +539,9 @@ class AlignmentModeSelector(Card):
                 button.hide()
             radios.addWidget(button)
             group.add(button, mode)
-
         layout.addLayout(radios)
+        layout.setContentsMargins(0, 0, 0, 0)
+
         self.addLayout(layout)
 
     def draw_pairwise_config(self):
@@ -582,6 +583,7 @@ class AlignmentModeSelector(Card):
         widget = QtWidgets.QWidget()
         widget.setLayout(layout)
         self.addWidget(widget)
+        widget.roll = VerticalRollAnimation(widget)
 
         self.controls.pairwise_config = widget
 
@@ -593,7 +595,7 @@ class AlignmentModeSelector(Card):
                 self.toggled.emit(button.alignmentMode)
 
     def handleModeChanged(self, mode):
-        self.controls.pairwise_config.setVisible(mode == AlignmentMode.PairwiseAlignment)
+        self.controls.pairwise_config.roll.setAnimatedVisible(mode == AlignmentMode.PairwiseAlignment)
 
 
 class DistanceMetricSelector(Card):
