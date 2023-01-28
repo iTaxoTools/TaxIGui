@@ -89,7 +89,8 @@ class DecontaminateModel(Task):
     dummy_time = Property(float, None)
 
     def __init__(self, name=None):
-        super().__init__(name, init=decontaminate.initialize)
+        super().__init__(name)
+        self.exec(DecontaminateSubtask.Initialize, decontaminate.initialize)
         self.binder = Binder()
         self.binder.bind(self.properties.alignment_mode, self.set_metric_from_mode)
         self.binder.bind(self.properties.alignment_mode, self.set_similarity_from_mode)
@@ -225,6 +226,8 @@ class DecontaminateModel(Task):
         self.ingroup_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
 
     def onDone(self, report):
+        if report.id == DecontaminateSubtask.Initialize:
+            return
         if report.id == DecontaminateSubtask.Main:
             time_taken = human_readable_seconds(report.result.seconds_taken)
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))

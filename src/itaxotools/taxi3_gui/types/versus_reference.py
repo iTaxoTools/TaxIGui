@@ -26,5 +26,6 @@ from ._type import Type
 
 class VersusReferenceSubtask(Enum):
     Main = auto()
+    Initialize = auto()
     AddDataFile = auto()
     AddReferenceFile = auto()

@@ -26,4 +26,5 @@ from ._type import Type
 
 class DereplicateSubtask(Enum):
     Main = auto()
+    Initialize = auto()
     AddSequenceFile = auto()

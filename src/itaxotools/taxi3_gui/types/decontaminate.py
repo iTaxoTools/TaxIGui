@@ -26,6 +26,7 @@ from ._type import Type
 
 class DecontaminateSubtask(Enum):
     Main = auto()
+    Initialize = auto()
     AddInputFile = auto()
     AddOutgroupFile = auto()
     AddIngroupFile = auto()

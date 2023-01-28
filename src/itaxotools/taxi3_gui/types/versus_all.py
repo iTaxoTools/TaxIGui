@@ -26,6 +26,7 @@ from ._type import Type
 
 class VersusAllSubtask(Enum):
     Main = auto()
+    Initialize = auto()
     AddSequenceFile = auto()
     AddSpeciesFile = auto()
     AddGeneraFile = auto()

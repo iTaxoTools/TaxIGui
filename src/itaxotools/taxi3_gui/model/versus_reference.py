@@ -87,7 +87,8 @@ class VersusReferenceModel(Task):
     dummy_time = Property(float, None)
 
     def __init__(self, name=None):
-        super().__init__(name, init=versus_reference.initialize)
+        super().__init__(name)
+        self.exec(VersusReferenceSubtask.Initialize, versus_reference.initialize)
 
     def readyTriggers(self):
         return [
@@ -197,6 +198,8 @@ class VersusReferenceModel(Task):
             self.input_reference = self.get_model_from_file_item(file_item, SequenceModel2)
 
     def onDone(self, report):
+        if report.id == VersusReferenceSubtask.Initialize:
+            return
         if report.id == VersusReferenceSubtask.Main:
             time_taken = human_readable_seconds(report.result.seconds_taken)
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))

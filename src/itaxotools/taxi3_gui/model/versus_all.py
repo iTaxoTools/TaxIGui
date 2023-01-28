@@ -100,7 +100,8 @@ class VersusAllModel(Task):
     dummy_time = Property(float, None)
 
     def __init__(self, name=None):
-        super().__init__(name, init=versus_all.initialize)
+        super().__init__(name)
+        self.exec(VersusAllSubtask.Initialize, versus_all.initialize)
 
     def readyTriggers(self):
         return [
@@ -271,6 +272,8 @@ class VersusAllModel(Task):
         self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
 
     def onDone(self, report):
+        if report.id == VersusAllSubtask.Initialize:
+            return
         if report.id == VersusAllSubtask.Main:
             time_taken = human_readable_seconds(report.result.seconds_taken)
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))

@@ -70,11 +70,8 @@ class Task(Object):
 
     counters = defaultdict(lambda: itertools.count(1, 1))
 
-    def __init__(self, name=None, init=None):
+    def __init__(self, name=None):
         super().__init__(name or self._get_next_name())
-
-        if init:
-            print('Worker init is temporarily ignored')
 
         self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)

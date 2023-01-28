@@ -82,7 +82,8 @@ class DereplicateModel(Task):
     dummy_time = Property(float, None)
 
     def __init__(self, name=None):
-        super().__init__(name, init=dereplicate.initialize)
+        super().__init__(name)
+        self.exec(DereplicateSubtask.Initialize, dereplicate.initialize)
         self.binder = Binder()
         self.binder.bind(self.properties.alignment_mode, self.set_metric_from_mode)
         self.binder.bind(self.properties.alignment_mode, self.set_similarity_from_mode)
@@ -197,6 +198,8 @@ class DereplicateModel(Task):
         self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
 
     def onDone(self, report):
+        if report.id == DereplicateSubtask.Initialize:
+            return
         if report.id == DereplicateSubtask.Main:
             time_taken = human_readable_seconds(report.result.seconds_taken)
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))

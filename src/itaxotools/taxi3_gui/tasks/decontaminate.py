@@ -42,10 +42,8 @@ def progress_handler(caption, index, total):
 def initialize():
     import itaxotools
     itaxotools.progress_handler('Initializing...')
-
-    from itaxotools.taxi3.library import config  # noqa
-    from itaxotools.taxi3.library import datatypes  # noqa
-    from itaxotools.taxi3.library import task  # noqa
+    from itaxotools.taxi3.tasks.decontaminate import Decontaminate  # noqa
+    from itaxotools.taxi3.tasks.decontaminate2 import Decontaminate2  # noqa
 
 
 def get_file_info(path: Path):
