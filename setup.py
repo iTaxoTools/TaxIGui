@@ -10,9 +10,9 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 
 setup(
-    name='taxi3-gui',
-    version='0.0.1',
-    description='A Qt GUI for Taxi3',
+    name='taxi-gui',
+    version='0.1.0',
+    description='A Qt GUI for Taxi2',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Patmanidis Stefanos',
@@ -22,11 +22,11 @@ setup(
         include=('itaxotools*',),
         where='src',
     ),
-    python_requires='>=3.8.6, <4',
+    python_requires='>=3.10.2, <4',
     install_requires=[
+        'taxi2==2.1.0',
+        'itaxotools-common==0.2.4',
         'pyside6>=6.1.1',
-        'taxi3==0.2.dev1',
-        'itaxotools-common==0.2.dev4',
     ],
     extras_require={
         'dev': [
@@ -37,14 +37,13 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'taxi3-gui = itaxotools.taxi3_gui:run',
+            'taxi-gui = itaxotools.taxi_gui:run',
         ]
     },
     classifiers=[
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3 :: Only',
     ],
     include_package_data=True,

@@ -4,6 +4,6 @@ exclude =
     build
     dist
 per-file-ignores =
-    src/itaxotools/taxi3_gui/app/resources.py:E251
-    src/itaxotools/taxi3_gui/app/skin.py:E241
-    src/itaxotools/taxi3_gui/**/__init__.py:F401
+    src/itaxotools/taxi_gui/app/resources.py:E251
+    src/itaxotools/taxi_gui/app/skin.py:E241
+    src/itaxotools/taxi_gui/**/__init__.py:F401

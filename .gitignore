@@ -9,6 +9,8 @@ __pycache__/
 *.so
 *~
 
+.DS_Store
+
 # due to using tox and pytest
 .tox
 .cache
