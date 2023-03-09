@@ -234,7 +234,7 @@ def versus_all(
     task.params.distances.write_matricial = distance_matricial
 
     task.params.format.float = f'{{:.{distance_precision}f}}'
-    task.params.format.percentage = f'{{:.{distance_precision}f}}%'
+    task.params.format.percentage = f'{{:.{distance_precision}f}}'
     task.params.format.missing = distance_missing
     task.params.format.percentage_multiply = distance_percentile
 
