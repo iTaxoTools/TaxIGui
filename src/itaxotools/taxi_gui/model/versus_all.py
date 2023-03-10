@@ -264,12 +264,19 @@ class VersusAllModel(Task):
             return
         if isinstance(file_item.object, InputFileModel.Spart):
             return
-        if isinstance(file_item.object, InputFileModel.Fasta) and not file_item.object.info.has_subsets:
-            return
-        self.perform_species = True
-        self.perform_genera = True
-        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
-        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+        if isinstance(file_item.object, InputFileModel.Tabfile):
+            info = file_item.object.info
+            if info.species is not None or info.organism is not None:
+                self.perform_species = True
+                self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+            if info.genera is not None or info.organism is not None:
+                self.perform_genera = True
+                self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+        if isinstance(file_item.object, InputFileModel.Fasta) and file_item.object.info.has_subsets:
+            self.perform_species = True
+            self.perform_genera = True
+            self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+            self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Initialize:
