@@ -16,9 +16,33 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-"""Program globals"""
+from typing import NamedTuple
+from importlib import import_module
 
-from . import model, resources, skin
-from .tasks import tasks
+from .._tasks import decontaminate, dereplicate, versus_all, versus_reference
 
-title = 'TaxI2.1'
+
+class Task(NamedTuple):
+    title: str
+    description: str
+    model: object
+    view: object
+
+    @classmethod
+    def from_module(cls, module):
+        import_module('.model', module.__package__)
+        import_module('.view', module.__package__)
+        return cls(
+            title = module.title,
+            description = module.description,
+            model = module.model.Model,
+            view = module.view.View,
+        )
+
+
+tasks = [
+    Task.from_module(versus_all),
+    Task.from_module(versus_reference),
+    Task.from_module(dereplicate),
+    Task.from_module(decontaminate),
+]
