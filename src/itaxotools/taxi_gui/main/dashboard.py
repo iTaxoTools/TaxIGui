@@ -21,7 +21,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from itaxotools.common.utility import override
 
 from .. import app
-from ..model import DecontaminateModel, DereplicateModel, Task, VersusAllModel, VersusReferenceModel
+from ..model.common import Task as TaskModel
 
 
 class DashItem(QtWidgets.QAbstractButton):
@@ -117,10 +117,10 @@ class Dashboard(QtWidgets.QFrame):
             """)
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget(DashItem('Versus All', 'Analyze distances within a dataset', self.handleVersusAll, self), 0, 0)
-        layout.addWidget(DashItem('Versus Reference', 'Compare distances to another dataset', self.handleVersusReference, self), 0, 1)
-        layout.addWidget(DashItem('Dereplicate', 'Detect similar sequences within a dataset', self.handleDereplicate, self), 1, 0)
-        layout.addWidget(DashItem('Decontaminate', 'Detect sequences close to another dataset', self.handleDecontaminate, self), 1, 1)
+
+        for index, task in enumerate(app.tasks):
+            self.drawTaskItem(layout, index, task)
+
         layout.setSpacing(6)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
@@ -128,20 +128,17 @@ class Dashboard(QtWidgets.QFrame):
         layout.setContentsMargins(6, 6, 6, 6)
         self.setLayout(layout)
 
-    def addTaskIfNew(self, type: Task):
+    def drawTaskItem(self, layout, index, task):
+        row, column = divmod(index, 2)
+        item = DashItem(
+            task.title,
+            task.description,
+            lambda: self.addTaskIfNew(task.model),
+            self)
+        layout.addWidget(item, row, column)
+
+    def addTaskIfNew(self, type: TaskModel):
         index = app.model.items.find_task(type)
         if index is None:
             index = app.model.items.add_task(type())
         app.model.items.focus(index)
-
-    def handleDereplicate(self):
-        self.addTaskIfNew(DereplicateModel)
-
-    def handleDecontaminate(self):
-        self.addTaskIfNew(DecontaminateModel)
-
-    def handleVersusAll(self):
-        self.addTaskIfNew(VersusAllModel)
-
-    def handleVersusReference(self):
-        self.addTaskIfNew(VersusReferenceModel)
