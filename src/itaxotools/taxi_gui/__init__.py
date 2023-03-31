@@ -33,7 +33,6 @@ def run():
     from .main import Main
 
     app = QtWidgets.QApplication(sys.argv)
-    app.setStyle('Fusion')
     skin.apply(app)
 
     files = [file for file in sys.argv[1:]]

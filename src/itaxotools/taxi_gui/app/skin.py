@@ -20,6 +20,12 @@ from PySide6.QtGui import QColor, QGuiApplication, QPalette
 
 from itaxotools.common.widgets import VectorIcon
 
+
+# QApplication Style
+
+style = 'Fusion'
+
+
 # Color definitions
 
 colors = {
@@ -118,6 +124,7 @@ scheme[QPalette.Inactive] = scheme[QPalette.Active]
 
 
 def apply(app: QGuiApplication):
+    app.setStyle(style)
     palette = app.palette()
     for group in scheme:
         for role in scheme[group]:
