@@ -46,9 +46,6 @@ class Body(QtWidgets.QStackedWidget):
         self.dashboard = Dashboard(self)
         self.addWidget(self.dashboard)
 
-        for task in app.tasks:
-            self.addView(task.model, task.view)
-
         self.showDashboard()
 
     def addView(self, object_type, view_type, *args, **kwargs):

@@ -29,14 +29,13 @@ def run():
 
     import sys
 
-    from .app import skin
+    from .app import skin, tasks
     from .main import Main
 
     app = QtWidgets.QApplication(sys.argv)
     skin.apply(app)
 
-    files = [file for file in sys.argv[1:]]
-    main = Main(files=files)
+    main = Main(tasks=tasks)
     main.show()
 
     sys.exit(app.exec())

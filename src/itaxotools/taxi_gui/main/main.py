@@ -43,7 +43,7 @@ class MainState(PropertyObject):
 class Main(ToolDialog):
     """Main window, handles everything"""
 
-    def __init__(self, parent=None, files=[]):
+    def __init__(self, tasks=[], parent=None):
         super(Main, self).__init__(parent)
         self.state = MainState()
 
@@ -53,6 +53,8 @@ class Main(ToolDialog):
 
         self.act()
         self.draw()
+
+        self.addTasks(tasks)
 
     def act(self):
         """Populate dialog actions"""
@@ -120,6 +122,14 @@ class Main(ToolDialog):
         layout.setColumnStretch(1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+    def addTasks(self, tasks):
+        for task in tasks:
+            self.addTask(task)
+
+    def addTask(self, task):
+        self.widgets.body.addView(task.model, task.view)
+        self.widgets.body.dashboard.addTaskItem(task)
 
     def handleHome(self):
         self.widgets.body.showDashboard()

@@ -107,6 +107,8 @@ class Dashboard(QtWidgets.QFrame):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._task_count = 0
+
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
@@ -117,10 +119,6 @@ class Dashboard(QtWidgets.QFrame):
             """)
 
         layout = QtWidgets.QGridLayout()
-
-        for index, task in enumerate(app.tasks):
-            self.drawTaskItem(layout, index, task)
-
         layout.setSpacing(6)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
@@ -128,14 +126,15 @@ class Dashboard(QtWidgets.QFrame):
         layout.setContentsMargins(6, 6, 6, 6)
         self.setLayout(layout)
 
-    def drawTaskItem(self, layout, index, task):
-        row, column = divmod(index, 2)
+    def addTaskItem(self, task):
+        row, column = divmod(self._task_count, 2)
         item = DashItem(
             task.title,
             task.description,
             lambda: self.addTaskIfNew(task.model),
             self)
-        layout.addWidget(item, row, column)
+        self.layout().addWidget(item, row, column)
+        self._task_count += 1
 
     def addTaskIfNew(self, type: TaskModel):
         index = app.model.items.find_task(type)
