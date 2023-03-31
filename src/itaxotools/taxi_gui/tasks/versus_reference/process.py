@@ -20,13 +20,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Tuple
 
-from ..types import ComparisonMode, ColumnFilter, AlignmentMode, DistanceMetric, FileFormat, DecontaminateMode
+from itaxotools.common.utility import AttrDict
+
+from itaxotools.taxi_gui.types import ComparisonMode, ColumnFilter, AlignmentMode, DistanceMetric, FileFormat
 
 
 @dataclass
-class DecontaminateResults:
+class VersusReferenceResults:
     pass
 
 
@@ -42,14 +44,13 @@ def progress_handler(caption, index, total):
 def initialize():
     import itaxotools
     itaxotools.progress_handler('Initializing...')
-    from itaxotools.taxi2.tasks.decontaminate import Decontaminate  # noqa
-    from itaxotools.taxi2.tasks.decontaminate2 import Decontaminate2  # noqa
+    from itaxotools.taxi2.tasks.versus_reference import VersusReference  # noqa
 
 
 def get_file_info(path: Path):
 
     from itaxotools.taxi2.files import FileInfo, FileFormat
-    from ..types import InputFile
+    from itaxotools.taxi_gui.types import InputFile
 
     def get_index(items, item):
         return items.index(item) if item else None
@@ -75,9 +76,10 @@ def get_file_info(path: Path):
     return InputFile.Unknown(path)
 
 
-def sequences_from_model(input: SequenceModel2) -> Sequences:
+def sequences_from_model(input: SequenceModel2):
     from itaxotools.taxi2.sequences import Sequences, SequenceHandler
-    from ..model import SequenceModel2
+    from itaxotools.taxi_gui import app
+    from itaxotools.taxi_gui.model import SequenceModel2
 
     if input.type == FileFormat.Tabfile:
         return Sequences.fromPath(
@@ -95,62 +97,66 @@ def sequences_from_model(input: SequenceModel2) -> Sequences:
     raise Exception(f'Cannot create sequences from input: {input}')
 
 
-def decontaminate(
+def execute(
 
     work_dir: Path,
 
-    decontaminate_mode: DecontaminateMode,
-
-    input_sequences: AttrDict,
-    outgroup_sequences: AttrDict,
-    ingroup_sequences: AttrDict,
+    input_data: AttrDict,
+    input_reference: AttrDict,
 
     alignment_mode: AlignmentMode,
     alignment_write_pairs: bool,
     alignment_pairwise_scores: dict,
 
-    distance_metric: DistanceMetric,
-    distance_metric_bbc_k: int,
+    distance_metrics: list[DistanceMetric],
+    distance_metrics_bbc_k: int,
+    main_metric: DistanceMetric,
+
     distance_linear: bool,
     distance_matricial: bool,
     distance_percentile: bool,
     distance_precision: int,
     distance_missing: str,
 
-    similarity_threshold: float,
-    outgroup_weight: int,
-    ingroup_weight: int,
-
-    **kwargs
-
 ) -> tuple[Path, float]:
 
-    from itaxotools.taxi2.tasks.decontaminate import Decontaminate
-    from itaxotools.taxi2.tasks.decontaminate2 import Decontaminate2
+    from itaxotools.taxi2.tasks.versus_reference import VersusReference
     from itaxotools.taxi2.distances import DistanceMetric as BackendDistanceMetric
     from itaxotools.taxi2.sequences import Sequences, SequenceHandler
-    from itaxotools.taxi2.partitions import Partition, PartitionHandler
     from itaxotools.taxi2.align import Scores
 
-    if decontaminate_mode == DecontaminateMode.DECONT:
-        task = Decontaminate()
-        task.params.thresholds.similarity = similarity_threshold
-    elif decontaminate_mode == DecontaminateMode.DECONT2:
-        task = Decontaminate2()
-        task.ingroup = sequences_from_model(ingroup_sequences)
-        task.params.weights.outgroup = outgroup_weight
-        task.params.weights.ingroup = ingroup_weight
-
+    task = VersusReference()
     task.work_dir = work_dir
     task.progress_handler = progress_handler
 
-    task.input = sequences_from_model(input_sequences)
-    task.set_output_format_from_path(input_sequences.path)
-    task.outgroup = sequences_from_model(outgroup_sequences)
+    task.input.data = sequences_from_model(input_data)
+    task.input.reference = sequences_from_model(input_reference)
 
     task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
     task.params.pairs.scores = Scores(**alignment_pairwise_scores)
     task.params.pairs.write = alignment_write_pairs
+
+    metrics_filter = {
+        AlignmentMode.NoAlignment: [
+            DistanceMetric.Uncorrected,
+            DistanceMetric.UncorrectedWithGaps,
+            DistanceMetric.JukesCantor,
+            DistanceMetric.Kimura2Parameter,
+            DistanceMetric.NCD,
+            DistanceMetric.BBC,
+        ],
+        AlignmentMode.PairwiseAlignment: [
+            DistanceMetric.Uncorrected,
+            DistanceMetric.UncorrectedWithGaps,
+            DistanceMetric.JukesCantor,
+            DistanceMetric.Kimura2Parameter,
+        ],
+        AlignmentMode.AlignmentFree: [
+            DistanceMetric.NCD,
+            DistanceMetric.BBC,
+        ],
+    }[alignment_mode]
+    distance_metrics = (metric for metric in distance_metrics if metric in metrics_filter)
 
     metrics_tr = {
         DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
@@ -158,11 +164,15 @@ def decontaminate(
         DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
         DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
         DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
-        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metric_bbc_k]),
+        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metrics_bbc_k]),
     }
-    metric = metrics_tr[distance_metric][0](*metrics_tr[distance_metric][1])
+    metrics = [
+        metrics_tr[metric][0](*metrics_tr[metric][1])
+        for metric in distance_metrics
+    ]
 
-    task.params.distances.metric = metric
+    task.params.distances.metric = metrics[0]  # <-- todo: from main_metric
+    task.params.distances.extra_metrics = metrics
     task.params.distances.write_linear = distance_linear
     task.params.distances.write_matricial = distance_matricial
 

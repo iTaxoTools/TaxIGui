@@ -19,10 +19,6 @@
 
 from .bulk_sequences import BulkSequencesModel, SequenceListModel
 from .common import Group, Item, ItemModel, Object, Task
-from .decontaminate import DecontaminateModel
-from .dereplicate import DereplicateModel
 from .sequence import SequenceModel, SequenceModel2
 from .input_file import InputFileModel
 from .partition import PartitionModel
-from .versus_all import VersusAllModel
-from .versus_reference import VersusReferenceModel

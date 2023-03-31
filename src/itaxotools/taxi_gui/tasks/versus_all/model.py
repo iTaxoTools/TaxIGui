@@ -21,15 +21,17 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from shutil import copytree
 
-from .. import app
-from ..tasks import versus_all
-from ..model import Item, ItemModel, Object
-from ..types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, VersusAllSubtask
-from ..utility import EnumObject, Property, Instance, human_readable_seconds
-from .common import Task
-from .sequence import SequenceModel2
-from .input_file import InputFileModel
-from .partition import PartitionModel
+from itaxotools.taxi_gui import app
+from itaxotools.taxi_gui.model import Item, ItemModel, Object
+from itaxotools.taxi_gui.types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
+from itaxotools.taxi_gui.utility import EnumObject, Property, Instance, human_readable_seconds
+from itaxotools.taxi_gui.model.common import Task
+from itaxotools.taxi_gui.model.sequence import SequenceModel2
+from itaxotools.taxi_gui.model.input_file import InputFileModel
+from itaxotools.taxi_gui.model.partition import PartitionModel
+
+from . import process
+from .types import VersusAllSubtask
 
 
 class PairwiseScores(EnumObject):
@@ -64,7 +66,7 @@ class StatisticsGroups(EnumObject):
     enum = StatisticsGroup
 
 
-class VersusAllModel(Task):
+class Model(Task):
     task_name = 'Versus All'
 
     perform_species = Property(bool, False)
@@ -101,7 +103,7 @@ class VersusAllModel(Task):
 
     def __init__(self, name=None):
         super().__init__(name)
-        self.exec(VersusAllSubtask.Initialize, versus_all.initialize)
+        self.exec(VersusAllSubtask.Initialize, process.initialize)
 
     def readyTriggers(self):
         return [
@@ -153,7 +155,7 @@ class VersusAllModel(Task):
 
         self.exec(
             VersusAllSubtask.Main,
-            versus_all.versus_all,
+            process.execute,
             work_dir=work_dir,
 
             perform_species=self.perform_species,
@@ -186,17 +188,17 @@ class VersusAllModel(Task):
     def add_sequence_file(self, path):
         self.busy = True
         self.busy_sequence = True
-        self.exec(VersusAllSubtask.AddSequenceFile, versus_all.get_file_info, path)
+        self.exec(VersusAllSubtask.AddSequenceFile, process.get_file_info, path)
 
     def add_species_file(self, path):
         self.busy = True
         self.busy_species = True
-        self.exec(VersusAllSubtask.AddSpeciesFile, versus_all.get_file_info, path)
+        self.exec(VersusAllSubtask.AddSpeciesFile, process.get_file_info, path)
 
     def add_genera_file(self, path):
         self.busy = True
         self.busy_genera = True
-        self.exec(VersusAllSubtask.AddGeneraFile, versus_all.get_file_info, path)
+        self.exec(VersusAllSubtask.AddGeneraFile, process.get_file_info, path)
 
     def add_file_item_from_info(self, info):
         if info.type == InputFile.Tabfile:

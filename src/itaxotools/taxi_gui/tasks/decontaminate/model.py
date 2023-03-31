@@ -21,15 +21,17 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from shutil import copytree
 
-from .. import app
-from ..tasks import decontaminate
-from ..model import Item, ItemModel, Object
-from ..types import DecontaminateMode, Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, DecontaminateSubtask
-from ..utility import EnumObject, Property, Instance, Binder, human_readable_seconds
-from .common import Task
-from .sequence import SequenceModel2
-from .input_file import InputFileModel
-from .partition import PartitionModel
+from  itaxotools.taxi_gui import app
+from  itaxotools.taxi_gui.model import Item, ItemModel, Object
+from  itaxotools.taxi_gui.types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
+from  itaxotools.taxi_gui.utility import EnumObject, Property, Instance, Binder, human_readable_seconds
+from  itaxotools.taxi_gui.model.common import Task
+from itaxotools.taxi_gui.model.sequence import SequenceModel2
+from itaxotools.taxi_gui.model.input_file import InputFileModel
+from itaxotools.taxi_gui.model.partition import PartitionModel
+
+from . import process
+from .types import DecontaminateSubtask, DecontaminateMode
 
 
 class PairwiseScores(EnumObject):
@@ -52,7 +54,7 @@ class StatisticsGroups(EnumObject):
     enum = StatisticsGroup
 
 
-class DecontaminateModel(Task):
+class Model(Task):
     task_name = 'Decontaminate'
 
     decontaminate_mode = Property(DecontaminateMode, DecontaminateMode.DECONT)
@@ -90,7 +92,7 @@ class DecontaminateModel(Task):
 
     def __init__(self, name=None):
         super().__init__(name)
-        self.exec(DecontaminateSubtask.Initialize, decontaminate.initialize)
+        self.exec(DecontaminateSubtask.Initialize, process.initialize)
         self.binder = Binder()
         self.binder.bind(self.properties.alignment_mode, self.set_metric_from_mode)
         self.binder.bind(self.properties.alignment_mode, self.set_similarity_from_mode)
@@ -110,6 +112,9 @@ class DecontaminateModel(Task):
     def readyTriggers(self):
         return [
             self.properties.input_sequences,
+            self.properties.outgroup_sequences,
+            self.properties.ingroup_sequences,
+            self.properties.decontaminate_mode,
             self.properties.alignment_mode,
             *(property for property in self.pairwise_scores.properties),
             self.properties.distance_metric,
@@ -124,6 +129,14 @@ class DecontaminateModel(Task):
             return False
         if not self.input_sequences.file_item:
             return False
+        if self.decontaminate_mode == DecontaminateMode.DECONT:
+            if self.outgroup_sequences is None:
+                return False
+        if self.decontaminate_mode == DecontaminateMode.DECONT2:
+            if self.outgroup_sequences is None:
+                return False
+            if self.ingroup_sequences is None:
+                return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
                 return False
@@ -143,7 +156,7 @@ class DecontaminateModel(Task):
 
         self.exec(
             DecontaminateSubtask.Main,
-            decontaminate.decontaminate,
+            process.execute,
             work_dir=work_dir,
 
             decontaminate_mode=self.decontaminate_mode,
@@ -172,17 +185,17 @@ class DecontaminateModel(Task):
     def add_input_file(self, path):
         self.busy = True
         self.busy_input = True
-        self.exec(DecontaminateSubtask.AddInputFile, decontaminate.get_file_info, path)
+        self.exec(DecontaminateSubtask.AddInputFile, process.get_file_info, path)
 
     def add_outgroup_file(self, path):
         self.busy = True
         self.busy_outgroup = True
-        self.exec(DecontaminateSubtask.AddOutgroupFile, decontaminate.get_file_info, path)
+        self.exec(DecontaminateSubtask.AddOutgroupFile, process.get_file_info, path)
 
     def add_ingroup_file(self, path):
         self.busy = True
         self.busy_ingroup = True
-        self.exec(DecontaminateSubtask.AddIngroupFile, decontaminate.get_file_info, path)
+        self.exec(DecontaminateSubtask.AddIngroupFile, process.get_file_info, path)
 
     def add_file_item_from_info(self, info):
         if info.type == InputFile.Tabfile:

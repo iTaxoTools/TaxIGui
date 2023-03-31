@@ -22,11 +22,11 @@ from pathlib import Path
 
 from itaxotools.common.utility import AttrDict, override
 
-from .. import app
-from ..utility import Guard, Binder, type_convert, human_readable_size
-from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
-from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
-from .common import Item, Card, CardCustom, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, VerticalRollAnimation
+from itaxotools.taxi_gui import app
+from itaxotools.taxi_gui.utility import Guard, Binder, type_convert, human_readable_size
+from itaxotools.taxi_gui.model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
+from itaxotools.taxi_gui.types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
+from itaxotools.taxi_gui.view.common import Item, Card, CardCustom, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, VerticalRollAnimation
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):
@@ -747,7 +747,7 @@ class DistanceMetricSelector(Card):
         self.controls.metrics.k2p.setVisible(not free)
 
 
-class VersusReferenceView(TaskView):
+class View(TaskView):
 
     def __init__(self, parent=None):
         super().__init__(parent)

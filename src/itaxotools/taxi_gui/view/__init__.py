@@ -18,8 +18,4 @@
 
 from .bulk_sequences import BulkSequencesView
 from .common import Card, ObjectView, TaskView
-from .decontaminate import DecontaminateView
-from .dereplicate import DereplicateView
 from .sequence import SequenceView
-from .versus_all import VersusAllView
-from .versus_reference import VersusReferenceView

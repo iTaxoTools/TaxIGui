@@ -20,15 +20,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from itaxotools.common.utility import AttrDict
-
-from ..types import ComparisonMode, ColumnFilter, AlignmentMode, DistanceMetric, FileFormat
-
+from itaxotools.taxi_gui.types import AlignmentMode, DistanceMetric, FileFormat
+from .types import DecontaminateMode
 
 @dataclass
-class VersusAllResults:
+class DecontaminateResults:
     pass
 
 
@@ -44,13 +42,14 @@ def progress_handler(caption, index, total):
 def initialize():
     import itaxotools
     itaxotools.progress_handler('Initializing...')
-    from itaxotools.taxi2.tasks.versus_all import VersusAll  # noqa
+    from itaxotools.taxi2.tasks.decontaminate import Decontaminate  # noqa
+    from itaxotools.taxi2.tasks.decontaminate2 import Decontaminate2  # noqa
 
 
 def get_file_info(path: Path):
 
     from itaxotools.taxi2.files import FileInfo, FileFormat
-    from ..types import InputFile
+    from itaxotools.taxi_gui.types import InputFile
 
     def get_index(items, item):
         return items.index(item) if item else None
@@ -73,20 +72,13 @@ def get_file_info(path: Path):
             size = info.size,
             has_subsets = info.has_subsets,
         )
-    if info.format == FileFormat.Spart:
-        return InputFile.Spart(
-            path = path,
-            size = info.size,
-            spartitions = info.spartitions,
-            is_matricial = info.is_matricial,
-            is_xml = info.is_xml,
-        )
     return InputFile.Unknown(path)
 
 
-def sequences_from_model(input: SequenceModel2):
+def sequences_from_model(input: SequenceModel2) -> Sequences:
     from itaxotools.taxi2.sequences import Sequences, SequenceHandler
-    from ..model import SequenceModel2
+    from itaxotools.taxi_gui import app
+    from itaxotools.taxi_gui.model import SequenceModel2
 
     if input.type == FileFormat.Tabfile:
         return Sequences.fromPath(
@@ -100,122 +92,66 @@ def sequences_from_model(input: SequenceModel2):
         return Sequences.fromPath(
             input.path,
             SequenceHandler.Fasta,
-            parse_organism=True,
         )
     raise Exception(f'Cannot create sequences from input: {input}')
 
 
-def partition_from_model(input: PartitionModel):
-    from itaxotools.taxi2.partitions import Partition, PartitionHandler
-    from ..model import PartitionModel
-
-    if input.type == FileFormat.Tabfile:
-        filter = {
-            ColumnFilter.All: None,
-            ColumnFilter.First: PartitionHandler.subset_first_word,
-        }[input.subset_filter]
-        return Partition.fromPath(
-            input.path,
-            PartitionHandler.Tabfile,
-            hasHeader = True,
-            idColumn=input.individual_column,
-            subColumn=input.subset_column,
-            filter=filter,
-        )
-    elif input.type == FileFormat.Fasta:
-        filter = {
-            ColumnFilter.All: None,
-            ColumnFilter.First: PartitionHandler.subset_first_word,
-        }[input.subset_filter]
-        return Partition.fromPath(
-            input.path,
-            PartitionHandler.Fasta,
-            filter=filter,
-        )
-    elif input.type == FileFormat.Spart:
-        return Partition.fromPath(
-            input.path,
-            PartitionHandler.Spart,
-            spartition=input.spartition,
-        )
-    raise Exception(f'Cannot create partition from input: {input}')
-
-
-def versus_all(
+def execute(
 
     work_dir: Path,
 
-    perform_species: bool,
-    perform_genera: bool,
+    decontaminate_mode: DecontaminateMode,
 
     input_sequences: AttrDict,
-    input_species: AttrDict,
-    input_genera: AttrDict,
+    outgroup_sequences: AttrDict,
+    ingroup_sequences: AttrDict,
 
     alignment_mode: AlignmentMode,
     alignment_write_pairs: bool,
     alignment_pairwise_scores: dict,
 
-    distance_metrics: list[DistanceMetric],
-    distance_metrics_bbc_k: int,
+    distance_metric: DistanceMetric,
+    distance_metric_bbc_k: int,
     distance_linear: bool,
     distance_matricial: bool,
     distance_percentile: bool,
     distance_precision: int,
     distance_missing: str,
 
-    statistics_all: bool,
-    statistics_species: bool,
-    statistics_genus: bool,
-
-    plot_histograms: bool,
-    plot_binwidth: float,
+    similarity_threshold: float,
+    outgroup_weight: int,
+    ingroup_weight: int,
 
     **kwargs
 
 ) -> tuple[Path, float]:
 
-    from itaxotools.taxi2.tasks.versus_all import VersusAll
+    from itaxotools.taxi2.tasks.decontaminate import Decontaminate
+    from itaxotools.taxi2.tasks.decontaminate2 import Decontaminate2
     from itaxotools.taxi2.distances import DistanceMetric as BackendDistanceMetric
     from itaxotools.taxi2.sequences import Sequences, SequenceHandler
     from itaxotools.taxi2.partitions import Partition, PartitionHandler
     from itaxotools.taxi2.align import Scores
 
-    task = VersusAll()
+    if decontaminate_mode == DecontaminateMode.DECONT:
+        task = Decontaminate()
+        task.params.thresholds.similarity = similarity_threshold
+    elif decontaminate_mode == DecontaminateMode.DECONT2:
+        task = Decontaminate2()
+        task.ingroup = sequences_from_model(ingroup_sequences)
+        task.params.weights.outgroup = outgroup_weight
+        task.params.weights.ingroup = ingroup_weight
+
     task.work_dir = work_dir
     task.progress_handler = progress_handler
 
-    task.input.sequences = sequences_from_model(input_sequences)
-    if perform_species:
-        task.input.species = partition_from_model(input_species)
-    if perform_genera:
-        task.input.genera = partition_from_model(input_genera)
+    task.input = sequences_from_model(input_sequences)
+    task.set_output_format_from_path(input_sequences.path)
+    task.outgroup = sequences_from_model(outgroup_sequences)
 
     task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)
     task.params.pairs.scores = Scores(**alignment_pairwise_scores)
     task.params.pairs.write = alignment_write_pairs
-
-    metrics_filter = {
-        AlignmentMode.NoAlignment: [
-            DistanceMetric.Uncorrected,
-            DistanceMetric.UncorrectedWithGaps,
-            DistanceMetric.JukesCantor,
-            DistanceMetric.Kimura2Parameter,
-            DistanceMetric.NCD,
-            DistanceMetric.BBC,
-        ],
-        AlignmentMode.PairwiseAlignment: [
-            DistanceMetric.Uncorrected,
-            DistanceMetric.UncorrectedWithGaps,
-            DistanceMetric.JukesCantor,
-            DistanceMetric.Kimura2Parameter,
-        ],
-        AlignmentMode.AlignmentFree: [
-            DistanceMetric.NCD,
-            DistanceMetric.BBC,
-        ],
-    }[alignment_mode]
-    distance_metrics = (metric for metric in distance_metrics if metric in metrics_filter)
 
     metrics_tr = {
         DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
@@ -223,28 +159,18 @@ def versus_all(
         DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
         DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
         DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
-        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metrics_bbc_k]),
+        DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metric_bbc_k]),
     }
-    metrics = [
-        metrics_tr[metric][0](*metrics_tr[metric][1])
-        for metric in distance_metrics
-    ]
-    task.params.distances.metrics = metrics
+    metric = metrics_tr[distance_metric][0](*metrics_tr[distance_metric][1])
+
+    task.params.distances.metric = metric
     task.params.distances.write_linear = distance_linear
     task.params.distances.write_matricial = distance_matricial
 
     task.params.format.float = f'{{:.{distance_precision}f}}'
-    task.params.format.percentage = f'{{:.{distance_precision}f}}'
+    task.params.format.percentage = f'{{:.{distance_precision}f}}%'
     task.params.format.missing = distance_missing
     task.params.format.percentage_multiply = distance_percentile
-
-    task.params.stats.all = statistics_all
-    task.params.stats.species = statistics_species
-    task.params.stats.genera = statistics_genus
-
-    task.params.plot.histograms = plot_histograms
-    task.params.plot.binwidth = plot_binwidth
-    task.params.plot.formats = ['pdf', 'svg', 'png']
 
     results = task.start()
 

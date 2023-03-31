@@ -17,9 +17,12 @@
 # -----------------------------------------------------------------------------
 
 from collections import namedtuple
+from dataclasses import dataclass
+from typing import NamedTuple
 from enum import Enum, auto
+from pathlib import Path
 
-from ._type import Type
+from itaxotools.common.types import Type
 
 
 class ComparisonMode(Type):
@@ -98,15 +101,108 @@ class SequenceReader(Enum):
         return self.value
 
 
-class DecontaminateMode(Enum):
-    DECONT = 'Single Reference'
-    DECONT2 = 'Double Reference'
-
-    def __str__(self):
-        return self.value
-
-
 class FileFormat(Enum):
     Tabfile = auto()
     Fasta = auto()
     Spart = auto()
+
+
+@dataclass
+class InputFile(Type):
+    path: Path
+    size: int
+
+    def as_dict(self):
+        return asdict(self)
+
+
+@dataclass
+class Unknown(InputFile):
+    pass
+
+
+@dataclass
+class Fasta(InputFile):
+    has_subsets: bool
+
+
+@dataclass
+class Tabfile(InputFile):
+    headers: list[str]
+    individuals: str = None
+    sequences: str = None
+    organism: str = None
+    species: str = None
+    genera: str = None
+
+
+@dataclass
+class Spart(InputFile):
+    spartitions: list[str]
+    is_matricial: bool
+    is_xml: bool
+
+
+class Entry(NamedTuple):
+    label: str
+    key: str
+    default: int
+
+
+class PropertyEnum(Enum):
+    property_type = lambda: object
+
+    def __init__(self, label, key, default):
+        self.label = label
+        self.key = key
+        self.default = default
+        self.type = object
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}.{self._name_}>'
+
+
+class PairwiseScore(PropertyEnum):
+    Match = Entry('Match', 'match_score', 1)
+    Mismatch = Entry('Mismatch', 'mismatch_score', -1)
+    InternalOpenGap = Entry('Open inner gap', 'internal_open_gap_score', -8)
+    InternalExtendGap = Entry('Extend inner gap', 'internal_extend_gap_score', -1)
+    EndOpenGap = Entry('Open outer gap', 'end_open_gap_score', -1)
+    EndExtendGap = Entry('Extend outer gap', 'end_extend_gap_score', -1)
+
+
+class DistanceMetric(PropertyEnum):
+    property_type = lambda: bool
+    Uncorrected = Entry('Uncorrected (p-distance)', 'p', True)
+    UncorrectedWithGaps = Entry('Uncorrected with gaps', 'pg', True)
+    JukesCantor = Entry('Jukes Cantor (jc)', 'jc', True)
+    Kimura2Parameter = Entry('Kimura 2-Parameter (k2p)', 'k2p', True)
+    NCD = Entry('Normalized Compression Distance (NCD)', 'ncd', True)
+    BBC = Entry('Base-Base Correlation (BBC)', 'bbc', False)
+
+
+class StatisticsGroup(PropertyEnum):
+    property_type = lambda: bool
+    All = Entry('For all sequences', 'for_all', True)
+    Species = Entry('Per species', 'per_species', True)
+    Genus = Entry('Per genus', 'per_genus', True)
+
+
+class AlignmentMode(Enum):
+    NoAlignment = ('Already aligned', 'the sequences will be compared without further alignment')
+    PairwiseAlignment = ('Pairwise alignment', 'align each pair of sequences just before calculating distances')
+    AlignmentFree = ('Alignment-free', 'calculate pairwise distances using alignment-free metrics')
+
+    def __init__(self, label, description):
+        self.label = label
+        self.description = description
+
+
+class ColumnFilter(Enum):
+    All = ('*', 'All contents')
+    First = ('1', 'First word')
+
+    def __init__(self, abr, text):
+        self.abr = abr
+        self.text = text
+        self.label = f'{text} ({abr})'

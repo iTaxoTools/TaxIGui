@@ -19,7 +19,7 @@
 from typing import NamedTuple
 from importlib import import_module
 
-from .._tasks import decontaminate, dereplicate, versus_all, versus_reference
+from ..tasks import decontaminate, dereplicate, versus_all, versus_reference
 
 
 class Task(NamedTuple):

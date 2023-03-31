@@ -16,5 +16,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from ._type import *
-from .common import *
+from enum import Enum, auto
+
+
+class DecontaminateSubtask(Enum):
+    Main = auto()
+    Initialize = auto()
+    AddInputFile = auto()
+    AddOutgroupFile = auto()
+    AddIngroupFile = auto()
+
+
+class DecontaminateMode(Enum):
+    DECONT = 'Single Reference'
+    DECONT2 = 'Double Reference'
+
+    def __str__(self):
+        return self.value

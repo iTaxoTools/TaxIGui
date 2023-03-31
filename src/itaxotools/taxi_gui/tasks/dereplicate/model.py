@@ -21,14 +21,17 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from shutil import copytree
 
-from .. import app
-from ..tasks import versus_reference
-from ..model import Item, ItemModel, Object
-from ..types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup, VersusReferenceSubtask
-from ..utility import EnumObject, Property, Instance, human_readable_seconds
-from .common import Task
-from .sequence import SequenceModel2
-from .input_file import InputFileModel
+from itaxotools.taxi_gui import app
+from itaxotools.taxi_gui.model import Item, ItemModel, Object
+from itaxotools.taxi_gui.types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
+from itaxotools.taxi_gui.utility import EnumObject, Property, Instance, Binder, human_readable_seconds
+from itaxotools.taxi_gui.model.common import Task
+from itaxotools.taxi_gui.model.sequence import SequenceModel2
+from itaxotools.taxi_gui.model.input_file import InputFileModel
+from itaxotools.taxi_gui.model.partition import PartitionModel
+
+from . import process
+from .types import DereplicateSubtask
 
 
 class PairwiseScores(EnumObject):
@@ -47,26 +50,22 @@ class PairwiseScores(EnumObject):
         )
 
 
-class DistanceMetrics(EnumObject):
-    enum = DistanceMetric
-
-    bbc_k = Property(int | None, 10)
-
-    def as_list(self):
-        return [
-            field for field in self.enum
-            if self.properties[field.key].value
-        ]
+class StatisticsGroups(EnumObject):
+    enum = StatisticsGroup
 
 
-class VersusReferenceModel(Task):
-    task_name = 'Versus Reference'
+class Model(Task):
+    task_name = 'Dereplicate'
 
-    input_data = Property(SequenceModel2, None)
-    input_reference = Property(SequenceModel2, None)
+    input_sequences = Property(SequenceModel2, None)
 
     alignment_mode = Property(AlignmentMode, AlignmentMode.PairwiseAlignment)
     alignment_write_pairs = Property(bool, True)
+
+    pairwise_scores = Property(PairwiseScores, Instance)
+
+    distance_metric = Property(DistanceMetric, DistanceMetric.Uncorrected)
+    distance_metric_bbc_k = Property(int | None, 10)
 
     distance_linear = Property(bool, True)
     distance_matricial = Property(bool, True)
@@ -75,46 +74,56 @@ class VersusReferenceModel(Task):
     distance_precision = Property(int | None, 4)
     distance_missing = Property(str, 'NA')
 
-    pairwise_scores = Property(PairwiseScores, Instance)
-    distance_metrics = Property(DistanceMetrics, Instance)
-    main_metric = Property(DistanceMetric, None)
+    similarity_threshold = Property(float | None, 0.03)
+    length_threshold = Property(int, 0)
 
     busy_main = Property(bool, False)
-    busy_data = Property(bool, False)
-    busy_reference = Property(bool, False)
+    busy_sequence = Property(bool, False)
 
     dummy_results = Property(Path, None)
     dummy_time = Property(float, None)
 
     def __init__(self, name=None):
         super().__init__(name)
-        self.exec(VersusReferenceSubtask.Initialize, versus_reference.initialize)
+        self.exec(DereplicateSubtask.Initialize, process.initialize)
+        self.binder = Binder()
+        self.binder.bind(self.properties.alignment_mode, self.set_metric_from_mode)
+        self.binder.bind(self.properties.alignment_mode, self.set_similarity_from_mode)
+
+    def set_metric_from_mode(self, mode: AlignmentMode):
+        if mode == AlignmentMode.AlignmentFree:
+            self.distance_metric = DistanceMetric.NCD
+        else:
+            self.distance_metric = DistanceMetric.Uncorrected
+
+    def set_similarity_from_mode(self, mode: AlignmentMode):
+        if mode == AlignmentMode.AlignmentFree:
+            self.similarity_threshold = 0.07
+        else:
+            self.similarity_threshold = 0.03
 
     def readyTriggers(self):
         return [
-            self.properties.input_data,
-            self.properties.input_reference,
+            self.properties.input_sequences,
             self.properties.alignment_mode,
             *(property for property in self.pairwise_scores.properties),
-            self.distance_metrics.properties.bbc,
-            self.distance_metrics.properties.bbc_k,
+            self.properties.distance_metric,
+            self.properties.distance_metric_bbc_k,
             self.properties.distance_precision,
         ]
 
     def isReady(self):
-        if self.input_data is None:
+        if self.input_sequences is None:
             return False
-        if self.input_reference is None:
+        if not isinstance(self.input_sequences, SequenceModel2):
             return False
-        if not self.input_data.file_item:
-            return False
-        if not self.input_reference.file_item:
+        if not self.input_sequences.file_item:
             return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
                 return False
-        if self.distance_metrics.bbc:
-            if self.distance_metrics.bbc_k is None:
+        if self.distance_metric == DistanceMetric.BBC:
+            if self.distance_metric_bbc_k is None:
                 return False
         if self.distance_precision is None:
             return False
@@ -128,37 +137,32 @@ class VersusReferenceModel(Task):
         work_dir.mkdir()
 
         self.exec(
-            VersusReferenceSubtask.Main,
-            versus_reference.versus_reference,
+            DereplicateSubtask.Main,
+            process.execute,
             work_dir=work_dir,
 
-            input_data=self.input_data.as_dict(),
-            input_reference=self.input_reference.as_dict(),
+            input_sequences=self.input_sequences.as_dict(),
 
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
             alignment_pairwise_scores = self.pairwise_scores.as_dict(),
 
-            distance_metrics=self.distance_metrics.as_list(),
-            distance_metrics_bbc_k=self.distance_metrics.bbc_k,
-            main_metric=self.main_metric,
-
+            distance_metric=self.distance_metric,
+            distance_metric_bbc_k=self.distance_metric_bbc_k,
             distance_linear=self.distance_linear,
             distance_matricial=self.distance_matricial,
             distance_percentile=self.distance_percentile,
             distance_precision=self.distance_precision,
             distance_missing=self.distance_missing,
+
+            similarity_threshold=self.similarity_threshold,
+            length_threshold=self.length_threshold,
         )
 
-    def add_data_file(self, path):
+    def add_sequence_file(self, path):
         self.busy = True
-        self.busy_data = True
-        self.exec(VersusReferenceSubtask.AddDataFile, versus_reference.get_file_info, path)
-
-    def add_reference_file(self, path):
-        self.busy = True
-        self.busy_reference = True
-        self.exec(VersusReferenceSubtask.AddReferenceFile, versus_reference.get_file_info, path)
+        self.busy_sequence = True
+        self.exec(DereplicateSubtask.AddSequenceFile, process.get_file_info, path)
 
     def add_file_item_from_info(self, info):
         if info.type == InputFile.Tabfile:
@@ -181,6 +185,7 @@ class VersusReferenceModel(Task):
             model_type = {
                 InputFileModel.Tabfile: {
                     SequenceModel2: SequenceModel2.Tabfile,
+                    PartitionModel: PartitionModel.Tabfile,
                 },
                 InputFileModel.Fasta: {
                     SequenceModel2: SequenceModel2.Fasta,
@@ -191,49 +196,39 @@ class VersusReferenceModel(Task):
             return None
         return model_type(file_item, *args, **kwargs)
 
-    def set_data_file_from_file_item(self, file_item):
-            self.input_data = self.get_model_from_file_item(file_item, SequenceModel2)
-
-    def set_reference_file_from_file_item(self, file_item):
-            self.input_reference = self.get_model_from_file_item(file_item, SequenceModel2)
+    def set_sequence_file_from_file_item(self, file_item):
+        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
 
     def onDone(self, report):
-        if report.id == VersusReferenceSubtask.Initialize:
+        if report.id == DereplicateSubtask.Initialize:
             return
-        if report.id == VersusReferenceSubtask.Main:
+        if report.id == DereplicateSubtask.Main:
             time_taken = human_readable_seconds(report.result.seconds_taken)
             self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
             self.dummy_results = report.result.output_directory
             self.dummy_time = report.result.seconds_taken
             self.busy_main = False
             self.done = True
-        if report.id == VersusReferenceSubtask.AddDataFile:
+        if report.id == DereplicateSubtask.AddSequenceFile:
             file_item = self.add_file_item_from_info(report.result)
-            self.set_data_file_from_file_item(file_item)
-            self.busy_data = False
-        if report.id == VersusReferenceSubtask.AddReferenceFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_reference_file_from_file_item(file_item)
-            self.busy_reference = False
+            self.set_sequence_file_from_file_item(file_item)
+            self.busy_sequence = False
         self.busy = False
 
     def onStop(self, report):
         super().onStop(report)
         self.busy_main = False
-        self.busy_data = False
-        self.busy_reference = False
+        self.busy_sequence = False
 
     def onFail(self, report):
         super().onFail(report)
         self.busy_main = False
-        self.busy_data = False
-        self.busy_reference = False
+        self.busy_sequence = False
 
     def onError(self, report):
         super().onError(report)
         self.busy_main = False
-        self.busy_data = False
-        self.busy_reference = False
+        self.busy_sequence = False
 
     def clear(self):
         self.dummy_results = None

@@ -21,10 +21,12 @@ from typing import NamedTuple
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
-from ._type import Type
+from itaxotools.common.types import Type
 
 
-class DereplicateSubtask(Enum):
+class VersusAllSubtask(Enum):
     Main = auto()
     Initialize = auto()
     AddSequenceFile = auto()
+    AddSpeciesFile = auto()
+    AddGeneraFile = auto()

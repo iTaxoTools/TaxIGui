@@ -21,7 +21,7 @@ from typing import NamedTuple
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
-from ._type import Type
+from itaxotools.common.types import Type
 
 
 class VersusReferenceSubtask(Enum):

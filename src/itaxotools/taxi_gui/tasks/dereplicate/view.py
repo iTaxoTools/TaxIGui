@@ -22,150 +22,17 @@ from pathlib import Path
 
 from itaxotools.common.utility import AttrDict, override
 
-from .. import app
-from ..utility import Guard, Binder, type_convert, human_readable_size
-from ..model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
-from ..types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
-from .common import Item, Card, CardCustom, NoWheelRadioButton, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, VerticalRollAnimation
+from itaxotools.taxi_gui import app
+from itaxotools.taxi_gui.utility import Guard, Binder, type_convert, human_readable_size
+from itaxotools.taxi_gui.model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
+from itaxotools.taxi_gui.types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
+from itaxotools.taxi_gui.view.common import Item, Card, CardCustom, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, VerticalRollAnimation
 
-from ..types import ComparisonMode, DecontaminateMode, Notification, DecontaminateMode
-from .common import (
+from itaxotools.taxi_gui.types import ComparisonMode, Notification
+from itaxotools.taxi_gui.view.common import (
     Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
-    SequenceSelector)
+    SequenceSelector, NoWheelRadioButton, RadioButtonGroup)
 
-
-class DecontaminateModeSelector(Card):
-
-    toggled = QtCore.Signal(DecontaminateMode)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        label = QtWidgets.QLabel('Decontamination Mode')
-        label.setStyleSheet("""font-size: 16px;""")
-
-        description = QtWidgets.QLabel(
-            'Decontamination is performed either against a single or a double reference. '
-            'The first reference defines the outgroup: sequences closest to this are considered contaminants. '
-            'If a second reference is given, it defines the ingroup: sequences closer to this are preserved.'
-        )
-        description.setWordWrap(True)
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(label)
-        layout.addWidget(description)
-        layout.addSpacing(4)
-        layout.setSpacing(8)
-
-        texts = {
-            DecontaminateMode.DECONT: '(outgroup only)',
-            DecontaminateMode.DECONT2: '(outgroup && ingroup)',
-        }
-
-        self.radio_buttons = list()
-        for mode in DecontaminateMode:
-            button = QtWidgets.QRadioButton(f'{str(mode)}\t\t{texts[mode]}')
-            button.decontaminate_mode = mode
-            button.toggled.connect(self.handleToggle)
-            self.radio_buttons.append(button)
-            layout.addWidget(button)
-
-        self.addLayout(layout)
-
-    def handleToggle(self, checked):
-        if not checked:
-            return
-        for button in self.radio_buttons:
-            if button.isChecked():
-                self.toggled.emit(button.decontaminate_mode)
-
-    def setDecontaminateMode(self, mode):
-        for button in self.radio_buttons:
-            button.setChecked(button.decontaminate_mode == mode)
-
-
-class ReferenceWeightSelector(Card):
-
-    edited_outgroup = QtCore.Signal(float)
-    edited_ingroup = QtCore.Signal(float)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        label = QtWidgets.QLabel('Reference Weights')
-        label.setStyleSheet("""font-size: 16px;""")
-
-        description = QtWidgets.QLabel(
-            'In order to determine whether a sequence is a contaminant or not, '
-            'its distance from the outgroup and ingroup reference databases are compared. '
-            'Each distance is first multiplied by a weight. '
-            'If the outgroup distance is the shortest of the two, '
-            'the sequence is treated as a contaminant.'
-        )
-        description.setWordWrap(True)
-
-        fields = self.draw_fields()
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(label)
-        layout.addWidget(description)
-        layout.addLayout(fields)
-        layout.setSpacing(8)
-
-        self.addLayout(layout)
-
-    def draw_fields(self):
-        label_outgroup = QtWidgets.QLabel('Outgroup weight:')
-        label_ingroup = QtWidgets.QLabel('Ingroup weight:')
-        field_outgroup = GLineEdit('')
-        field_ingroup = GLineEdit('')
-
-        field_outgroup.setFixedWidth(80)
-        field_ingroup.setFixedWidth(80)
-
-        field_outgroup.textEditedSafe.connect(self.handleOutgroupEdit)
-        field_ingroup.textEditedSafe.connect(self.handleIngroupEdit)
-
-        validator = QtGui.QDoubleValidator(self)
-        locale = QtCore.QLocale.c()
-        locale.setNumberOptions(QtCore.QLocale.RejectGroupSeparator)
-        validator.setLocale(locale)
-        validator.setBottom(0)
-        validator.setDecimals(2)
-        field_outgroup.setValidator(validator)
-        field_ingroup.setValidator(validator)
-
-        layout = QtWidgets.QGridLayout()
-        layout.addWidget(label_outgroup, 0, 0)
-        layout.addWidget(label_ingroup, 1, 0)
-        layout.addWidget(field_outgroup, 0, 1)
-        layout.addWidget(field_ingroup, 1, 1)
-        layout.setColumnStretch(2, 1)
-
-        self.outgroup = field_outgroup
-        self.ingroup = field_ingroup
-        self.locale = locale
-        return layout
-
-    def handleOutgroupEdit(self, text):
-        weight = self.toFloat(text)[0]
-        self.edited_outgroup.emit(weight)
-
-    def handleIngroupEdit(self, text):
-        weight = self.toFloat(text)[0]
-        self.edited_ingroup.emit(weight)
-
-    def setOutgroupWeight(self, weight):
-        self.outgroup.setText(self.toString(weight))
-
-    def setIngroupWeight(self, weight):
-        self.ingroup.setText(self.toString(weight))
-
-    def toFloat(self, text):
-        return self.locale.toFloat(text)
-
-    def toString(self, number):
-        return self.locale.toString(number, 'f', 2)
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):
@@ -295,7 +162,7 @@ class TitleCard(Card):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        title = QtWidgets.QLabel('Decontaminate')
+        title = QtWidgets.QLabel('Dereplicate')
         title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
 
         description = QtWidgets.QLabel(
@@ -359,7 +226,6 @@ class TitleCard(Card):
 class DummyResultsCard(Card):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setVisible(False)
         self.path = Path()
 
         title = QtWidgets.QLabel('Results: ')
@@ -675,8 +541,6 @@ class AlignmentModeSelector(CardCustom):
         radios.setSpacing(8)
         for mode in AlignmentMode:
             button = RichRadioButton(f'{mode.label}:', mode.description, self)
-            if mode == AlignmentMode.NoAlignment:
-                button.hide()
             radios.addWidget(button)
             group.add(button, mode)
         layout.addLayout(radios)
@@ -968,7 +832,37 @@ class IdentityThresholdCard(Card):
         self.controls.identityThreshold = threshold
 
 
-class DecontaminateView(TaskView):
+class LengthThresholdCard(Card):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        label = QtWidgets.QLabel('Length Threshold')
+        label.setStyleSheet("""font-size: 16px;""")
+
+        threshold = GLineEdit('0')
+        threshold.setFixedWidth(80)
+
+        validator = QtGui.QIntValidator(threshold)
+        validator.setBottom(0)
+        threshold.setValidator(validator)
+
+        description = QtWidgets.QLabel('Sequences with length below this threshold will be ignored.')
+        description.setWordWrap(True)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(label, 0, 0)
+        layout.addWidget(threshold, 0, 1)
+        layout.addWidget(description, 1, 0)
+        layout.setColumnStretch(0, 1)
+        layout.setHorizontalSpacing(20)
+        layout.setSpacing(8)
+        self.addLayout(layout)
+
+        self.controls.lengthThreshold = threshold
+
+
+class View(TaskView):
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -980,14 +874,11 @@ class DecontaminateView(TaskView):
         self.cards.dummy_results = DummyResultsCard(self)
         self.cards.progress = ProgressCard(self)
         self.cards.input_sequences = SequenceSelector('Input sequence', self)
-        self.cards.mode_selector = DecontaminateModeSelector(self)
-        self.cards.outgroup_sequences = SequenceSelector('Outgroup reference', self)
-        self.cards.ingroup_sequences = SequenceSelector('Ingroup reference', self)
-        self.cards.weight_selector = ReferenceWeightSelector(self)
         self.cards.alignment_mode = AlignmentModeSelector(self)
         self.cards.distance_metrics = DistanceMetricSelector(self)
         self.cards.similarity = SimilarityThresholdCard(self)
         self.cards.identity = IdentityThresholdCard(self)
+        self.cards.length = LengthThresholdCard(self)
 
         layout = QtWidgets.QVBoxLayout()
         for card in self.cards:
@@ -1009,24 +900,11 @@ class DecontaminateView(TaskView):
         self.binder.bind(object.properties.busy_main, self.cards.title.setBusy)
         self.binder.bind(object.properties.busy_main, self.cards.progress.setEnabled)
         self.binder.bind(object.properties.busy_main, self.cards.progress.setVisible)
-        self.binder.bind(object.properties.busy_input, self.cards.input_sequences.setBusy)
-        self.binder.bind(object.properties.busy_outgroup, self.cards.outgroup_sequences.setBusy)
-        self.binder.bind(object.properties.busy_ingroup, self.cards.ingroup_sequences.setBusy)
+        self.binder.bind(object.properties.busy_sequence, self.cards.input_sequences.setBusy)
 
-        self.binder.bind(self.cards.mode_selector.toggled, self.object.properties.decontaminate_mode)
-        self.binder.bind(self.object.properties.decontaminate_mode, self.cards.mode_selector.setDecontaminateMode)
-
-        self.binder.bind(self.cards.input_sequences.itemChanged, object.set_input_file_from_file_item)
+        self.binder.bind(self.cards.input_sequences.itemChanged, object.set_sequence_file_from_file_item)
         self.binder.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
-        self.binder.bind(self.cards.input_sequences.addInputFile, object.add_input_file)
-
-        self.binder.bind(self.cards.outgroup_sequences.itemChanged, object.set_outgroup_file_from_file_item)
-        self.binder.bind(object.properties.outgroup_sequences, self.cards.outgroup_sequences.setObject)
-        self.binder.bind(self.cards.outgroup_sequences.addInputFile, object.add_outgroup_file)
-
-        self.binder.bind(self.cards.ingroup_sequences.itemChanged, object.set_ingroup_file_from_file_item)
-        self.binder.bind(object.properties.ingroup_sequences, self.cards.ingroup_sequences.setObject)
-        self.binder.bind(self.cards.ingroup_sequences.addInputFile, object.add_ingroup_file)
+        self.binder.bind(self.cards.input_sequences.addInputFile, object.add_sequence_file)
 
         self.binder.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
         self.binder.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
@@ -1072,16 +950,13 @@ class DecontaminateView(TaskView):
         self.binder.bind(object.properties.similarity_threshold, self.cards.identity.controls.identityThreshold.setValue, lambda x: 100 - round(x * 100))
         self.binder.bind(self.cards.identity.controls.identityThreshold.valueChangedSafe, object.properties.similarity_threshold, lambda x: (100 - x) / 100)
 
-        self.binder.bind(object.properties.outgroup_weight, self.cards.weight_selector.setOutgroupWeight)
-        self.binder.bind(object.properties.ingroup_weight, self.cards.weight_selector.setIngroupWeight)
-        self.binder.bind(self.cards.weight_selector.edited_outgroup, object.properties.outgroup_weight)
-        self.binder.bind(self.cards.weight_selector.edited_ingroup, object.properties.ingroup_weight)
+        self.binder.bind(object.properties.length_threshold, self.cards.length.controls.lengthThreshold.setText, lambda x: str(x) if x is not None else '')
+        self.binder.bind(self.cards.length.controls.lengthThreshold.textEditedSafe, object.properties.length_threshold, lambda x: type_convert(x, int, 0))
 
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
-        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.roll_animation.setAnimatedVisible,  lambda x: x is not None)
+        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
 
         self.binder.bind(object.properties.distance_metric, self.update_visible_cards)
-        self.binder.bind(object.properties.decontaminate_mode, self.update_visible_cards)
 
         self.binder.bind(object.properties.editable, self.setEditable)
 
@@ -1090,16 +965,8 @@ class DecontaminateView(TaskView):
             self.object.distance_metric == DistanceMetric.Uncorrected,
             self.object.distance_metric == DistanceMetric.UncorrectedWithGaps,
         ))
-        if self.object.decontaminate_mode == DecontaminateMode.DECONT:
-            self.cards.ingroup_sequences.roll_animation.setAnimatedVisible(False)
-            self.cards.weight_selector.roll_animation.setAnimatedVisible(False)
-            self.cards.identity.roll_animation.setAnimatedVisible(uncorrected)
-            self.cards.similarity.roll_animation.setAnimatedVisible(not uncorrected)
-        elif self.object.decontaminate_mode == DecontaminateMode.DECONT2:
-            self.cards.ingroup_sequences.roll_animation.setAnimatedVisible(True)
-            self.cards.weight_selector.roll_animation.setAnimatedVisible(True)
-            self.cards.identity.roll_animation.setAnimatedVisible(False)
-            self.cards.similarity.roll_animation.setAnimatedVisible(False)
+        self.cards.identity.setVisible(uncorrected)
+        self.cards.similarity.setVisible(not uncorrected)
 
     def setEditable(self, editable: bool):
         for card in self.cards:

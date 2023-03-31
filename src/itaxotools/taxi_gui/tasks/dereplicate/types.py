@@ -17,16 +17,9 @@
 # -----------------------------------------------------------------------------
 
 from enum import Enum, auto
-from typing import NamedTuple
-from dataclasses import dataclass, asdict
-from pathlib import Path
-
-from ._type import Type
 
 
-class DecontaminateSubtask(Enum):
+class DereplicateSubtask(Enum):
     Main = auto()
     Initialize = auto()
-    AddInputFile = auto()
-    AddOutgroupFile = auto()
-    AddIngroupFile = auto()
+    AddSequenceFile = auto()
