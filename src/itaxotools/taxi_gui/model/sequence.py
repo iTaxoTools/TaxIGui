@@ -25,20 +25,6 @@ from .common import Object, Property, Item
 from .input_file import InputFileModel
 
 
-class SequenceModel(Object):
-    path = Property(Path)
-    reader = Property(SequenceReader)
-
-    def __init__(self, path, reader=SequenceReader.TabfileReader):
-        super().__init__()
-        self.path = path
-        self.name = path.name
-        self.reader = reader
-
-    def __repr__(self):
-        return f'{".".join(self._get_name_chain())}({repr(self.name)})'
-
-
 class SequenceModel2(Object):
     file_item = Property(Item, None)
 

@@ -24,7 +24,7 @@ from itaxotools.common.utility import AttrDict, override
 
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.utility import Guard, Binder, type_convert, human_readable_size
-from itaxotools.taxi_gui.model import Item, ItemModel, Object, SequenceModel, SequenceModel2, PartitionModel
+from itaxotools.taxi_gui.model import Item, ItemModel, Object, SequenceModel2, PartitionModel
 from itaxotools.taxi_gui.types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from itaxotools.taxi_gui.view.common import Item, Card, CardCustom, NoWheelRadioButton, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, VerticalRollAnimation
 

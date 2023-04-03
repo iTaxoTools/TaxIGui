@@ -17,8 +17,7 @@
 # -----------------------------------------------------------------------------
 
 
-from .bulk_sequences import BulkSequencesModel, SequenceListModel
 from .common import Group, Item, ItemModel, Object, Task
-from .sequence import SequenceModel, SequenceModel2
+from .sequence import SequenceModel2
 from .input_file import InputFileModel
 from .partition import PartitionModel

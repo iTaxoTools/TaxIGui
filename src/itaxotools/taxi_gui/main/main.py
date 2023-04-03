@@ -27,7 +27,6 @@ from itaxotools.common.utility import AttrDict
 from itaxotools.common.widgets import ToolDialog
 
 from .. import app
-from ..model import BulkSequencesModel, SequenceModel
 from ..utility import PropertyObject, Property
 from .body import Body
 from .footer import Footer
@@ -70,7 +69,6 @@ class Main(ToolDialog):
         action.setIcon(app.resources.icons.open)
         action.setShortcut(QtGui.QKeySequence.Open)
         action.setStatusTip('Open an existing file')
-        # action.triggered.connect(self.handleOpen)
         action.setVisible(False)
         self.actions.open = action
 
@@ -78,7 +76,6 @@ class Main(ToolDialog):
         action.setIcon(app.resources.icons.save)
         action.setShortcut(QtGui.QKeySequence.Save)
         action.setStatusTip('Save results')
-        # action.triggered.connect(self.handleSave)
         self.actions.save = action
 
         action = QtGui.QAction('&Run', self)
@@ -134,53 +131,6 @@ class Main(ToolDialog):
     def handleHome(self):
         self.widgets.body.showDashboard()
         self.widgets.sidebar.clearSelection()
-
-    def handleOpen(self):
-        filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
-            self, f'{app.title} - Open File')
-        if not filenames:
-            return
-        if len(filenames) == 1:
-            path = Path(filenames[0])
-            app.model.items.add_sequence(SequenceModel(path), focus=True)
-        else:
-            paths = [Path(filename) for filename in filenames]
-            app.model.items.add_sequence(BulkSequencesModel(paths), focus=True)
-
-    def handleSave(self):
-        try:
-            self._handleSave()
-        except Exception as exception:
-            QtWidgets.QMessageBox.critical(self, app.title, str(exception))
-
-    def _handleSave(self):
-        item = self.widgets.body.activeItem
-        if not item:
-            QtWidgets.QMessageBox.information(self, app.title, 'Please select a sequence and try again.')
-            return
-        if isinstance(item.object, SequenceModel):
-            source = item.object.path
-            filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-                self, f'{app.title} - Save File',
-                QtCore.QDir.currentPath() + '/' + source.name)
-            if not filename:
-                return
-            destination = Path(filename)
-            shutil.copy(source, destination)
-            return
-        if isinstance(item.object, BulkSequencesModel):
-            filename = QtWidgets.QFileDialog.getExistingDirectory(
-                self, f'{app.title} - Save Bulk Files',
-                QtCore.QDir.currentPath())
-            if not filename:
-                return
-            directory = Path(filename)
-            for sequence in item.object.sequences:
-                source = sequence.path
-                destination = directory / source.name
-                shutil.copy(source, destination)
-            return
-        QtWidgets.QMessageBox.information(self, app.title, 'Please select a sequence and try again.')
 
     def reject(self):
         if self.state.dirty_data:

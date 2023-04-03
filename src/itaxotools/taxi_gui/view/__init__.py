@@ -16,6 +16,4 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from .bulk_sequences import BulkSequencesView
 from .common import Card, ObjectView, TaskView
-from .sequence import SequenceView

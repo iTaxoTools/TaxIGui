@@ -23,7 +23,7 @@ from pathlib import Path
 from itaxotools.common.utility import AttrDict, override
 
 from .. import app
-from ..model import BulkSequencesModel, Item, ItemModel, Object, SequenceModel
+from ..model import Item, ItemModel, Object
 from ..types import ComparisonMode, Notification, PairwiseComparisonConfig
 from ..utility import Guard, Binder
 
