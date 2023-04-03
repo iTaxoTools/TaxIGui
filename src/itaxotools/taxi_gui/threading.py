@@ -25,7 +25,7 @@ from contextlib import contextmanager
 from itaxotools.common.utility import override
 
 from .io import PipeWrite, StreamGroup
-from .threading_loop import (
+from .process.loop import (
     Command, ReportDone, ReportExit, ReportFail, ReportProgress, ReportQuit,
     ReportStop, loop)
 

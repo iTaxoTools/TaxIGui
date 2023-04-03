@@ -27,6 +27,7 @@ from itaxotools.taxi_gui.model.common import ItemModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import TaskModel
+from itaxotools.taxi_gui.process.common import get_file_info
 from itaxotools.taxi_gui.types import (
     AlignmentMode, DistanceMetric, InputFile, Notification, PairwiseScore)
 from itaxotools.taxi_gui.utility import human_readable_seconds
@@ -157,12 +158,12 @@ class Model(TaskModel):
     def add_data_file(self, path):
         self.busy = True
         self.busy_data = True
-        self.exec(VersusReferenceSubtask.AddDataFile, process.get_file_info, path)
+        self.exec(VersusReferenceSubtask.AddDataFile, get_file_info, path)
 
     def add_reference_file(self, path):
         self.busy = True
         self.busy_reference = True
-        self.exec(VersusReferenceSubtask.AddReferenceFile, process.get_file_info, path)
+        self.exec(VersusReferenceSubtask.AddReferenceFile, get_file_info, path)
 
     def add_file_item_from_info(self, info):
         if info.type == InputFile.Tabfile:

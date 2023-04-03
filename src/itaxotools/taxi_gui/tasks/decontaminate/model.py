@@ -28,6 +28,7 @@ from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import TaskModel
+from itaxotools.taxi_gui.process.common import get_file_info
 from itaxotools.taxi_gui.types import (
     AlignmentMode, DistanceMetric, InputFile, Notification, PairwiseScore,
     StatisticsGroup)
@@ -188,17 +189,17 @@ class Model(TaskModel):
     def add_input_file(self, path):
         self.busy = True
         self.busy_input = True
-        self.exec(DecontaminateSubtask.AddInputFile, process.get_file_info, path)
+        self.exec(DecontaminateSubtask.AddInputFile, get_file_info, path)
 
     def add_outgroup_file(self, path):
         self.busy = True
         self.busy_outgroup = True
-        self.exec(DecontaminateSubtask.AddOutgroupFile, process.get_file_info, path)
+        self.exec(DecontaminateSubtask.AddOutgroupFile, get_file_info, path)
 
     def add_ingroup_file(self, path):
         self.busy = True
         self.busy_ingroup = True
-        self.exec(DecontaminateSubtask.AddIngroupFile, process.get_file_info, path)
+        self.exec(DecontaminateSubtask.AddIngroupFile, get_file_info, path)
 
     def add_file_item_from_info(self, info):
         if info.type == InputFile.Tabfile:

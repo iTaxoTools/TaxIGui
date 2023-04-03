@@ -23,8 +23,9 @@ from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
 
-from itaxotools.taxi_gui.types import (
-    AlignmentMode, ColumnFilter, DistanceMetric, FileFormat)
+from itaxotools.taxi_gui.process.common import (
+    partition_from_model, progress_handler, sequences_from_model)
+from itaxotools.taxi_gui.types import AlignmentMode, DistanceMetric
 
 
 @dataclass
@@ -32,112 +33,10 @@ class VersusAllResults:
     pass
 
 
-def progress_handler(caption, index, total):
-    import itaxotools
-    itaxotools.progress_handler(
-        text=caption,
-        value=index,
-        maximum=total,
-    )
-
-
 def initialize():
     import itaxotools
     itaxotools.progress_handler('Initializing...')
     from itaxotools.taxi2.tasks.versus_all import VersusAll  # noqa
-
-
-def get_file_info(path: Path):
-
-    from itaxotools.taxi2.files import FileFormat, FileInfo
-
-    from itaxotools.taxi_gui.types import InputFile
-
-    def get_index(items, item):
-        return items.index(item) if item else None
-
-    info = FileInfo.from_path(path)
-    if info.format == FileFormat.Tabfile:
-        return InputFile.Tabfile(
-            path = path,
-            size = info.size,
-            headers = info.headers,
-            individuals = info.header_individuals,
-            sequences = info.header_sequences,
-            organism = info.header_organism,
-            species = info.header_species,
-            genera = info.header_genus,
-        )
-    if info.format == FileFormat.Fasta:
-        return InputFile.Fasta(
-            path = path,
-            size = info.size,
-            has_subsets = info.has_subsets,
-        )
-    if info.format == FileFormat.Spart:
-        return InputFile.Spart(
-            path = path,
-            size = info.size,
-            spartitions = info.spartitions,
-            is_matricial = info.is_matricial,
-            is_xml = info.is_xml,
-        )
-    return InputFile.Unknown(path)
-
-
-def sequences_from_model(input: SequenceModel):
-    from itaxotools.taxi2.sequences import SequenceHandler, Sequences
-
-    if input.type == FileFormat.Tabfile:
-        return Sequences.fromPath(
-            input.path,
-            SequenceHandler.Tabfile,
-            hasHeader = True,
-            idColumn=input.index_column,
-            seqColumn=input.sequence_column,
-        )
-    elif input.type == FileFormat.Fasta:
-        return Sequences.fromPath(
-            input.path,
-            SequenceHandler.Fasta,
-            parse_organism=True,
-        )
-    raise Exception(f'Cannot create sequences from input: {input}')
-
-
-def partition_from_model(input: PartitionModel):
-    from itaxotools.taxi2.partitions import Partition, PartitionHandler
-
-    if input.type == FileFormat.Tabfile:
-        filter = {
-            ColumnFilter.All: None,
-            ColumnFilter.First: PartitionHandler.subset_first_word,
-        }[input.subset_filter]
-        return Partition.fromPath(
-            input.path,
-            PartitionHandler.Tabfile,
-            hasHeader = True,
-            idColumn=input.individual_column,
-            subColumn=input.subset_column,
-            filter=filter,
-        )
-    elif input.type == FileFormat.Fasta:
-        filter = {
-            ColumnFilter.All: None,
-            ColumnFilter.First: PartitionHandler.subset_first_word,
-        }[input.subset_filter]
-        return Partition.fromPath(
-            input.path,
-            PartitionHandler.Fasta,
-            filter=filter,
-        )
-    elif input.type == FileFormat.Spart:
-        return Partition.fromPath(
-            input.path,
-            PartitionHandler.Spart,
-            spartition=input.spartition,
-        )
-    raise Exception(f'Cannot create partition from input: {input}')
 
 
 def execute(

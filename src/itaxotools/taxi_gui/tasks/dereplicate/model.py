@@ -28,6 +28,7 @@ from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import TaskModel
+from itaxotools.taxi_gui.process.common import get_file_info
 from itaxotools.taxi_gui.types import (
     AlignmentMode, DistanceMetric, InputFile, Notification, PairwiseScore,
     StatisticsGroup)
@@ -165,7 +166,7 @@ class Model(TaskModel):
     def add_sequence_file(self, path):
         self.busy = True
         self.busy_sequence = True
-        self.exec(DereplicateSubtask.AddSequenceFile, process.get_file_info, path)
+        self.exec(DereplicateSubtask.AddSequenceFile, get_file_info, path)
 
     def add_file_item_from_info(self, info):
         if info.type == InputFile.Tabfile:

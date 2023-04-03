@@ -22,7 +22,7 @@ from typing import Any, Callable, Dict, List, NamedTuple
 
 import itaxotools
 
-from .io import PipeWriterIO
+from ..io import PipeWriterIO
 
 
 class InitDone:

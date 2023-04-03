@@ -21,7 +21,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from itaxotools.taxi_gui.types import AlignmentMode, DistanceMetric, FileFormat
+from itaxotools.common.utility import AttrDict
+
+from itaxotools.taxi_gui.process.common import (
+    progress_handler, sequences_from_model)
+from itaxotools.taxi_gui.types import AlignmentMode, DistanceMetric
 
 
 @dataclass
@@ -29,68 +33,10 @@ class DereplicateResults:
     pass
 
 
-def progress_handler(caption, index, total):
-    import itaxotools
-    itaxotools.progress_handler(
-        text=caption,
-        value=index,
-        maximum=total,
-    )
-
-
 def initialize():
     import itaxotools
     itaxotools.progress_handler('Initializing...')
     from itaxotools.taxi2.tasks.dereplicate import Dereplicate  # noqa
-
-
-def get_file_info(path: Path):
-
-    from itaxotools.taxi2.files import FileFormat, FileInfo
-
-    from itaxotools.taxi_gui.types import InputFile
-
-    def get_index(items, item):
-        return items.index(item) if item else None
-
-    info = FileInfo.from_path(path)
-    if info.format == FileFormat.Tabfile:
-        return InputFile.Tabfile(
-            path = path,
-            size = info.size,
-            headers = info.headers,
-            individuals = info.header_individuals,
-            sequences = info.header_sequences,
-            organism = info.header_organism,
-            species = info.header_species,
-            genera = info.header_genus,
-        )
-    if info.format == FileFormat.Fasta:
-        return InputFile.Fasta(
-            path = path,
-            size = info.size,
-            has_subsets = info.has_subsets,
-        )
-    return InputFile.Unknown(path)
-
-
-def sequences_from_model(input: SequenceModel):
-    from itaxotools.taxi2.sequences import SequenceHandler, Sequences
-
-    if input.type == FileFormat.Tabfile:
-        return Sequences.fromPath(
-            input.path,
-            SequenceHandler.Tabfile,
-            hasHeader = True,
-            idColumn=input.index_column,
-            seqColumn=input.sequence_column,
-        )
-    elif input.type == FileFormat.Fasta:
-        return Sequences.fromPath(
-            input.path,
-            SequenceHandler.Fasta,
-        )
-    raise Exception(f'Cannot create sequences from input: {input}')
 
 
 def execute(
