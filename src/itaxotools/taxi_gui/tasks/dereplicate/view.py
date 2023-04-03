@@ -26,12 +26,11 @@ from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.utility import Guard, Binder, type_convert, human_readable_size
 from itaxotools.taxi_gui.model import Item, ItemModel, Object, SequenceModel, PartitionModel
 from itaxotools.taxi_gui.types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
-from itaxotools.taxi_gui.view.common import Item, Card, CardCustom, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, VerticalRollAnimation
-
 from itaxotools.taxi_gui.types import ComparisonMode, Notification
-from itaxotools.taxi_gui.view.common import (
-    Card, ComparisonModeSelector, GLineEdit, GSpinBox, ObjectView,
-    SequenceSelector, NoWheelRadioButton, RadioButtonGroup)
+from itaxotools.taxi_gui.view.widgets import GLineEdit, GSpinBox, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, NoWheelComboBox, NoWheelRadioButton
+from itaxotools.taxi_gui.view.animations import VerticalRollAnimation
+from itaxotools.taxi_gui.view.cards import Card, CardCustom
+from itaxotools.taxi_gui.view.tasks import TaskView
 
 
 
