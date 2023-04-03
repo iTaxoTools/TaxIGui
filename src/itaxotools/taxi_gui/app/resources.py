@@ -68,7 +68,7 @@ icons = ResourceLoader(
     clear = lambda: VectorIcon(
         _get_common('icons/svg/clear.svg'), skin.colormap),
     home = lambda: VectorIcon(
-        _get_local('icons/home.svg'), skin.colormap),
+        _get_common('icons/svg/home.svg'), skin.colormap),
     app = lambda: QtGui.QIcon(
         _get_local('logos/taxi2.ico')),
 )
