@@ -18,8 +18,9 @@
 
 from PySide6 import QtCore, QtWidgets
 
+from itaxotools.common.bindings import Binder
+
 from .. import app
-from ..utility import Binder
 from ..model.common import Item
 from ..model.tasks import TaskModel
 from ..view.tasks import TaskView

@@ -16,16 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtWidgets
 
-from pathlib import Path
 
-from itaxotools.common.utility import AttrDict, override
 
-from .. import app
-from ..model.common import Item, ItemModel, Object
-from ..types import ComparisonMode, Notification, PairwiseComparisonConfig
-from ..utility import Guard, Binder
 
 
 class VerticalRollAnimation(QtCore.QPropertyAnimation):

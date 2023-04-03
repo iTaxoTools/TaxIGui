@@ -18,13 +18,14 @@
 
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from shutil import copytree
 
+from itaxotools.common.bindings import EnumObject, Property, Instance, Binder
+
 from itaxotools.taxi_gui import app
-from itaxotools.taxi_gui.model.common import Item, ItemModel, Object
+from itaxotools.taxi_gui.model.common import ItemModel
 from itaxotools.taxi_gui.types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
-from itaxotools.taxi_gui.utility import EnumObject, Property, Instance, Binder, human_readable_seconds
+from itaxotools.taxi_gui.utility import human_readable_seconds
 from itaxotools.taxi_gui.model.tasks import TaskModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel

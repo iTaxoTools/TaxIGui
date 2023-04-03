@@ -17,11 +17,7 @@
 # -----------------------------------------------------------------------------
 
 from enum import Enum, auto
-from typing import NamedTuple
-from dataclasses import dataclass, asdict
-from pathlib import Path
 
-from itaxotools.common.types import Type
 
 
 class VersusAllSubtask(Enum):

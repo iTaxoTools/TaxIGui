@@ -18,16 +18,14 @@
 
 """Main dialog window"""
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets
 
-import shutil
-from pathlib import Path
 
+from itaxotools.common.bindings import PropertyObject, Property
 from itaxotools.common.utility import AttrDict
 from itaxotools.common.widgets import ToolDialog
 
 from .. import app
-from ..utility import PropertyObject, Property
 from .body import Body
 from .footer import Footer
 from .header import Header

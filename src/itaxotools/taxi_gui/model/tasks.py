@@ -24,11 +24,10 @@ from typing import Any, Callable, List
 from tempfile import TemporaryDirectory
 from pathlib import Path
 
-from itaxotools.common.utility import override
+from itaxotools.common.bindings import Property, PropertyRef
 
 from ..threading import ReportProgress, ReportDone, ReportFail, ReportExit, ReportStop, Worker
-from ..types import Notification, Type
-from ..utility import Property, PropertyObject, PropertyRef
+from ..types import Notification
 from .common import Object
 
 
@@ -109,7 +108,6 @@ class TaskModel(Object):
 
     def save(self):
         """Slot for saving results"""
-        pass
 
     def clear(self):
         """Slot for discarding results"""

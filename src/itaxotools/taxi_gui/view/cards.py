@@ -23,9 +23,8 @@ from pathlib import Path
 from itaxotools.common.utility import AttrDict, override
 
 from .. import app
-from ..model.common import Item, ItemModel, Object
-from ..types import ComparisonMode, Notification, PairwiseComparisonConfig
-from ..utility import Guard, Binder
+from ..model.common import Item, ItemModel
+from ..types import ComparisonMode, PairwiseComparisonConfig
 from . animations import VerticalRollAnimation
 
 

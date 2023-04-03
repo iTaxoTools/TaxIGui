@@ -18,8 +18,7 @@
 
 from pathlib import Path
 
-from ..types import Type, SequenceReader, ColumnFilter, InputFile
-from ..utility import Instance
+from ..types import InputFile
 from .common import Object, Property
 
 

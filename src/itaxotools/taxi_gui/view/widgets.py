@@ -18,14 +18,7 @@
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from pathlib import Path
-
-from itaxotools.common.utility import AttrDict, override
-
-from .. import app
-from ..model.common import Item, ItemModel, Object
-from ..types import ComparisonMode, Notification, PairwiseComparisonConfig
-from ..utility import Guard, Binder
+from itaxotools.common.utility import override, Guard
 
 
 class NoWheelComboBox(QtWidgets.QComboBox):

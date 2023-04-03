@@ -20,7 +20,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Tuple
 
 from itaxotools.common.utility import AttrDict
 
@@ -86,8 +85,6 @@ def get_file_info(path: Path):
 
 def sequences_from_model(input: SequenceModel):
     from itaxotools.taxi2.sequences import Sequences, SequenceHandler
-    from itaxotools.taxi_gui import app
-    from itaxotools.taxi_gui.model.sequence import SequenceModel
 
     if input.type == FileFormat.Tabfile:
         return Sequences.fromPath(
@@ -108,8 +105,6 @@ def sequences_from_model(input: SequenceModel):
 
 def partition_from_model(input: PartitionModel):
     from itaxotools.taxi2.partitions import Partition, PartitionHandler
-    from itaxotools.taxi_gui import app
-    from itaxotools.taxi_gui.model.partition import PartitionModel
 
     if input.type == FileFormat.Tabfile:
         filter = {
@@ -179,8 +174,6 @@ def execute(
 
     from itaxotools.taxi2.tasks.versus_all import VersusAll
     from itaxotools.taxi2.distances import DistanceMetric as BackendDistanceMetric
-    from itaxotools.taxi2.sequences import Sequences, SequenceHandler
-    from itaxotools.taxi2.partitions import Partition, PartitionHandler
     from itaxotools.taxi2.align import Scores
 
     task = VersusAll()

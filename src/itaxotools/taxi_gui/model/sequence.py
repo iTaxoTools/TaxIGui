@@ -16,11 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
 
-from ..types import Type, SequenceReader, ColumnFilter, FileFormat
+from ..types import ColumnFilter, FileFormat
 from .common import Object, Property, Item
 from .input_file import InputFileModel
 

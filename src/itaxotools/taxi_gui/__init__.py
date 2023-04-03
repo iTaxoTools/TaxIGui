@@ -25,7 +25,7 @@ def run():
     Imports are made locally to optimize multiprocessing.
     """
 
-    from PySide6 import QtCore, QtWidgets
+    from PySide6 import QtWidgets
 
     import sys
 

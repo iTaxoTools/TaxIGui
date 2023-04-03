@@ -16,18 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore
 
-from enum import Enum
-from dataclasses import dataclass
-from typing import Callable, ClassVar, Optional, Union, NamedTuple, Type
-from types import UnionType
 
-from itaxotools.common.utility import AttrDict, Guard
-from itaxotools.common.bindings import (
-    Instance, _Instance, Property, PropertyRef, PropertiesRef,
-    PropertyMeta, PropertyObject, EnumObjectMeta, EnumObject,
-    Binding, Binder)
 
 
 def type_convert(value, type, default):

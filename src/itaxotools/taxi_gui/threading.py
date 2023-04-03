@@ -18,18 +18,15 @@
 
 from PySide6 import QtCore
 
-from collections import deque
 from contextlib import contextmanager
-from typing import Callable
 import multiprocessing as mp
 import sys
-import io
 
 from itaxotools.common.utility import override
 
 from .io import StreamGroup, PipeWrite
 from .threading_loop import (
-    Command, InitDone, ReportProgress, ReportDone, ReportFail, ReportExit, ReportStop, ReportQuit, loop)
+    Command, ReportProgress, ReportDone, ReportFail, ReportExit, ReportStop, ReportQuit, loop)
 
 
 class Worker(QtCore.QThread):

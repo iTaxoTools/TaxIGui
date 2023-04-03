@@ -18,7 +18,6 @@
 
 import sys
 import traceback
-from dataclasses import dataclass
 from typing import Any, NamedTuple, Callable, List, Dict
 
 from .io import PipeWriterIO

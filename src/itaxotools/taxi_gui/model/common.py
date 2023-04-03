@@ -18,17 +18,10 @@
 
 from PySide6 import QtCore
 
-import itertools
-from collections import defaultdict
-from typing import Any, Callable, List
-from tempfile import TemporaryDirectory
-from pathlib import Path
 
 from itaxotools.common.utility import override
-
-from ..threading import ReportProgress, ReportDone, ReportFail, ReportExit, ReportStop, Worker
-from ..types import Notification, Type
-from ..utility import Property, PropertyObject, PropertyRef
+from itaxotools.common.types import Type
+from itaxotools.common.bindings import Property, PropertyObject
 
 
 class _TypedPropertyObjectMeta(type(PropertyObject), type(Type)):

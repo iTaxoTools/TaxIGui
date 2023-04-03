@@ -20,7 +20,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 from itaxotools.taxi_gui.types import AlignmentMode, DistanceMetric, FileFormat
 from .types import DecontaminateMode
@@ -77,8 +76,6 @@ def get_file_info(path: Path):
 
 def sequences_from_model(input: SequenceModel) -> Sequences:
     from itaxotools.taxi2.sequences import Sequences, SequenceHandler
-    from itaxotools.taxi_gui import app
-    from itaxotools.taxi_gui.model.sequence import SequenceModel
 
     if input.type == FileFormat.Tabfile:
         return Sequences.fromPath(
@@ -129,8 +126,6 @@ def execute(
     from itaxotools.taxi2.tasks.decontaminate import Decontaminate
     from itaxotools.taxi2.tasks.decontaminate2 import Decontaminate2
     from itaxotools.taxi2.distances import DistanceMetric as BackendDistanceMetric
-    from itaxotools.taxi2.sequences import Sequences, SequenceHandler
-    from itaxotools.taxi2.partitions import Partition, PartitionHandler
     from itaxotools.taxi2.align import Scores
 
     if decontaminate_mode == DecontaminateMode.DECONT:

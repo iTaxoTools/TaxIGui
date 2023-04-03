@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore, QtGui
+from PySide6 import QtGui
 
 from itaxotools.common import resources
 from itaxotools.common.widgets import VectorIcon, VectorPixmap

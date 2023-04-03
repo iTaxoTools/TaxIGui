@@ -16,16 +16,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtWidgets
 
 from pathlib import Path
 
-from itaxotools.common.utility import AttrDict, override
+from itaxotools.common.bindings import Binder
 
 from .. import app
-from ..model.common import Item, ItemModel, Object
-from ..types import ComparisonMode, Notification, PairwiseComparisonConfig
-from ..utility import Guard, Binder
+from ..model.common import Object
+from ..types import Notification
 
 
 class ObjectView(QtWidgets.QFrame):
