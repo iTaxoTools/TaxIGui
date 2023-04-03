@@ -25,7 +25,7 @@ from .common import Object, Property, Item
 from .input_file import InputFileModel
 
 
-class SequenceModel2(Object):
+class SequenceModel(Object):
     file_item = Property(Item, None)
 
     def __init__(self, file_item=None):
@@ -38,7 +38,7 @@ class SequenceModel2(Object):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
 
 
-class Fasta(SequenceModel2):
+class Fasta(SequenceModel):
     has_subsets = Property(bool, False)
     parse_organism = Property(bool, False)
 
@@ -57,7 +57,7 @@ class Fasta(SequenceModel2):
         )
 
 
-class Tabfile(SequenceModel2):
+class Tabfile(SequenceModel):
     index_column = Property(int, -1)
     sequence_column = Property(int, -1)
     index_filter = Property(ColumnFilter, ColumnFilter.All)

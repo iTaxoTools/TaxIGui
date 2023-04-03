@@ -26,7 +26,7 @@ from itaxotools.taxi_gui.model import Item, ItemModel, Object
 from itaxotools.taxi_gui.types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
 from itaxotools.taxi_gui.utility import EnumObject, Property, Instance, Binder, human_readable_seconds
 from itaxotools.taxi_gui.model.common import Task
-from itaxotools.taxi_gui.model.sequence import SequenceModel2
+from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 
@@ -57,7 +57,7 @@ class StatisticsGroups(EnumObject):
 class Model(Task):
     task_name = 'Dereplicate'
 
-    input_sequences = Property(SequenceModel2, None)
+    input_sequences = Property(SequenceModel, None)
 
     alignment_mode = Property(AlignmentMode, AlignmentMode.PairwiseAlignment)
     alignment_write_pairs = Property(bool, True)
@@ -115,7 +115,7 @@ class Model(Task):
     def isReady(self):
         if self.input_sequences is None:
             return False
-        if not isinstance(self.input_sequences, SequenceModel2):
+        if not isinstance(self.input_sequences, SequenceModel):
             return False
         if not self.input_sequences.file_item:
             return False
@@ -184,11 +184,11 @@ class Model(Task):
         try:
             model_type = {
                 InputFileModel.Tabfile: {
-                    SequenceModel2: SequenceModel2.Tabfile,
+                    SequenceModel: SequenceModel.Tabfile,
                     PartitionModel: PartitionModel.Tabfile,
                 },
                 InputFileModel.Fasta: {
-                    SequenceModel2: SequenceModel2.Fasta,
+                    SequenceModel: SequenceModel.Fasta,
                 },
             }[type(file_item.object)][model_parent]
         except Exception:
@@ -197,7 +197,7 @@ class Model(Task):
         return model_type(file_item, *args, **kwargs)
 
     def set_sequence_file_from_file_item(self, file_item):
-        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
+        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel)
 
     def onDone(self, report):
         if report.id == DereplicateSubtask.Initialize:

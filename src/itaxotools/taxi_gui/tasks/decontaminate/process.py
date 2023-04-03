@@ -75,10 +75,10 @@ def get_file_info(path: Path):
     return InputFile.Unknown(path)
 
 
-def sequences_from_model(input: SequenceModel2) -> Sequences:
+def sequences_from_model(input: SequenceModel) -> Sequences:
     from itaxotools.taxi2.sequences import Sequences, SequenceHandler
     from itaxotools.taxi_gui import app
-    from itaxotools.taxi_gui.model import SequenceModel2
+    from itaxotools.taxi_gui.model import SequenceModel
 
     if input.type == FileFormat.Tabfile:
         return Sequences.fromPath(

@@ -26,7 +26,7 @@ from itaxotools.taxi_gui.model import Item, ItemModel, Object
 from itaxotools.taxi_gui.types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
 from itaxotools.taxi_gui.utility import EnumObject, Property, Instance, human_readable_seconds
 from itaxotools.taxi_gui.model.common import Task
-from itaxotools.taxi_gui.model.sequence import SequenceModel2
+from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 
@@ -72,7 +72,7 @@ class Model(Task):
     perform_species = Property(bool, False)
     perform_genera = Property(bool, False)
 
-    input_sequences = Property(SequenceModel2, None)
+    input_sequences = Property(SequenceModel, None)
     input_species = Property(PartitionModel, None)
     input_genera = Property(PartitionModel, None)
 
@@ -122,7 +122,7 @@ class Model(Task):
     def isReady(self):
         if self.input_sequences is None:
             return False
-        if not isinstance(self.input_sequences, SequenceModel2):
+        if not isinstance(self.input_sequences, SequenceModel):
             return False
         if not self.input_sequences.file_item:
             return False
@@ -223,11 +223,11 @@ class Model(Task):
         try:
             model_type = {
                 InputFileModel.Tabfile: {
-                    SequenceModel2: SequenceModel2.Tabfile,
+                    SequenceModel: SequenceModel.Tabfile,
                     PartitionModel: PartitionModel.Tabfile,
                 },
                 InputFileModel.Fasta: {
-                    SequenceModel2: SequenceModel2.Fasta,
+                    SequenceModel: SequenceModel.Fasta,
                     PartitionModel: PartitionModel.Fasta,
                 },
                 InputFileModel.Spart: {
@@ -238,12 +238,12 @@ class Model(Task):
             self.notification.emit(Notification.Warn('Unexpected file type.'))
             return None
         model = model_type(file_item, *args, **kwargs)
-        if model_type == SequenceModel2.Fasta:
+        if model_type == SequenceModel.Fasta:
             model.parse_organism = model.has_subsets
         return model
 
     def set_sequence_file_from_file_item(self, file_item):
-        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel2)
+        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel)
         self.propagate_file_item(file_item)
 
     def set_species_file_from_file_item(self, file_item):

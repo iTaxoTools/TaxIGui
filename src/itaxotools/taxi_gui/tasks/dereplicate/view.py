@@ -24,7 +24,7 @@ from itaxotools.common.utility import AttrDict, override
 
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.utility import Guard, Binder, type_convert, human_readable_size
-from itaxotools.taxi_gui.model import Item, ItemModel, Object, SequenceModel2, PartitionModel
+from itaxotools.taxi_gui.model import Item, ItemModel, Object, SequenceModel, PartitionModel
 from itaxotools.taxi_gui.types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from itaxotools.taxi_gui.view.common import Item, Card, CardCustom, NoWheelComboBox, GLineEdit, ObjectView, TaskView, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, VerticalRollAnimation
 
@@ -484,7 +484,7 @@ class SequenceSelector(InputSelector):
 
     def setObject(self, object):
         super().setObject(object)
-        if object and isinstance(object, SequenceModel2.Tabfile):
+        if object and isinstance(object, SequenceModel.Tabfile):
             self.populateCombos(object.file_item.object.info.headers)
             self.binder.bind(object.properties.index_column, self.controls.tabfile.index_combo.setCurrentIndex)
             self.binder.bind(self.controls.tabfile.index_combo.currentIndexChanged, object.properties.index_column)
@@ -497,7 +497,7 @@ class SequenceSelector(InputSelector):
             self.binder.bind(object.file_item.object.properties.size, self.controls.tabfile.file_size.setText, lambda x: human_readable_size(x))
             self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
             self.controls.config.setVisible(True)
-        elif object and isinstance(object, SequenceModel2.Fasta):
+        elif object and isinstance(object, SequenceModel.Fasta):
             self.binder.bind(object.file_item.object.properties.size, self.controls.fasta.file_size.setText, lambda x: human_readable_size(x))
             self.controls.config.setCurrentWidget(self.controls.fasta.widget)
             self.controls.config.setVisible(True)
