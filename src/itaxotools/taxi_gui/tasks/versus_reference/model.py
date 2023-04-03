@@ -22,10 +22,10 @@ from tempfile import TemporaryDirectory
 from shutil import copytree
 
 from itaxotools.taxi_gui import app
-from itaxotools.taxi_gui.model import Item, ItemModel, Object
+from itaxotools.taxi_gui.model.common import Item, ItemModel, Object
 from itaxotools.taxi_gui.types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode, StatisticsGroup
 from itaxotools.taxi_gui.utility import EnumObject, Property, Instance, human_readable_seconds
-from itaxotools.taxi_gui.model.common import Task
+from itaxotools.taxi_gui.model.tasks import TaskModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 
@@ -61,7 +61,7 @@ class DistanceMetrics(EnumObject):
         ]
 
 
-class Model(Task):
+class Model(TaskModel):
     task_name = 'Versus Reference'
 
     input_data = Property(SequenceModel, None)

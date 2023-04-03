@@ -20,7 +20,8 @@ from PySide6 import QtCore, QtWidgets
 
 from .. import app
 from ..utility import Binder
-from ..model.common import Item, Task as TaskModel
+from ..model.common import Item
+from ..model.tasks import TaskModel
 from ..view.tasks import TaskView
 from .dashboard import Dashboard
 

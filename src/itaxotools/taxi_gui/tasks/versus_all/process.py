@@ -87,7 +87,7 @@ def get_file_info(path: Path):
 def sequences_from_model(input: SequenceModel):
     from itaxotools.taxi2.sequences import Sequences, SequenceHandler
     from itaxotools.taxi_gui import app
-    from itaxotools.taxi_gui.model import SequenceModel
+    from itaxotools.taxi_gui.model.sequence import SequenceModel
 
     if input.type == FileFormat.Tabfile:
         return Sequences.fromPath(
@@ -109,7 +109,7 @@ def sequences_from_model(input: SequenceModel):
 def partition_from_model(input: PartitionModel):
     from itaxotools.taxi2.partitions import Partition, PartitionHandler
     from itaxotools.taxi_gui import app
-    from itaxotools.taxi_gui.model import PartitionModel
+    from itaxotools.taxi_gui.model.partition import PartitionModel
 
     if input.type == FileFormat.Tabfile:
         filter = {

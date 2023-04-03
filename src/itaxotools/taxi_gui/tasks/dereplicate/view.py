@@ -24,14 +24,16 @@ from itaxotools.common.utility import AttrDict, override
 
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.utility import Guard, Binder, type_convert, human_readable_size
-from itaxotools.taxi_gui.model import Item, ItemModel, Object, SequenceModel, PartitionModel
 from itaxotools.taxi_gui.types import ColumnFilter, Notification, AlignmentMode, PairwiseComparisonConfig, StatisticsGroup, AlignmentMode, PairwiseScore, DistanceMetric
 from itaxotools.taxi_gui.types import ComparisonMode, Notification
 from itaxotools.taxi_gui.view.widgets import GLineEdit, GSpinBox, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, NoWheelComboBox, NoWheelRadioButton
 from itaxotools.taxi_gui.view.animations import VerticalRollAnimation
 from itaxotools.taxi_gui.view.cards import Card, CardCustom
 from itaxotools.taxi_gui.view.tasks import TaskView
-
+from itaxotools.taxi_gui.model.common import Item, ItemModel, Object
+from itaxotools.taxi_gui.model.sequence import SequenceModel
+from itaxotools.taxi_gui.model.input_file import InputFileModel
+from itaxotools.taxi_gui.model.partition import PartitionModel
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):

@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from itaxotools.common.utility import override
 
 from .. import app
-from ..model import Group, Item, ItemModel
+from ..model.common import Group, Item, ItemModel
 
 
 class ItemView(ABC):
