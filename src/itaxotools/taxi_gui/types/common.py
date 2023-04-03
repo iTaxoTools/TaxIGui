@@ -18,9 +18,9 @@
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import NamedTuple
 from enum import Enum, auto
 from pathlib import Path
+from typing import NamedTuple
 
 from itaxotools.common.types import Type
 
@@ -112,9 +112,6 @@ class InputFile(Type):
     path: Path
     size: int
 
-    def as_dict(self):
-        return asdict(self)
-
 
 @dataclass
 class Unknown(InputFile):
@@ -150,8 +147,6 @@ class Entry(NamedTuple):
 
 
 class PropertyEnum(Enum):
-    property_type = lambda: object
-
     def __init__(self, label, key, default):
         self.label = label
         self.key = key
@@ -172,7 +167,6 @@ class PairwiseScore(PropertyEnum):
 
 
 class DistanceMetric(PropertyEnum):
-    property_type = lambda: bool
     Uncorrected = Entry('Uncorrected (p-distance)', 'p', True)
     UncorrectedWithGaps = Entry('Uncorrected with gaps', 'pg', True)
     JukesCantor = Entry('Jukes Cantor (jc)', 'jc', True)
@@ -182,7 +176,6 @@ class DistanceMetric(PropertyEnum):
 
 
 class StatisticsGroup(PropertyEnum):
-    property_type = lambda: bool
     All = Entry('For all sequences', 'for_all', True)
     Species = Entry('Per species', 'per_species', True)
     Genus = Entry('Per genus', 'per_genus', True)

@@ -20,13 +20,14 @@ from PySide6 import QtCore
 
 import itertools
 from collections import defaultdict
-from typing import Any, Callable, List
-from tempfile import TemporaryDirectory
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Any, Callable, List
 
 from itaxotools.common.bindings import Property, PropertyRef
 
-from ..threading import ReportProgress, ReportDone, ReportFail, ReportExit, ReportStop, Worker
+from ..threading import (
+    ReportDone, ReportExit, ReportFail, ReportProgress, ReportStop, Worker)
 from ..types import Notification
 from .common import Object
 

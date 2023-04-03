@@ -18,10 +18,9 @@
 
 from PySide6 import QtCore
 
-
-from itaxotools.common.utility import override
-from itaxotools.common.types import Type
 from itaxotools.common.bindings import Property, PropertyObject
+from itaxotools.common.types import Type
+from itaxotools.common.utility import override
 
 
 class _TypedPropertyObjectMeta(type(PropertyObject), type(Type)):

@@ -20,7 +20,6 @@ from PySide6.QtGui import QColor, QGuiApplication, QPalette
 
 from itaxotools.common.widgets import VectorIcon
 
-
 # QApplication Style
 
 style = 'Fusion'

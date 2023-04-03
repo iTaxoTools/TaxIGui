@@ -20,8 +20,7 @@
 
 from PySide6 import QtGui, QtWidgets
 
-
-from itaxotools.common.bindings import PropertyObject, Property
+from itaxotools.common.bindings import Property, PropertyObject
 from itaxotools.common.utility import AttrDict
 from itaxotools.common.widgets import ToolDialog
 

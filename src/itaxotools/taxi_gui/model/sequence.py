@@ -20,7 +20,7 @@
 from itaxotools.common.utility import AttrDict
 
 from ..types import ColumnFilter, FileFormat
-from .common import Object, Property, Item
+from .common import Item, Object, Property
 from .input_file import InputFileModel
 
 

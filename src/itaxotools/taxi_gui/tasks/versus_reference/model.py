@@ -20,15 +20,16 @@ from datetime import datetime
 from pathlib import Path
 from shutil import copytree
 
-from itaxotools.common.bindings import EnumObject, Property, Instance, Binder
+from itaxotools.common.bindings import EnumObject, Instance, Property
 
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.model.common import ItemModel
-from itaxotools.taxi_gui.types import Notification, InputFile, PairwiseScore, DistanceMetric, AlignmentMode
-from itaxotools.taxi_gui.utility import human_readable_seconds
-from itaxotools.taxi_gui.model.tasks import TaskModel
-from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
+from itaxotools.taxi_gui.model.sequence import SequenceModel
+from itaxotools.taxi_gui.model.tasks import TaskModel
+from itaxotools.taxi_gui.types import (
+    AlignmentMode, DistanceMetric, InputFile, Notification, PairwiseScore)
+from itaxotools.taxi_gui.utility import human_readable_seconds
 
 from . import process
 from .types import VersusReferenceSubtask
@@ -195,10 +196,10 @@ class Model(TaskModel):
         return model_type(file_item, *args, **kwargs)
 
     def set_data_file_from_file_item(self, file_item):
-            self.input_data = self.get_model_from_file_item(file_item, SequenceModel)
+        self.input_data = self.get_model_from_file_item(file_item, SequenceModel)
 
     def set_reference_file_from_file_item(self, file_item):
-            self.input_reference = self.get_model_from_file_item(file_item, SequenceModel)
+        self.input_reference = self.get_model_from_file_item(file_item, SequenceModel)
 
     def onDone(self, report):
         if report.id == VersusReferenceSubtask.Initialize:

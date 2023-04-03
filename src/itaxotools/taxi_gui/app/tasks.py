@@ -16,8 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from typing import NamedTuple
 from importlib import import_module
+from typing import NamedTuple
 
 from ..tasks import decontaminate, dereplicate, versus_all, versus_reference
 

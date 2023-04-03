@@ -18,11 +18,11 @@
 
 import sys
 import traceback
-from typing import Any, NamedTuple, Callable, List, Dict
-
-from .io import PipeWriterIO
+from typing import Any, Callable, Dict, List, NamedTuple
 
 import itaxotools
+
+from .io import PipeWriterIO
 
 
 class InitDone:

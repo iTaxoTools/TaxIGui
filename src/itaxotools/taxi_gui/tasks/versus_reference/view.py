@@ -16,23 +16,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from pathlib import Path
 
-from itaxotools.common.utility import AttrDict, override, Guard
 from itaxotools.common.bindings import Binder
+from itaxotools.common.utility import AttrDict, Guard, override
 
 from itaxotools.taxi_gui import app
-from itaxotools.taxi_gui.utility import type_convert, human_readable_size
-from itaxotools.taxi_gui.types import ColumnFilter, AlignmentMode, AlignmentMode, PairwiseScore, DistanceMetric
-from itaxotools.taxi_gui.view.cards import Card, CardCustom
-from itaxotools.taxi_gui.view.widgets import GLineEdit, RadioButtonGroup, RichRadioButton, MinimumStackedWidget, NoWheelComboBox
-from itaxotools.taxi_gui.view.animations import VerticalRollAnimation
-from itaxotools.taxi_gui.view.cards import Card
-from itaxotools.taxi_gui.view.tasks import TaskView
 from itaxotools.taxi_gui.model.common import Item, ItemModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
+from itaxotools.taxi_gui.types import (
+    AlignmentMode, ColumnFilter, DistanceMetric, PairwiseScore)
+from itaxotools.taxi_gui.utility import human_readable_size, type_convert
+from itaxotools.taxi_gui.view.animations import VerticalRollAnimation
+from itaxotools.taxi_gui.view.cards import Card, CardCustom
+from itaxotools.taxi_gui.view.tasks import TaskView
+from itaxotools.taxi_gui.view.widgets import (
+    GLineEdit, MinimumStackedWidget, NoWheelComboBox, RadioButtonGroup,
+    RichRadioButton)
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):
@@ -842,7 +844,7 @@ class View(TaskView):
         self.binder.bind(object.properties.alignment_mode, self.cards.distance_metrics.setAlignmentMode)
 
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
-        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible,  lambda x: x is not None)
+        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible, lambda x: x is not None)
 
         self.binder.bind(object.properties.editable, self.setEditable)
 

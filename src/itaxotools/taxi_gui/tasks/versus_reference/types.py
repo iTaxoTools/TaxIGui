@@ -19,7 +19,6 @@
 from enum import Enum, auto
 
 
-
 class VersusReferenceSubtask(Enum):
     Main = auto()
     Initialize = auto()

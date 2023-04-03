@@ -18,7 +18,9 @@
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from itaxotools.common.utility import override, Guard
+from time import time_ns
+
+from itaxotools.common.utility import Guard, override
 
 
 class NoWheelComboBox(QtWidgets.QComboBox):
@@ -213,8 +215,8 @@ class SpinningCircle(QtWidgets.QWidget):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setBrush(QtCore.Qt.NoBrush)
 
-        x = self.size().width()/2
-        y = self.size().height()/2
+        x = self.size().width() / 2
+        y = self.size().height() / 2
         painter.translate(QtCore.QPoint(x, y))
 
         palette = QtGui.QGuiApplication.palette()

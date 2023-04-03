@@ -19,9 +19,6 @@
 from PySide6 import QtCore, QtWidgets
 
 
-
-
-
 class VerticalRollAnimation(QtCore.QPropertyAnimation):
     def __init__(self, widget: QtWidgets.QWidget):
         super().__init__(widget, b'maximumHeight')

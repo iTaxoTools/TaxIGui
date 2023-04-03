@@ -48,7 +48,8 @@ def initialize():
 
 def get_file_info(path: Path):
 
-    from itaxotools.taxi2.files import FileInfo, FileFormat
+    from itaxotools.taxi2.files import FileFormat, FileInfo
+
     from itaxotools.taxi_gui.types import InputFile
 
     def get_index(items, item):
@@ -76,7 +77,7 @@ def get_file_info(path: Path):
 
 
 def sequences_from_model(input: SequenceModel):
-    from itaxotools.taxi2.sequences import Sequences, SequenceHandler
+    from itaxotools.taxi2.sequences import SequenceHandler, Sequences
 
     if input.type == FileFormat.Tabfile:
         return Sequences.fromPath(
@@ -117,9 +118,10 @@ def execute(
 
 ) -> tuple[Path, float]:
 
-    from itaxotools.taxi2.tasks.versus_reference import VersusReference
-    from itaxotools.taxi2.distances import DistanceMetric as BackendDistanceMetric
     from itaxotools.taxi2.align import Scores
+    from itaxotools.taxi2.distances import \
+        DistanceMetric as BackendDistanceMetric
+    from itaxotools.taxi2.tasks.versus_reference import VersusReference
 
     task = VersusReference()
     task.work_dir = work_dir

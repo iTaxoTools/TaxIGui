@@ -18,11 +18,12 @@
 
 from __future__ import annotations
 
+from typing import Literal
 
 from itaxotools.common.utility import AttrDict
 
 from ..types import ColumnFilter, FileFormat
-from .common import Object, Property, Item
+from .common import Item, Object, Property
 from .input_file import InputFileModel
 
 
@@ -42,7 +43,7 @@ class PartitionModel(Object):
 class Fasta(PartitionModel):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(self, file_item, preference: 'species' | 'genera' = None):
+    def __init__(self, file_item, preference: Literal['species', 'genera'] = None):
         assert isinstance(file_item.object, InputFileModel.Fasta)
         super().__init__(file_item)
         info = file_item.object.info
@@ -64,7 +65,7 @@ class Tabfile(PartitionModel):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
     individual_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(self, file_item, preference: 'species' | 'genera' = None):
+    def __init__(self, file_item, preference: Literal['species', 'genera'] = None):
         assert isinstance(file_item.object, InputFileModel.Tabfile)
         super().__init__(file_item)
         info = file_item.object.info

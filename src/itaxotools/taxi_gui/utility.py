@@ -17,9 +17,6 @@
 # -----------------------------------------------------------------------------
 
 
-
-
-
 def type_convert(value, type, default):
     try:
         return type(value)
