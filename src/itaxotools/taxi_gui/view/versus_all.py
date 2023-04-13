@@ -843,6 +843,56 @@ class AlignmentModeSelector(CardCustom):
         self.controls.pairwise_config.roll.setAnimatedVisible(mode == AlignmentMode.PairwiseAlignment)
 
 
+class DistanceTemplateComboBox(NoWheelComboBox):
+    valueChanged = QtCore.Signal(str)
+    invalidTemplate = QtCore.Signal(str)
+
+    def __init__(self):
+        super().__init__()
+        self.currentIndexChanged.connect(self.handleIndexChanged)
+        self.setEditable(True)
+
+        self.addItem('mean (minimum-maximum)', '{mean} ({min}-{max})')
+        self.addItem('minimum-maximum (mean)', '{min}-{max} ({mean})')
+        self.addItem('minimum-maximum', '{min}-{max}')
+        self.addItem('mean', '{mean}')
+
+    def handleIndexChanged(self, index):
+        if self.itemData(index) is None:
+            self.updateIndexValue(index)
+        self.valueChanged.emit(self.itemData(index))
+        if self.itemText(index) == self.itemData(index):
+            self.invalidTemplate.emit(self.itemText(index))
+
+    def updateIndexValue(self, index):
+        text = self.itemText(index)
+        data = text
+        data = data.replace('minimum', '{min}')
+        data = data.replace('maximum', '{max}')
+        data = data.replace('mean', '{mean}')
+        self.setItemData(index, data)
+
+    def setValue(self, value):
+        index = self.findData(value)
+        if index >= 0:
+            self.setCurrentIndex(index)
+            return
+        text = value.format(min='minimum', max='maximum', mean='mean')
+        self.addItem(text, value)
+        self.setCurrentIndex(self.count() - 1)
+
+    def focusOutEvent(self, event):
+        index = self.findText(self.currentText())
+        if index < 0:
+            # Text was edited and does not exist, add new item
+            index = self.count()
+            self.addItem(self.currentText())
+            self.updateIndexValue(index)
+            
+        self.setCurrentIndex(index)
+        super().focusOutEvent(event)
+
+
 class DistanceMetricSelector(Card):
 
     def __init__(self, parent=None):
@@ -944,6 +994,29 @@ class DistanceMetricSelector(Card):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
+        template_label = QtWidgets.QLabel('Summary template:')
+        precision_label = QtWidgets.QLabel('Decimal precision:')
+        missing_label = QtWidgets.QLabel('Not-Available symbol:')
+
+        layout.addWidget(template_label, 0, 0)
+        layout.addWidget(precision_label, 1, 0)
+        layout.addWidget(missing_label, 2, 0)
+
+        layout.setColumnMinimumWidth(1, 16)
+        layout.setColumnStretch(1, 0)
+
+        template = DistanceTemplateComboBox()
+        precision = GLineEdit('4')
+        missing = GLineEdit('NA')
+
+        layout.addWidget(template, 0, 2)
+        layout.addWidget(precision, 1, 2)
+        layout.addWidget(missing, 2, 2)
+        layout.setColumnStretch(2, 2)
+
+        layout.setColumnMinimumWidth(3, 16)
+        layout.setColumnStretch(3, 0)
+
         unit_radio = QtWidgets.QRadioButton('Distances from 0.0 to 1.0')
         percent_radio = QtWidgets.QRadioButton('Distances as percentages (%)')
 
@@ -951,33 +1024,16 @@ class DistanceMetricSelector(Card):
         percentile.add(unit_radio, False)
         percentile.add(percent_radio, True)
 
-        layout.addWidget(unit_radio, 0, 0)
-        layout.addWidget(percent_radio, 1, 0)
-        layout.setColumnStretch(0, 2)
-
-        layout.setColumnMinimumWidth(1, 16)
-        layout.setColumnStretch(1, 0)
-
-        precision_label = QtWidgets.QLabel('Decimal precision:')
-        missing_label = QtWidgets.QLabel('Not-Available symbol:')
-
-        layout.addWidget(precision_label, 0, 2)
-        layout.addWidget(missing_label, 1, 2)
-
-        layout.setColumnMinimumWidth(3, 16)
-
-        precision = GLineEdit('4')
-        missing = GLineEdit('NA')
-
-        self.controls.percentile = percentile
-        self.controls.precision = precision
-        self.controls.missing = missing
-
-        layout.addWidget(precision, 0, 4)
-        layout.addWidget(missing, 1, 4)
+        layout.addWidget(unit_radio, 0, 4)
+        layout.addWidget(percent_radio, 1, 4)
         layout.setColumnStretch(4, 2)
 
         self.addLayout(layout)
+
+        self.controls.template = template
+        self.controls.precision = precision
+        self.controls.missing = missing
+        self.controls.percentile = percentile
 
     def setAlignmentMode(self, mode):
         pairwise = bool(mode == AlignmentMode.PairwiseAlignment)
@@ -1168,6 +1224,9 @@ class VersusAllView(TaskView):
         self.binder.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
         self.binder.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
         self.binder.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
+        self.binder.bind(self.cards.distance_metrics.controls.template.valueChanged, object.properties.distance_stats_template)
+        self.binder.bind(self.cards.distance_metrics.controls.template.invalidTemplate, self.handleInvalidTemplate)
+        self.binder.bind(object.properties.distance_stats_template, self.cards.distance_metrics.controls.template.setValue)
 
         self.binder.bind(object.properties.alignment_mode, self.cards.distance_metrics.setAlignmentMode)
 
@@ -1191,6 +1250,10 @@ class VersusAllView(TaskView):
         self.cards.title.setEnabled(True)
         self.cards.dummy_results.setEnabled(True)
         self.cards.progress.setEnabled(True)
+
+    def handleInvalidTemplate(self, text):
+        notification = Notification.Warn(f'No values included in template: {repr(text)}')
+        self.showNotification(notification)
 
     def save(self):
         path = self.getExistingDirectory('Save All')
