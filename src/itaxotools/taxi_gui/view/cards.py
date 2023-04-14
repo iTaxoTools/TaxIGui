@@ -38,6 +38,15 @@ class CardLayout(QtWidgets.QBoxLayout):
             return item.widget().isVisible()
         return True
 
+    def _iterVisibleItemHeights(self, width=-1):
+        for item in self:
+            if not self._isItemVisible(item):
+                continue
+            if item.hasHeightForWidth():
+                yield item.heightForWidth(width)
+            else:
+                yield item.sizeHint().height()
+
     def expandingDirections(self):
         return QtCore.Qt.Vertical
 
@@ -57,18 +66,11 @@ class CardLayout(QtWidgets.QBoxLayout):
         margins = self.contentsMargins()
         width -= margins.left() + margins.right()
         height = margins.top() + margins.bottom()
-        visible = 0
 
-        for item in self:
-            if not self._isItemVisible(item):
-                continue
-            visible += 1
+        for item_height in self._iterVisibleItemHeights(width):
+            height += item_height
 
-            if item.hasHeightForWidth():
-                height += item.heightForWidth(width)
-            else:
-                height += item.sizeHint().height()
-
+        visible = sum(1 for item in self if self._isItemVisible(item))
         if visible > 1:
             height += (visible - 1) * self.spacing()
 
@@ -113,6 +115,16 @@ class CardLayout(QtWidgets.QBoxLayout):
             yy += height
             yy += self.spacing()
 
+    def separatorPositions(self, width=-1):
+        positions = []
+        cursor = self.contentsMargins().top()
+        for height in self._iterVisibleItemHeights(width):
+            cursor += height
+            position = cursor + self.spacing() / 2
+            positions.append(position)
+            cursor += self.spacing()
+        return positions[:-1]
+
 
 class Card(QtWidgets.QFrame):
     def __init__(self, parent=None):
@@ -149,19 +161,5 @@ class Card(QtWidgets.QFrame):
         left = self.separator_margin
         right = self.width() - self.separator_margin
 
-        items = [
-            item for item in self.layout()
-            if item.widget() and item.widget().isVisible()
-            or item.layout()
-        ]
-        pairs = zip(items[:-1], items[1:])
-
-        for first, second in pairs:
-            bottom = first.geometry().bottom()
-            top = second.geometry().top()
-            middle = (bottom + top) / 2
-            painter.drawLine(left, middle, right, middle)
-
-
-class CardCustom(Card):
-    pass
+        for position in self.layout().separatorPositions(self.width()):
+            painter.drawLine(left, position, right, position)

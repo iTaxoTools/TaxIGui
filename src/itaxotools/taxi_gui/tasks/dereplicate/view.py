@@ -30,7 +30,7 @@ from itaxotools.taxi_gui.types import (
     AlignmentMode, ColumnFilter, ComparisonMode, DistanceMetric, PairwiseScore)
 from itaxotools.taxi_gui.utility import human_readable_size, type_convert
 from itaxotools.taxi_gui.view.animations import VerticalRollAnimation
-from itaxotools.taxi_gui.view.cards import Card, CardCustom
+from itaxotools.taxi_gui.view.cards import Card
 from itaxotools.taxi_gui.view.tasks import TaskView
 from itaxotools.taxi_gui.view.widgets import (
     GLineEdit, GSpinBox, MinimumStackedWidget, NoWheelComboBox,
@@ -514,7 +514,7 @@ class SequenceSelector(InputSelector):
             self.controls.tabfile.sequence_combo.addItem(header)
 
 
-class AlignmentModeSelector(CardCustom):
+class AlignmentModeSelector(Card):
     resetScores = QtCore.Signal()
 
     def __init__(self, parent=None):
