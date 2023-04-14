@@ -36,7 +36,6 @@ class VerticalRollAnimation(QtCore.QPropertyAnimation):
             self.targetObject().setVisible(visible)
             return
         self._visible_target = visible
-        self.targetObject().setVisible(True)
         if visible:
             self.setEndValue(self.targetObject().sizeHint().height())
             self.setDirection(QtCore.QAbstractAnimation.Forward)
@@ -44,6 +43,7 @@ class VerticalRollAnimation(QtCore.QPropertyAnimation):
             self.setDirection(QtCore.QAbstractAnimation.Backward)
         if self.state() != QtCore.QAbstractAnimation.Running:
             self.start()
+        self.targetObject().setVisible(True)
 
     def animatedShow(self):
         self.setAnimatedVisible(True)
