@@ -167,7 +167,7 @@ class TitleCard(Card):
         super().__init__(parent)
 
         title = QtWidgets.QLabel('Versus All')
-        title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
+        title.setStyleSheet("""font-size: 18px; font-weight: bold;""")
 
         description = QtWidgets.QLabel(
             'Derive statistics from the distance betweens all pairs of sequences.')
@@ -185,23 +185,13 @@ class TitleCard(Card):
         remove.setEnabled(False)
         remove.setVisible(False)
 
-        contents = QtWidgets.QVBoxLayout()
-        contents.addWidget(title)
-        contents.addWidget(description)
-        contents.addStretch(1)
-        contents.setSpacing(6)
-
-        buttons = QtWidgets.QVBoxLayout()
-        buttons.addWidget(run)
-        buttons.addWidget(cancel)
-        buttons.addWidget(remove)
-        buttons.addStretch(1)
-        buttons.setSpacing(8)
-
-        layout = QtWidgets.QHBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 10, 0, 10)
-        layout.addLayout(contents, 1)
-        layout.addLayout(buttons, 0)
+        layout.addWidget(title)
+        layout.addWidget(description)
+        layout.addStretch(1)
+        layout.setSpacing(6)
+
         self.addLayout(layout)
 
         self.controls.run = run

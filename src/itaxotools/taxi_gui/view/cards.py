@@ -24,121 +24,103 @@ from .animations import VerticalRollAnimation
 
 
 class CardLayout(QtWidgets.QBoxLayout):
-    def __init__(self, *args, **kwargs):
-        super().__init__(QtWidgets.QBoxLayout.TopToBottom)
-        # self.setContentsMargins(8, 8, 8, 8)
+    def __init__(self, parent=None):
+        super().__init__(QtWidgets.QBoxLayout.TopToBottom, parent)
+
+    def __iter__(self):
+        for index in range(self.count()):
+            yield self.itemAt(index)
+
+    def _isItemVisible(self, item):
+        if isinstance(item, QtWidgets.QWidget):
+            return item.isVisible()
+        elif isinstance(item, QtWidgets.QWidgetItem):
+            return item.widget().isVisible()
+        return True
 
     def expandingDirections(self):
         return QtCore.Qt.Vertical
 
+    def minimumSize(self):
+        return self.sizeHint()
+
+    def minimumHeightForWidth(self, width):
+        return self.heightForWidth(width)
+
     def hasHeightForWidth(self):
+        for item in self:
+            if item.hasHeightForWidth():
+                return True
         return False
 
-    def setGeometry(self, rect):
-        super().setGeometry(rect)
-
+    def heightForWidth(self, width):
         margins = self.contentsMargins()
-        rect.adjust(margins.left(), margins.top(), -margins.right(), -margins.bottom())
+        width -= margins.left() + margins.right()
+        height = margins.top() + margins.bottom()
+        visible = 0
+
+        for item in self:
+            if not self._isItemVisible(item):
+                continue
+            visible += 1
+
+            if item.hasHeightForWidth():
+                height += item.heightForWidth(width)
+            else:
+                height += item.sizeHint().height()
+
+        if visible > 1:
+            height += (visible - 1) * self.spacing()
+
+        return height
+
+    def minimumWidth(self):
+        margins = self.contentsMargins()
+        width = margins.left() + margins.right()
+
+        for item in self:
+            if not self._isItemVisible(item):
+                continue
+            width = max(width, item.sizeHint().width())
+
+        return width
+
+    def sizeHint(self):
+        width = self.minimumWidth()
+        height = self.heightForWidth(width)
+        size = QtCore.QSize(width, height)
+        return size
+
+    def setGeometry(self, rect):
+        margins = self.contentsMargins()
+        rect = rect.marginsRemoved(margins)
 
         width = rect.width()
         height = rect.height()
         yy_incr = height / self.count()
         xx = rect.x()
         yy = rect.y()
-        for index in range(self.count()):
-            item = self.itemAt(index)
+        for item in self:
             item_rect = QtCore.QRect(xx, yy, width, yy_incr)
-            if isinstance(item, QtWidgets.QWidget) and not item.isVisible():
+            if not self._isItemVisible(item):
                 continue
-            if isinstance(item, QtWidgets.QWidgetItem) and not item.widget().isVisible():
-                continue
-            item_rect.setHeight(item.sizeHint().height())
+            if item.hasHeightForWidth():
+                height = item.heightForWidth(width)
+            else:
+                height = item.sizeHint().height()
+            item_rect.setHeight(height)
             item.setGeometry(item_rect)
-            yy += item.sizeHint().height()
+            yy += height
             yy += self.spacing()
-
-    def sizeHint(self):
-        return self.minimumSize()
-
-    def minimumSize(self):
-        width = 0
-        height = 0
-        visible = 0
-        for index in range(self.count()):
-            item = self.itemAt(index)
-            if isinstance(item, QtWidgets.QWidget) and not item.isVisible():
-                continue
-            if isinstance(item, QtWidgets.QWidgetItem) and not item.widget().isVisible():
-                continue
-            visible += 1
-            width = max(width, item.sizeHint().width())
-            height += item.sizeHint().height()
-        if visible > 1:
-            height += (visible - 1) * self.spacing()
-        size = QtCore.QSize(width, height)
-
-        margins = self.contentsMargins()
-        size += QtCore.QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
-
-        return size
 
 
 class Card(QtWidgets.QFrame):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.setStyleSheet("""Card{background: Palette(Midlight);}""")
         self.roll_animation = VerticalRollAnimation(self)
         self.controls = AttrDict()
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.setContentsMargins(16, 10, 16, 10)
-        layout.setSpacing(24)
-        self.setLayout(layout)
-
-    def addWidget(self, widget):
-        self.layout().addWidget(widget)
-
-    def addLayout(self, widget):
-        self.layout().addLayout(widget)
-
-    @override
-    def paintEvent(self, event):
-        super().paintEvent(event)
-
-        if self.layout().count():
-            self.paintSeparators()
-
-    def paintSeparators(self):
-        option = QtWidgets.QStyleOption()
-        option.initFrom(self)
-        painter = QtGui.QPainter(self)
-        painter.setPen(option.palette.color(QtGui.QPalette.Mid))
-
-        layout = self.layout()
-        frame = layout.contentsRect()
-        left = frame.left()
-        right = frame.right()
-
-        items = [
-            item for item in (layout.itemAt(id) for id in range(0, layout.count()))
-            if item.widget() and item.widget().isVisible()
-            or item.layout()
-        ]
-        pairs = zip(items[:-1], items[1:])
-
-        for first, second in pairs:
-            bottom = first.geometry().bottom()
-            top = second.geometry().top()
-            middle = (bottom + top) / 2
-            painter.drawLine(left, middle, right, middle)
-
-
-class CardCustom(QtWidgets.QFrame):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setStyleSheet("""CardCustom{background: Palette(Midlight);}""")
-        self.roll_animation = VerticalRollAnimation(self)
-        self.controls = AttrDict()
+        self.separator_margin = 8
 
         layout = CardLayout()
         layout.setContentsMargins(16, 10, 16, 10)
@@ -164,13 +146,11 @@ class CardCustom(QtWidgets.QFrame):
         painter = QtGui.QPainter(self)
         painter.setPen(option.palette.color(QtGui.QPalette.Mid))
 
-        layout = self.layout()
-        frame = layout.contentsRect()
-        left = frame.left()
-        right = frame.right()
+        left = self.separator_margin
+        right = self.width() - self.separator_margin
 
         items = [
-            item for item in (layout.itemAt(id) for id in range(0, layout.count()))
+            item for item in self.layout()
             if item.widget() and item.widget().isVisible()
             or item.layout()
         ]
@@ -181,3 +161,7 @@ class CardCustom(QtWidgets.QFrame):
             top = second.geometry().top()
             middle = (bottom + top) / 2
             painter.drawLine(left, middle, right, middle)
+
+
+class CardCustom(Card):
+    pass
