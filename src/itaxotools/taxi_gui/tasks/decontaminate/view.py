@@ -27,7 +27,7 @@ from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.model.common import Item, ItemModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.types import (
-    AlignmentMode, ColumnFilter, ComparisonMode, DistanceMetric, PairwiseScore)
+    AlignmentMode, ColumnFilter, DistanceMetric, PairwiseScore)
 from itaxotools.taxi_gui.utility import human_readable_size, type_convert
 from itaxotools.taxi_gui.view.animations import VerticalRollAnimation
 from itaxotools.taxi_gui.view.cards import Card
@@ -1117,7 +1117,3 @@ class View(TaskView):
         path = self.getExistingDirectory('Save All')
         if path:
             self.object.save(path)
-
-    def handleMode(self, mode):
-        self.cards.similarity.setVisible(mode.type is ComparisonMode.AlignmentFree)
-        self.cards.identity.setVisible(mode.type is not ComparisonMode.AlignmentFree)

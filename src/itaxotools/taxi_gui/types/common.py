@@ -25,31 +25,6 @@ from typing import NamedTuple
 from itaxotools.common.types import Type
 
 
-class ComparisonMode(Type):
-    label: str
-
-    def is_valid(self):
-        return True
-
-
-class AlignmentFree(ComparisonMode):
-    label = 'Alignment-Free (BBC)'
-
-
-class AlreadyAligned(ComparisonMode):
-    label = 'Already Aligned'
-
-
-class PairwiseAlignment(ComparisonMode):
-    label = 'Pairwise Alignment'
-
-    def __init__(self, config=None):
-        self.config = config or PairwiseComparisonConfig()
-
-    def is_valid(self):
-        return self.config.is_valid()
-
-
 class Notification(Type):
     def __init__(self, text: str, info: str = ''):
         self.text = text
@@ -66,29 +41,6 @@ class Warn(Notification):
 
 class Fail(Notification):
     pass
-
-
-class PairwiseComparisonConfig(dict):
-    Score = namedtuple('Score', ['label', 'default'])
-    scores = {
-        'match score': Score('Match Score', 1),
-        'mismatch score': Score('Mismatch Score', -1),
-        'gap penalty': Score('Gap Penalty', -8),
-        'gap extend penalty': Score('Gap Extend Penalty', -1),
-        'end gap penalty': Score('End Gap Penalty', -1),
-        'end gap extend penalty': Score('End Gap Extend Penalty', -1),
-    }
-
-    def __init__(self):
-        for key, score in self.scores.items():
-            self[key] = score.default
-
-    @classmethod
-    def label(cls, key):
-        return cls.scores[key].label
-
-    def is_valid(self):
-        return all(isinstance(x, int) for x in self.values())
 
 
 class SequenceReader(Enum):
@@ -182,9 +134,9 @@ class StatisticsGroup(PropertyEnum):
 
 
 class AlignmentMode(Enum):
-    NoAlignment = ('Already aligned', 'the sequences will be compared without further alignment')
-    PairwiseAlignment = ('Pairwise alignment', 'align each pair of sequences just before calculating distances')
-    AlignmentFree = ('Alignment-free', 'calculate pairwise distances using alignment-free metrics')
+    NoAlignment = 'Already aligned', 'the sequences will be compared without further alignment'
+    PairwiseAlignment = 'Pairwise alignment', 'align each pair of sequences just before calculating distances'
+    AlignmentFree = 'Alignment-free', 'calculate pairwise distances using alignment-free metrics'
 
     def __init__(self, label, description):
         self.label = label
