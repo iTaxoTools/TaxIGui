@@ -25,7 +25,9 @@ from itaxotools.common.utility import AttrDict
 
 from itaxotools.taxi_gui.process.common import (
     partition_from_model, progress_handler, sequences_from_model)
-from itaxotools.taxi_gui.types import AlignmentMode, DistanceMetric
+from itaxotools.taxi_gui.types import DistanceMetric
+
+from ..common.types import AlignmentMode
 
 
 @dataclass

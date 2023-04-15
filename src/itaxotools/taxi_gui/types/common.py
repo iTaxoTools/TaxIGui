@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from collections import namedtuple
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
@@ -109,15 +108,6 @@ class PropertyEnum(Enum):
         return f'<{self.__class__.__name__}.{self._name_}>'
 
 
-class PairwiseScore(PropertyEnum):
-    Match = Entry('Match', 'match_score', 1)
-    Mismatch = Entry('Mismatch', 'mismatch_score', -1)
-    InternalOpenGap = Entry('Open inner gap', 'internal_open_gap_score', -8)
-    InternalExtendGap = Entry('Extend inner gap', 'internal_extend_gap_score', -1)
-    EndOpenGap = Entry('Open outer gap', 'end_open_gap_score', -1)
-    EndExtendGap = Entry('Extend outer gap', 'end_extend_gap_score', -1)
-
-
 class DistanceMetric(PropertyEnum):
     Uncorrected = Entry('Uncorrected (p-distance)', 'p', True)
     UncorrectedWithGaps = Entry('Uncorrected with gaps', 'pg', True)
@@ -131,16 +121,6 @@ class StatisticsGroup(PropertyEnum):
     All = Entry('For all sequences', 'for_all', True)
     Species = Entry('Per species', 'per_species', True)
     Genus = Entry('Per genus', 'per_genus', True)
-
-
-class AlignmentMode(Enum):
-    NoAlignment = 'Already aligned', 'the sequences will be compared without further alignment'
-    PairwiseAlignment = 'Pairwise alignment', 'align each pair of sequences just before calculating distances'
-    AlignmentFree = 'Alignment-free', 'calculate pairwise distances using alignment-free metrics'
-
-    def __init__(self, label, description):
-        self.label = label
-        self.description = description
 
 
 class ColumnFilter(Enum):

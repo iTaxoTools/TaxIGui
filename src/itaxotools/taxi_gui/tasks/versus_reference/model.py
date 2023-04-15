@@ -28,10 +28,10 @@ from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import TaskModel
 from itaxotools.taxi_gui.process.common import get_file_info
-from itaxotools.taxi_gui.types import (
-    AlignmentMode, DistanceMetric, InputFile, Notification, PairwiseScore)
+from itaxotools.taxi_gui.types import DistanceMetric, InputFile, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
+from ..common.types import AlignmentMode, PairwiseScore
 from . import process
 from .types import VersusReferenceSubtask
 
