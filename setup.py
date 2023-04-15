@@ -32,7 +32,8 @@ setup(
         'dev': [
             'pyinstaller>=4.5.1',
             'flake8>=4.0.0',
-            'isort>=5.9.0'
+            'isort>=5.9.0',
+            'autoflake>=2.0.0',
         ],
     },
     entry_points={
