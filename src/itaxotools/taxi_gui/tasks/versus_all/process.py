@@ -63,6 +63,7 @@ def execute(
     distance_percentile: bool,
     distance_precision: int,
     distance_missing: str,
+    distance_stats_template: str,
 
     statistics_all: bool,
     statistics_species: bool,
@@ -135,6 +136,7 @@ def execute(
     task.params.format.float = f'{{:.{distance_precision}f}}'
     task.params.format.percentage = f'{{:.{distance_precision}f}}'
     task.params.format.missing = distance_missing
+    task.params.format.stats_template = distance_stats_template
     task.params.format.percentage_multiply = distance_percentile
 
     task.params.stats.all = statistics_all

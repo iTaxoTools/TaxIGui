@@ -89,6 +89,7 @@ class Model(TaskModel):
     distance_percentile = Property(bool, False)
     distance_precision = Property(int | None, 4)
     distance_missing = Property(str, 'NA')
+    distance_stats_template = Property(str, '{mean} ({min}-{max})')
 
     pairwise_scores = Property(PairwiseScores, Instance)
     distance_metrics = Property(DistanceMetrics, Instance)
@@ -180,6 +181,7 @@ class Model(TaskModel):
             distance_percentile=self.distance_percentile,
             distance_precision=self.distance_precision,
             distance_missing=self.distance_missing,
+            distance_stats_template=self.distance_stats_template,
 
             statistics_all=self.statistics_groups.for_all,
             statistics_species=self.statistics_groups.per_species,
