@@ -322,6 +322,7 @@ class SequenceSelector(InputSelector):
             self.controls.config.setVisible(True)
         else:
             self.controls.config.setVisible(False)
+        self.update()
 
     def populateCombos(self, headers):
         self.controls.tabfile.index_combo.clear()

@@ -146,6 +146,11 @@ class Card(QtWidgets.QFrame):
         self.layout().addLayout(widget)
 
     @override
+    def update(self):
+        self.layout().invalidate()
+        super().update()
+
+    @override
     def paintEvent(self, event):
         super().paintEvent(event)
 
