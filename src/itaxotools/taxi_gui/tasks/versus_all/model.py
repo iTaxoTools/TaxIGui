@@ -131,15 +131,24 @@ class Model(TaskModel):
             return False
         if not self.input_sequences.file_item:
             return False
+        if not self.input_sequences.is_valid():
+            return False
         if self.perform_species:
             if not isinstance(self.input_species, PartitionModel):
                 return False
             if not self.input_species.file_item:
                 return False
+            if not self.input_species.is_valid():
+                return False
         if self.perform_genera:
             if not isinstance(self.input_genera, PartitionModel):
                 return False
             if not self.input_genera.file_item:
+                return False
+            if not self.input_genera.is_valid():
+                return False
+        if self.perform_species and self.perform_genera:
+            if self.input_species == self.input_genera:
                 return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
@@ -249,22 +258,41 @@ class Model(TaskModel):
         return model
 
     def set_sequence_file_from_file_item(self, file_item):
+        if self.input_sequences is not None:
+            self.input_sequences.updated.disconnect(self.checkIfReady)
         self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel)
+        if self.input_sequences is not None:
+            self.input_sequences.updated.connect(self.checkIfReady)
         self.propagate_file_item(file_item)
+
+    def _set_species_file_from_file_item(self, file_item):
+        if self.input_species is not None:
+            self.input_species.updated.disconnect(self.checkIfReady)
+        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+        if self.input_species is not None:
+            self.input_species.updated.connect(self.checkIfReady)
 
     def set_species_file_from_file_item(self, file_item):
         try:
-            self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+            self._set_species_file_from_file_item(file_item)
         except Exception:
             self.notification.emit(Notification.Warn('No partition information found in file.'))
             self.input_species = None
             self.properties.input_species.update()
 
+    def _set_genera_file_from_file_item(self, file_item):
+        if self.input_genera is not None:
+            self.input_genera.updated.disconnect(self.checkIfReady)
+        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+        if self.input_genera is not None:
+            self.input_genera.updated.connect(self.checkIfReady)
+
     def set_genera_file_from_file_item(self, file_item):
         try:
-            self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+            self._set_genera_file_from_file_item(file_item)
         except Exception:
             self.notification.emit(Notification.Warn('No partition information found in file.'))
+            self.input_genera = None
             self.properties.input_genera.update()
 
     def propagate_file_item(self, file_item):
@@ -276,15 +304,15 @@ class Model(TaskModel):
             info = file_item.object.info
             if info.species is not None or info.organism is not None:
                 self.perform_species = True
-                self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
+                self._set_species_file_from_file_item(file_item)
             if info.genera is not None or info.organism is not None:
                 self.perform_genera = True
-                self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+                self._set_genera_file_from_file_item(file_item)
         if isinstance(file_item.object, InputFileModel.Fasta) and file_item.object.info.has_subsets:
             self.perform_species = True
             self.perform_genera = True
-            self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
-            self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
+            self.input_species = self._set_species_file_from_file_item(file_item)
+            self.input_genera = self._set_genera_file_from_file_item(file_item)
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Initialize:

@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from PySide6 import QtCore
+
 from typing import Literal
 
 from itaxotools.common.utility import AttrDict
@@ -29,6 +31,7 @@ from .input_file import InputFileModel
 
 class PartitionModel(Object):
     file_item = Property(Item, None)
+    updated = QtCore.Signal()
 
     def __init__(self, file_item=None):
         super().__init__()
@@ -38,6 +41,9 @@ class PartitionModel(Object):
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
+
+    def is_valid(self):
+        return True
 
 
 class Fasta(PartitionModel):
@@ -83,6 +89,11 @@ class Tabfile(PartitionModel):
             if self.subset_column >= 0 and preference == 'genera':
                 self.subset_filter = ColumnFilter.First
 
+        self.properties.subset_column.notify.connect(self.updated)
+        self.properties.individual_column.notify.connect(self.updated)
+        self.properties.subset_filter.notify.connect(self.updated)
+        self.properties.individual_filter.notify.connect(self.updated)
+
     @staticmethod
     def _header_get(headers: list[str], field: str):
         try:
@@ -99,6 +110,16 @@ class Tabfile(PartitionModel):
             subset_filter = self.subset_filter,
             individual_filter = self.individual_filter,
         )
+
+    def is_valid(self):
+        if self.subset_column < 0:
+            return False
+        if self.individual_column < 0:
+            return False
+        if self.subset_column == self.individual_column:
+            if self.subset_filter == self.individual_filter:
+                return False
+        return True
 
 
 class Spart(PartitionModel):

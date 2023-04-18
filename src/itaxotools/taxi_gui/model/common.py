@@ -42,7 +42,14 @@ class Object(PropertyObject, Type, metaclass=_TypedPropertyObjectMeta):
         return Type.__repr__(self)
 
     def __eq__(self, other):
-        return id(self) == id(other)
+        if type(self) != type(other):
+            return False
+        for a, b in zip(self.properties, other.properties):
+            if a.key != b.key:
+                return False
+            if a.value != b.value:
+                return False
+        return True
 
 
 class Group(Object):

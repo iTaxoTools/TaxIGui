@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from PySide6 import QtCore
 
 from itaxotools.common.utility import AttrDict
 
@@ -26,6 +27,7 @@ from .input_file import InputFileModel
 
 class SequenceModel(Object):
     file_item = Property(Item, None)
+    updated = QtCore.Signal()
 
     def __init__(self, file_item=None):
         super().__init__()
@@ -35,6 +37,9 @@ class SequenceModel(Object):
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
+
+    def is_valid(self):
+        return True
 
 
 class Fasta(SequenceModel):
@@ -69,6 +74,11 @@ class Tabfile(SequenceModel):
         self.index_column = self._header_get(info.headers, info.individuals)
         self.sequence_column = self._header_get(info.headers, info.sequences)
 
+        self.properties.index_column.notify.connect(self.updated)
+        self.properties.sequence_column.notify.connect(self.updated)
+        self.properties.index_filter.notify.connect(self.updated)
+        self.properties.sequence_filter.notify.connect(self.updated)
+
     @staticmethod
     def _header_get(headers: list[str], field: str):
         try:
@@ -83,3 +93,13 @@ class Tabfile(SequenceModel):
             index_column = self.index_column,
             sequence_column = self.sequence_column,
         )
+
+    def is_valid(self):
+        if self.index_column < 0:
+            return False
+        if self.sequence_column < 0:
+            return False
+        if self.index_column == self.sequence_column:
+            if self.index_filter == self.sequence_filter:
+                return False
+        return True
