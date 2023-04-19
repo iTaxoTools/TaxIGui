@@ -32,65 +32,7 @@ from itaxotools.taxi_gui.view.widgets import (
 
 from ..common.types import AlignmentMode, PairwiseScore
 from ..common.view import (
-    AlignmentModeSelector, PartitionSelector, SequenceSelector)
-
-
-class TitleCard(Card):
-    run = QtCore.Signal()
-    cancel = QtCore.Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        title = QtWidgets.QLabel('Versus All')
-        title.setStyleSheet("""font-size: 18px; font-weight: bold;""")
-
-        description = QtWidgets.QLabel(
-            'Derive statistics from the distance betweens all pairs of sequences.')
-        description.setWordWrap(True)
-
-        run = QtWidgets.QPushButton('Run')
-        run.clicked.connect(self.handleRun)
-        run.setVisible(False)
-
-        cancel = QtWidgets.QPushButton('Cancel')
-        cancel.clicked.connect(self.handleCancel)
-        cancel.setVisible(False)
-
-        remove = QtWidgets.QPushButton('Remove')
-        remove.setEnabled(False)
-        remove.setVisible(False)
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.setContentsMargins(0, 10, 0, 10)
-        layout.addWidget(title)
-        layout.addWidget(description)
-        layout.addStretch(1)
-        layout.setSpacing(6)
-
-        self.addLayout(layout)
-
-        self.controls.run = run
-        self.controls.cancel = cancel
-        self.controls.title = title
-
-    def handleRun(self):
-        self.run.emit()
-
-    def handleCancel(self):
-        self.cancel.emit()
-
-    def setTitle(self, text):
-        self.controls.title.setText(text)
-
-    def setReady(self, ready: bool):
-        # self.controls.run.setEnabled(ready)
-        pass
-
-    def setBusy(self, busy: bool):
-        self.setEnabled(True)
-        # self.controls.run.setVisible(not busy)
-        # self.controls.cancel.setVisible(busy)
+    AlignmentModeSelector, PartitionSelector, SequenceSelector, TitleCard)
 
 
 class DummyResultsCard(Card):
@@ -452,7 +394,10 @@ class View(TaskView):
 
     def draw(self):
         self.cards = AttrDict()
-        self.cards.title = TitleCard(self)
+        self.cards.title = TitleCard(
+            'Versus All',
+            'Derive statistics from the distance betweens all pairs of sequences.',
+            self)
         self.cards.dummy_results = DummyResultsCard(self)
         self.cards.progress = ProgressCard(self)
         self.cards.input_sequences = SequenceSelector('Input sequences', self)
@@ -488,10 +433,7 @@ class View(TaskView):
         self.binder.bind(object.notification, self.showNotification)
         self.binder.bind(object.progression, self.cards.progress.showProgress)
 
-        self.binder.bind(self.cards.title.run, object.start)
-        self.binder.bind(self.cards.title.cancel, object.stop)
         self.binder.bind(object.properties.name, self.cards.title.setTitle)
-        self.binder.bind(object.properties.ready, self.cards.title.setReady)
         self.binder.bind(object.properties.busy_main, self.cards.title.setBusy)
         self.binder.bind(object.properties.busy_main, self.cards.progress.setEnabled)
         self.binder.bind(object.properties.busy_main, self.cards.progress.setVisible)

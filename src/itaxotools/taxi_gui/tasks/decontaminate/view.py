@@ -30,7 +30,8 @@ from itaxotools.taxi_gui.view.widgets import (
     GLineEdit, GSpinBox, NoWheelRadioButton, RadioButtonGroup)
 
 from ..common.types import AlignmentMode, PairwiseScore
-from ..common.view import CrossAlignmentModeSelector, SequenceSelector
+from ..common.view import (
+    CrossAlignmentModeSelector, SequenceSelector, TitleCard)
 from .types import DecontaminateMode
 
 
@@ -166,74 +167,6 @@ class ReferenceWeightSelector(Card):
 
     def toString(self, number):
         return self.locale.toString(number, 'f', 2)
-
-
-class TitleCard(Card):
-    run = QtCore.Signal()
-    cancel = QtCore.Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        title = QtWidgets.QLabel('Decontaminate')
-        title.setStyleSheet("""font-size: 18px; font-weight: bold; """)
-
-        description = QtWidgets.QLabel(
-            'For each sequence in the input dataset, find the closest match in the reference database.')
-        description.setWordWrap(True)
-
-        run = QtWidgets.QPushButton('Run')
-        run.clicked.connect(self.handleRun)
-        run.setVisible(False)
-
-        cancel = QtWidgets.QPushButton('Cancel')
-        cancel.clicked.connect(self.handleCancel)
-        cancel.setVisible(False)
-
-        remove = QtWidgets.QPushButton('Remove')
-        remove.setEnabled(False)
-        remove.setVisible(False)
-
-        contents = QtWidgets.QVBoxLayout()
-        contents.addWidget(title)
-        contents.addWidget(description)
-        contents.addStretch(1)
-        contents.setSpacing(6)
-
-        buttons = QtWidgets.QVBoxLayout()
-        buttons.addWidget(run)
-        buttons.addWidget(cancel)
-        buttons.addWidget(remove)
-        buttons.addStretch(1)
-        buttons.setSpacing(8)
-
-        layout = QtWidgets.QHBoxLayout()
-        layout.setContentsMargins(0, 10, 0, 10)
-        layout.addLayout(contents, 1)
-        layout.addLayout(buttons, 0)
-        self.addLayout(layout)
-
-        self.controls.run = run
-        self.controls.cancel = cancel
-        self.controls.title = title
-
-    def handleRun(self):
-        self.run.emit()
-
-    def handleCancel(self):
-        self.cancel.emit()
-
-    def setTitle(self, text):
-        self.controls.title.setText(text)
-
-    def setReady(self, ready: bool):
-        # self.controls.run.setEnabled(ready)
-        pass
-
-    def setBusy(self, busy: bool):
-        self.setEnabled(True)
-        # self.controls.run.setVisible(not busy)
-        # self.controls.cancel.setVisible(busy)
 
 
 class DummyResultsCard(Card):
@@ -525,7 +458,10 @@ class View(TaskView):
 
     def draw(self):
         self.cards = AttrDict()
-        self.cards.title = TitleCard(self)
+        self.cards.title = TitleCard(
+            'Decontaminate',
+            'For each sequence in the input dataset, find the closest match in the reference database.',
+            self)
         self.cards.dummy_results = DummyResultsCard(self)
         self.cards.progress = ProgressCard(self)
         self.cards.input_sequences = SequenceSelector('Input sequence', self)
@@ -554,7 +490,6 @@ class View(TaskView):
         self.binder.bind(object.progression, self.cards.progress.showProgress)
 
         self.binder.bind(object.properties.name, self.cards.title.setTitle)
-        self.binder.bind(object.properties.ready, self.cards.title.setReady)
         self.binder.bind(object.properties.busy_main, self.cards.title.setBusy)
         self.binder.bind(object.properties.busy_main, self.cards.progress.setEnabled)
         self.binder.bind(object.properties.busy_main, self.cards.progress.setVisible)

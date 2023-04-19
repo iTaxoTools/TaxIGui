@@ -39,6 +39,36 @@ from .model import ItemProxyModel
 from .types import AlignmentMode, PairwiseScore
 
 
+class TitleCard(Card):
+    def __init__(self, title, description, parent=None):
+        super().__init__(parent)
+
+        label_title = QtWidgets.QLabel(title)
+        font = label_title.font()
+        font.setPixelSize(18)
+        font.setBold(True)
+        font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 1)
+        label_title.setFont(font)
+
+        label_description = QtWidgets.QLabel(description)
+        label_description.setWordWrap(True)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(0, 12, 0, 12)
+        layout.addWidget(label_title)
+        layout.addWidget(label_description)
+        layout.setSpacing(8)
+        self.addLayout(layout)
+
+        self.controls.title = label_title
+
+    def setTitle(self, text):
+        self.controls.title.setText(text)
+
+    def setBusy(self, busy: bool):
+        self.setEnabled(not busy)
+
+
 class ColumnFilterDelegate(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
         if not index.isValid():
