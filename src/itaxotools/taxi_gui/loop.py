@@ -16,13 +16,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+"""Worker process loop"""
+
 import sys
 import traceback
 from typing import Any, Callable, Dict, List, NamedTuple
 
 import itaxotools
 
-from ..io import PipeWriterIO
+from .io import PipeWriterIO
 
 
 class InitDone:
