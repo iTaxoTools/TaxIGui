@@ -38,3 +38,12 @@ class PairwiseScore(PropertyEnum):
     InternalExtendGap = Entry('Extend inner gap', 'internal_extend_gap_score', -1)
     EndOpenGap = Entry('Open outer gap', 'end_open_gap_score', -1)
     EndExtendGap = Entry('Extend outer gap', 'end_extend_gap_score', -1)
+
+
+class DistanceMetric(PropertyEnum):
+    Uncorrected = Entry('Uncorrected (p-distance)', 'p', True)
+    UncorrectedWithGaps = Entry('Uncorrected with gaps', 'pg', True)
+    JukesCantor = Entry('Jukes Cantor (jc)', 'jc', True)
+    Kimura2Parameter = Entry('Kimura 2-Parameter (k2p)', 'k2p', True)
+    NCD = Entry('Normalized Compression Distance (NCD)', 'ncd', True)
+    BBC = Entry('Base-Base Correlation (BBC)', 'bbc', False)

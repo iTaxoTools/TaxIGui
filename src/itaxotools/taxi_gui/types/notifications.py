@@ -16,32 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from enum import Enum
-from typing import NamedTuple
+
+from itaxotools.common.types import Type
 
 
-class Entry(NamedTuple):
-    label: str
-    key: str
-    default: int
-
-
-class PropertyEnum(Enum):
-    def __init__(self, label, key, default):
-        self.label = label
-        self.key = key
-        self.default = default
-        self.type = object
-
-    def __repr__(self):
-        return f'<{self.__class__.__name__}.{self._name_}>'
-
-
-class ColumnFilter(Enum):
-    All = ('*', 'All contents')
-    First = ('1', 'First word')
-
-    def __init__(self, abr, text):
-        self.abr = abr
+class Notification(Type):
+    def __init__(self, text: str, info: str = ''):
         self.text = text
-        self.label = f'{text} ({abr})'
+        self.info = info
+
+
+class Info(Notification):
+    pass
+
+
+class Warn(Notification):
+    pass
+
+
+class Fail(Notification):
+    pass

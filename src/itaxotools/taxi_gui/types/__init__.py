@@ -17,3 +17,5 @@
 # -----------------------------------------------------------------------------
 
 from .common import *
+from .files import *
+from .notifications import *

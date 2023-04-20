@@ -16,32 +16,54 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from enum import Enum
+from dataclasses import dataclass
+from enum import Enum, auto
+from pathlib import Path
 from typing import NamedTuple
+
+from itaxotools.common.types import Type
+
+
+class FileFormat(Enum):
+    Tabfile = auto()
+    Fasta = auto()
+    Spart = auto()
+
+
+@dataclass
+class InputFile(Type):
+    path: Path
+    size: int
+
+
+@dataclass
+class Unknown(InputFile):
+    pass
+
+
+@dataclass
+class Fasta(InputFile):
+    has_subsets: bool
+
+
+@dataclass
+class Tabfile(InputFile):
+    headers: list[str]
+    individuals: str = None
+    sequences: str = None
+    organism: str = None
+    species: str = None
+    genera: str = None
+
+
+@dataclass
+class Spart(InputFile):
+    spartitions: list[str]
+    is_matricial: bool
+    is_xml: bool
 
 
 class Entry(NamedTuple):
     label: str
     key: str
     default: int
-
-
-class PropertyEnum(Enum):
-    def __init__(self, label, key, default):
-        self.label = label
-        self.key = key
-        self.default = default
-        self.type = object
-
-    def __repr__(self):
-        return f'<{self.__class__.__name__}.{self._name_}>'
-
-
-class ColumnFilter(Enum):
-    All = ('*', 'All contents')
-    First = ('1', 'First word')
-
-    def __init__(self, abr, text):
-        self.abr = abr
-        self.text = text
-        self.label = f'{text} ({abr})'

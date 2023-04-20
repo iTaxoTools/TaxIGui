@@ -18,6 +18,8 @@
 
 from enum import Enum, auto
 
+from itaxotools.taxi_gui.types import Entry, PropertyEnum
+
 
 class VersusAllSubtask(Enum):
     Main = auto()
@@ -25,3 +27,9 @@ class VersusAllSubtask(Enum):
     AddSequenceFile = auto()
     AddSpeciesFile = auto()
     AddGeneraFile = auto()
+
+
+class StatisticsGroup(PropertyEnum):
+    All = Entry('For all sequences', 'for_all', True)
+    Species = Entry('Per species', 'per_species', True)
+    Genus = Entry('Per genus', 'per_genus', True)

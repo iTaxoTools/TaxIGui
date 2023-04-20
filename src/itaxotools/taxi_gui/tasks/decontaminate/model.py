@@ -28,12 +28,11 @@ from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import TaskModel
-from itaxotools.taxi_gui.types import (
-    DistanceMetric, InputFile, Notification, StatisticsGroup)
+from itaxotools.taxi_gui.types import InputFile, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
 from ..common.process import get_file_info
-from ..common.types import AlignmentMode, PairwiseScore
+from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
 from .types import DecontaminateMode, DecontaminateSubtask
 
@@ -52,10 +51,6 @@ class PairwiseScores(EnumObject):
             self.properties[score.key].value is None
             for score in self.enum
         )
-
-
-class StatisticsGroups(EnumObject):
-    enum = StatisticsGroup
 
 
 class Model(TaskModel):

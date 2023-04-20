@@ -23,10 +23,8 @@ from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
 
-from itaxotools.taxi_gui.types import DistanceMetric
-
 from ..common.process import progress_handler, sequences_from_model
-from ..common.types import AlignmentMode
+from ..common.types import AlignmentMode, DistanceMetric
 
 
 @dataclass

@@ -20,18 +20,18 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
-from itaxotools.taxi_gui.types import (
-    DistanceMetric, Notification, StatisticsGroup)
+from itaxotools.taxi_gui.types import Notification
 from itaxotools.taxi_gui.utility import type_convert
 from itaxotools.taxi_gui.view.cards import Card
 from itaxotools.taxi_gui.view.tasks import TaskView
 from itaxotools.taxi_gui.view.widgets import (
     GLineEdit, NoWheelComboBox, RadioButtonGroup)
 
-from ..common.types import AlignmentMode, PairwiseScore
+from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from ..common.view import (
     AlignmentModeSelector, DummyResultsCard, PartitionSelector, ProgressCard,
     SequenceSelector, TitleCard)
+from .types import StatisticsGroup
 
 
 class OptionalCategory(Card):
