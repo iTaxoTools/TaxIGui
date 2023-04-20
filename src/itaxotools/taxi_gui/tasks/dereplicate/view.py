@@ -18,8 +18,6 @@
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from pathlib import Path
-
 from itaxotools.common.utility import AttrDict
 
 from itaxotools.taxi_gui.types import DistanceMetric
@@ -30,57 +28,9 @@ from itaxotools.taxi_gui.view.widgets import (
     GLineEdit, GSpinBox, NoWheelRadioButton, RadioButtonGroup)
 
 from ..common.types import AlignmentMode, PairwiseScore
-from ..common.view import AlignmentModeSelector, SequenceSelector, TitleCard
-
-
-class DummyResultsCard(Card):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.path = Path()
-
-        title = QtWidgets.QLabel('Results: ')
-        title.setStyleSheet("""font-size: 16px;""")
-        title.setMinimumWidth(120)
-
-        path = QtWidgets.QLineEdit()
-        path.setReadOnly(True)
-
-        browse = QtWidgets.QPushButton('Browse')
-        browse.clicked.connect(self.handleBrowse)
-
-        layout = QtWidgets.QHBoxLayout()
-        layout.addWidget(title)
-        layout.addWidget(path, 1)
-        layout.addWidget(browse)
-        layout.setSpacing(16)
-        self.addLayout(layout)
-
-        self.controls.path = path
-        self.controls.browse = browse
-
-    def handleBrowse(self):
-        url = QtCore.QUrl.fromLocalFile(str(self.path))
-        QtGui.QDesktopServices.openUrl(url)
-
-    def setPath(self, path: Path):
-        if path is None:
-            path = Path()
-        self.path = path
-        self.controls.path.setText(str(path))
-
-
-class ProgressCard(QtWidgets.QProgressBar):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setMaximum(0)
-        self.setMinimum(0)
-        self.setValue(0)
-        self.setVisible(False)
-
-    def showProgress(self, report):
-        self.setMaximum(report.maximum)
-        self.setMinimum(report.minimum)
-        self.setValue(report.value)
+from ..common.view import (
+    AlignmentModeSelector, DummyResultsCard, ProgressCard, SequenceSelector,
+    TitleCard)
 
 
 class DistanceMetricSelector(Card):
