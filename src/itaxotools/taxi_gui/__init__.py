@@ -22,20 +22,18 @@
 def run():
     """
     Show the Taxi2 window and enter the main event loop.
-    Imports are made locally to optimize multiprocessing.
+    Imports are done locally to optimize multiprocessing.
     """
 
-    from PySide6 import QtWidgets
-
-    import sys
-
-    from .app import skin, tasks
+    from . import config
+    from .app import Application, skin
     from .main import Main
 
-    app = QtWidgets.QApplication(sys.argv)
-    skin.apply(app)
+    app = Application()
+    app.set_config(config)
+    app.set_skin(skin)
 
-    main = Main(tasks=tasks)
+    main = Main()
     main.show()
 
-    sys.exit(app.exec())
+    app.exec()

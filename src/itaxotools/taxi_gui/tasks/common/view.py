@@ -230,7 +230,7 @@ class InputSelector(Card):
 
     def handleBrowse(self, *args):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self.window(), f'{app.title} - Import Sequence File')
+            self.window(), f'{app.config.title} - Import Sequence File')
         if not filename:
             return
         self.addInputFile.emit(Path(filename))

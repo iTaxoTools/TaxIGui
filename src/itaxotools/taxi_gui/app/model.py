@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from ..model.common import ItemModel
+from ..model.common import ItemModel, MainModel
 
 items = ItemModel()
+main = MainModel()

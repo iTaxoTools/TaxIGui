@@ -19,8 +19,6 @@
 from importlib import import_module
 from typing import NamedTuple
 
-from ..tasks import decontaminate, dereplicate, versus_all, versus_reference
-
 
 class Task(NamedTuple):
     title: str
@@ -38,11 +36,3 @@ class Task(NamedTuple):
             model = module.model.Model,
             view = module.view.View,
         )
-
-
-tasks = [
-    Task.from_module(versus_all),
-    Task.from_module(versus_reference),
-    Task.from_module(dereplicate),
-    Task.from_module(decontaminate),
-]

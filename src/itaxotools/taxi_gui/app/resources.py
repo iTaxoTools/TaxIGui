@@ -26,7 +26,7 @@ from . import skin
 
 class ResourceLoader:
     def __init__(self, **kwargs):
-        self.attrs = kwargs
+        super().__setattr__('attrs', kwargs)
 
     def __dir__(self):
         return super().__dir__() + self.attrs
@@ -34,6 +34,9 @@ class ResourceLoader:
     def __getattr__(self, attr):
         if attr in self.attrs:
             return self.attrs[attr]()
+
+    def __setattr__(self, attr, value):
+        self.attrs[attr] = value
 
 
 def _get_common(path):

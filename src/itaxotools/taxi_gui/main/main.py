@@ -20,7 +20,6 @@
 
 from PySide6 import QtGui, QtWidgets
 
-from itaxotools.common.bindings import Property, PropertyObject
 from itaxotools.common.utility import AttrDict
 from itaxotools.common.widgets import ToolDialog
 
@@ -31,26 +30,20 @@ from .header import Header
 from .sidebar import SideBar
 
 
-class MainState(PropertyObject):
-    dirty_data = Property(bool, True)
-    busy = Property(bool, False)
-
-
 class Main(ToolDialog):
-    """Main window, handles everything"""
+    """Main window, hosts all tasks and actions"""
 
-    def __init__(self, tasks=[], parent=None):
+    def __init__(self, parent=None):
         super(Main, self).__init__(parent)
-        self.state = MainState()
 
         self.setWindowIcon(app.resources.icons.app)
-        self.setWindowTitle(app.title)
+        self.setWindowTitle(app.config.title)
         self.resize(680, 500)
 
         self.act()
         self.draw()
 
-        self.addTasks(tasks)
+        self.addTasks(app.config.tasks)
 
     def act(self):
         """Populate dialog actions"""
@@ -119,6 +112,7 @@ class Main(ToolDialog):
 
     def addTasks(self, tasks):
         for task in tasks:
+            task = app.Task.from_module(task)
             self.addTask(task)
 
     def addTask(self, task):
@@ -130,6 +124,6 @@ class Main(ToolDialog):
         self.widgets.sidebar.clearSelection()
 
     def reject(self):
-        if self.state.dirty_data:
+        if app.model.main.dirty_data:
             return super().reject()
         return True

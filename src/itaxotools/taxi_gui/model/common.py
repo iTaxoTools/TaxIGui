@@ -56,6 +56,11 @@ class Group(Object):
     pass
 
 
+class MainModel(PropertyObject):
+    dirty_data = Property(bool, True)
+    busy = Property(bool, False)
+
+
 class Item:
     """Provides a hierarchical structure for Objects"""
     def __init__(self, object: Object, parent=None):

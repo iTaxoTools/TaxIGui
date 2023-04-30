@@ -16,8 +16,30 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-"""Program globals"""
+from PySide6 import QtWidgets
 
-from . import model, resources, skin
-from .application import Application
-from .tasks import Task
+from sys import exit
+from types import ModuleType
+
+from . import config
+
+
+class Application(QtWidgets.QApplication):
+    def __init__(self):
+        super().__init__([])
+
+    def exec(self):
+        exit(super().exec())
+
+    def set_title(self, title: str):
+        config.title = title
+
+    def set_tasks(self, tasks: list[ModuleType]):
+        config.tasks = tasks
+
+    def set_config(self, config: ModuleType):
+        self.set_title(config.title)
+        self.set_tasks(config.tasks)
+
+    def set_skin(self, skin: ModuleType):
+        skin.apply(self)

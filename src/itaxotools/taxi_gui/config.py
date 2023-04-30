@@ -16,8 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-"""Program globals"""
+from .tasks import decontaminate, dereplicate, versus_all, versus_reference
 
-from . import model, resources, skin
-from .application import Application
-from .tasks import Task
+title = 'TaxI2.1'
+
+tasks = [
+    versus_all,
+    versus_reference,
+    dereplicate,
+    decontaminate,
+]

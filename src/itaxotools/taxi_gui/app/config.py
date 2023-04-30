@@ -16,8 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-"""Program globals"""
 
-from . import model, resources, skin
-from .application import Application
-from .tasks import Task
+title = 'TaxiGui'
+tasks = []

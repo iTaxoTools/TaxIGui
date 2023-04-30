@@ -49,7 +49,7 @@ class ObjectView(QtWidgets.QFrame):
         }[notification.type]
 
         msgBox = QtWidgets.QMessageBox(self.window())
-        msgBox.setWindowTitle(app.title)
+        msgBox.setWindowTitle(app.config.title)
         msgBox.setIcon(icon)
         msgBox.setText(notification.text)
         msgBox.setDetailedText(notification.info)
@@ -58,28 +58,28 @@ class ObjectView(QtWidgets.QFrame):
 
     def getOpenPath(self, caption='Open File', dir='', filter=''):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self.window(), f'{app.title} - {caption}', dir, filter=filter)
+            self.window(), f'{app.config.title} - {caption}', dir, filter=filter)
         if not filename:
             return None
         return Path(filename)
 
     def getSavePath(self, caption='Open File', dir=''):
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self.window(), f'{app.title} - {caption}', dir)
+            self.window(), f'{app.config.title} - {caption}', dir)
         if not filename:
             return None
         return Path(filename)
 
     def getExistingDirectory(self, caption='Open File', dir=''):
         filename = QtWidgets.QFileDialog.getExistingDirectory(
-            self.window(), f'{app.title} - {caption}', dir)
+            self.window(), f'{app.config.title} - {caption}', dir)
         if not filename:
             return None
         return Path(filename)
 
     def getConfirmation(self, title='Confirmation', text='Are you sure?'):
         msgBox = QtWidgets.QMessageBox(self)
-        msgBox.setWindowTitle(f'{app.title} - {title}')
+        msgBox.setWindowTitle(f'{app.config.title} - {title}')
         msgBox.setIcon(QtWidgets.QMessageBox.Question)
         msgBox.setText(text)
         msgBox.setStandardButtons(
