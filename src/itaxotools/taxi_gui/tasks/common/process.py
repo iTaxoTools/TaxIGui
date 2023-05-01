@@ -69,7 +69,7 @@ def get_file_info(path: Path):
             is_matricial = info.is_matricial,
             is_xml = info.is_xml,
         )
-    return InputFile.Unknown(path)
+    return InputFile.Unknown(path, info.size)
 
 
 def sequences_from_model(input: AttrDict):
