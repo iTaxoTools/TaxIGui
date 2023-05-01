@@ -33,6 +33,8 @@ class ScrollArea(QtWidgets.QScrollArea):
         super().__init__(parent)
         self.setWidgetResizable(True)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.setContentsMargins(40, 0, 0, 0)
+        self.setStyleSheet("""ScrollArea {border: none;}""")
 
 
 class Body(QtWidgets.QStackedWidget):

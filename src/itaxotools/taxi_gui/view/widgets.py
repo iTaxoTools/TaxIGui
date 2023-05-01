@@ -281,7 +281,7 @@ class CategoryButton(QtWidgets.QAbstractButton):
         mild = palette.color(QtGui.QPalette.Dark)
         bold = palette.color(QtGui.QPalette.Shadow)
 
-        color = weak if self.grayed else bold
+        color = weak if self.grayed else mild
         if self.grayed:
             painter.setPen(QtGui.QPen(mild, 1, QtCore.Qt.SolidLine))
 
