@@ -29,6 +29,8 @@ def human_readable_size(size):
         if size < 1000.0 or unit == 'GB':
             break
         size /= 1000.0
+    if unit == 'B':
+        return f'{int(size)} {unit}'
     return f'{size:.2f} {unit}'
 
 
