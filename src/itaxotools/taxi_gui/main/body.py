@@ -80,17 +80,21 @@ class Body(QtWidgets.QStackedWidget):
 
     def bindTask(self, task: TaskModel, view: TaskView):
         self.binder.unbind_all()
-        self.actions.open.setEnabled(False)
+
+        self.binder.bind(task.properties.can_open, self.actions.open.setVisible)
+        self.binder.bind(task.properties.can_save, self.actions.save.setVisible)
 
         self.binder.bind(task.properties.ready, self.actions.start.setEnabled)
         self.binder.bind(task.properties.editable, self.actions.start.setVisible)
         self.binder.bind(task.properties.busy, self.actions.stop.setVisible)
         self.binder.bind(task.properties.busy, self.actions.home.setEnabled, lambda busy: not busy)
+        self.binder.bind(task.properties.busy, self.actions.open.setEnabled, lambda busy: not busy)
         self.binder.bind(task.properties.done, self.actions.save.setEnabled)
         self.binder.bind(task.properties.done, self.actions.clear.setVisible)
 
         self.binder.bind(self.actions.start.triggered, view.start)
         self.binder.bind(self.actions.stop.triggered, view.stop)
+        self.binder.bind(self.actions.open.triggered, view.open)
         self.binder.bind(self.actions.save.triggered, view.save)
         self.binder.bind(self.actions.clear.triggered, view.clear)
 

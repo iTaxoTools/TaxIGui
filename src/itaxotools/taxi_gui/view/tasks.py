@@ -102,6 +102,11 @@ class TaskView(ObjectView):
         ):
             self.object.stop()
 
+    def open(self):
+        path = self.getOpenPath()
+        if path:
+            self.object.open(path)
+
     def save(self):
         path = self.getExistingDirectory(
             'Save All', str(self.object.suggested_directory))

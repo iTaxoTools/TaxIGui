@@ -57,6 +57,8 @@ class Group(Object):
 
 
 class MainModel(PropertyObject):
+    dashboard = Property(bool, False)
+
     dirty_data = Property(bool, True)
     busy = Property(bool, False)
 

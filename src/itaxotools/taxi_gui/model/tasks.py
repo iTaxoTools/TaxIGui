@@ -38,6 +38,9 @@ class TaskModel(Object):
     notification = QtCore.Signal(Notification)
     progression = QtCore.Signal(ReportProgress)
 
+    can_open = Property(bool, False)
+    can_save = Property(bool, True)
+
     ready = Property(bool, True)
     busy = Property(bool, False)
     done = Property(bool, False)
@@ -106,6 +109,9 @@ class TaskModel(Object):
         if self.worker is None:
             return
         self.worker.reset()
+
+    def open(self):
+        """Slot for opening files"""
 
     def save(self):
         """Slot for saving results"""

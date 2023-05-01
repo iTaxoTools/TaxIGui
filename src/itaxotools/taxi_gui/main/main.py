@@ -53,6 +53,7 @@ class Main(ToolDialog):
         action.setIcon(app.resources.icons.home)
         action.setStatusTip('Open the dashboard')
         action.triggered.connect(self.handleHome)
+        action.setVisible(len(app.config.tasks) > 1)
         self.actions.home = action
 
         action = QtGui.QAction('&Open', self)
@@ -114,6 +115,9 @@ class Main(ToolDialog):
         for task in tasks:
             task = app.Task.from_module(task)
             self.addTask(task)
+
+        if len(tasks) == 1:
+            self.widgets.body.dashboard.addTaskIfNew(task.model)
 
     def addTask(self, task):
         self.widgets.body.addView(task.model, task.view)
