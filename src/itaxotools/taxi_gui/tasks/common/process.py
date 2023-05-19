@@ -36,14 +36,15 @@ def progress_handler(caption, index, total):
 
 def get_file_info(path: Path):
 
-    from itaxotools.taxi2.files import FileFormat, FileInfo
+    from itaxotools.taxi2.file_types import FileFormat, FileInfo
+    from itaxotools.taxi2.files import get_info
 
     from itaxotools.taxi_gui.types import InputFile
 
     def get_index(items, item):
         return items.index(item) if item else None
 
-    info = FileInfo.from_path(path)
+    info = get_info(path)
     if info.format == FileFormat.Tabfile:
         return InputFile.Tabfile(
             path = path,
