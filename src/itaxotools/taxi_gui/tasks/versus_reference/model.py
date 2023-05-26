@@ -27,7 +27,7 @@ from itaxotools.taxi_gui.model.common import ItemModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import TaskModel
-from itaxotools.taxi_gui.types import InputFile, Notification
+from itaxotools.taxi_gui.types import FileInfo, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
 from ..common.process import get_file_info
@@ -166,13 +166,13 @@ class Model(TaskModel):
         self.exec(VersusReferenceSubtask.AddReferenceFile, get_file_info, path)
 
     def add_file_item_from_info(self, info):
-        if info.type == InputFile.Tabfile:
+        if info.type == FileInfo.Tabfile:
             if len(info.headers) < 2:
                 self.notification.emit(Notification.Warn('Not enough columns in tabfile.'))
                 return
             index = app.model.items.add_file(InputFileModel.Tabfile(info), focus=False)
             return index.data(ItemModel.ItemRole)
-        elif info.type == InputFile.Fasta:
+        elif info.type == FileInfo.Fasta:
             index = app.model.items.add_file(InputFileModel.Fasta(info), focus=False)
             return index.data(ItemModel.ItemRole)
         else:

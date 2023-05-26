@@ -45,6 +45,11 @@ class PartitionModel(Object):
     def is_valid(self):
         return True
 
+    def as_dict(self):
+        return AttrDict(
+            path = self.file_item.object.path,
+        )
+
 
 class Fasta(PartitionModel):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
@@ -77,15 +82,15 @@ class Tabfile(PartitionModel):
         info = file_item.object.info
 
         subset = {
-            'species': info.species,
-            'genera': info.genera,
-            None: info.organism,
+            'species': info.header_species,
+            'genera': info.header_genus,
+            None: info.header_organism,
         }[preference]
-        self.individual_column = self._header_get(info.headers, info.individuals)
+        self.individual_column = self._header_get(info.headers, info.header_individuals)
         self.subset_column = self._header_get(info.headers, subset)
 
         if self.subset_column < 0:
-            self.subset_column = self._header_get(info.headers, info.organism)
+            self.subset_column = self._header_get(info.headers, info.header_organism)
             if self.subset_column >= 0 and preference == 'genera':
                 self.subset_filter = ColumnFilter.First
 

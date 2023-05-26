@@ -18,7 +18,7 @@
 
 from pathlib import Path
 
-from ..types import InputFile
+from ..types import FileInfo
 from .common import Object, Property
 
 
@@ -37,25 +37,25 @@ class InputFileModel(Object):
 
 
 class Fasta(InputFileModel):
-    info = Property(InputFile.Fasta, None)
+    info = Property(FileInfo.Fasta, None)
 
-    def __init__(self, info: InputFile.Fasta):
+    def __init__(self, info: FileInfo.Fasta):
         super().__init__(info.path, info.size)
         self.info = info
 
 
 class Tabfile(InputFileModel):
-    info = Property(InputFile.Tabfile, None)
+    info = Property(FileInfo.Tabfile, None)
 
-    def __init__(self, info: InputFile.Tabfile):
+    def __init__(self, info: FileInfo.Tabfile):
         assert len(info.headers) >= 2
         super().__init__(info.path, info.size)
         self.info = info
 
 
 class Spart(InputFileModel):
-    info = Property(InputFile.Spart, None)
+    info = Property(FileInfo.Spart, None)
 
-    def __init__(self, info: InputFile.Spart):
+    def __init__(self, info: FileInfo.Spart):
         super().__init__(info.path, info.size)
         self.info = info

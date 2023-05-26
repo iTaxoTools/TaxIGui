@@ -21,8 +21,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
-
-from itaxotools.taxi_gui.types import ColumnFilter, FileFormat
+from itaxotools.taxi_gui.types import ColumnFilter
+from itaxotools.taxi2.file_types import FileFormat, FileInfo
 
 
 def progress_handler(caption, index, total):
@@ -35,42 +35,8 @@ def progress_handler(caption, index, total):
 
 
 def get_file_info(path: Path):
-
-    from itaxotools.taxi2.file_types import FileFormat, FileInfo
     from itaxotools.taxi2.files import get_info
-
-    from itaxotools.taxi_gui.types import InputFile
-
-    def get_index(items, item):
-        return items.index(item) if item else None
-
-    info = get_info(path)
-    if info.format == FileFormat.Tabfile:
-        return InputFile.Tabfile(
-            path = path,
-            size = info.size,
-            headers = info.headers,
-            individuals = info.header_individuals,
-            sequences = info.header_sequences,
-            organism = info.header_organism,
-            species = info.header_species,
-            genera = info.header_genus,
-        )
-    if info.format == FileFormat.Fasta:
-        return InputFile.Fasta(
-            path = path,
-            size = info.size,
-            has_subsets = info.has_subsets,
-        )
-    if info.format == FileFormat.Spart:
-        return InputFile.Spart(
-            path = path,
-            size = info.size,
-            spartitions = info.spartitions,
-            is_matricial = info.is_matricial,
-            is_xml = info.is_xml,
-        )
-    return InputFile.Unknown(path, info.size)
+    return get_info(path)
 
 
 def sequences_from_model(input: AttrDict):

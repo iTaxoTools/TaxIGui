@@ -41,6 +41,11 @@ class SequenceModel(Object):
     def is_valid(self):
         return True
 
+    def as_dict(self):
+        return AttrDict(
+            path = self.file_item.object.path,
+        )
+
 
 class Fasta(SequenceModel):
     has_subsets = Property(bool, False)
@@ -71,8 +76,8 @@ class Tabfile(SequenceModel):
         assert isinstance(file_item.object, InputFileModel.Tabfile)
         super().__init__(file_item)
         info = file_item.object.info
-        self.index_column = self._header_get(info.headers, info.individuals)
-        self.sequence_column = self._header_get(info.headers, info.sequences)
+        self.index_column = self._header_get(info.headers, info.header_individuals)
+        self.sequence_column = self._header_get(info.headers, info.header_sequences)
 
         self.properties.index_column.notify.connect(self.updated)
         self.properties.sequence_column.notify.connect(self.updated)

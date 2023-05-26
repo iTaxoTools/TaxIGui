@@ -16,54 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from dataclasses import dataclass
-from enum import Enum, auto
-from pathlib import Path
-from typing import NamedTuple
+from itaxotools.taxi2.file_types import FileFormat, FileInfo
 
-from itaxotools.common.types import Type
-
-
-class FileFormat(Enum):
-    Tabfile = auto()
-    Fasta = auto()
-    Spart = auto()
-
-
-@dataclass
-class InputFile(Type):
-    path: Path
-    size: int
-
-
-@dataclass
-class Unknown(InputFile):
-    pass
-
-
-@dataclass
-class Fasta(InputFile):
-    has_subsets: bool
-
-
-@dataclass
-class Tabfile(InputFile):
-    headers: list[str]
-    individuals: str = None
-    sequences: str = None
-    organism: str = None
-    species: str = None
-    genera: str = None
-
-
-@dataclass
-class Spart(InputFile):
-    spartitions: list[str]
-    is_matricial: bool
-    is_xml: bool
-
-
-class Entry(NamedTuple):
-    label: str
-    key: str
-    default: int
+__all__ = ['FileFormat', 'FileInfo']
