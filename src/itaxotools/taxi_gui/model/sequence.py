@@ -18,22 +18,25 @@
 
 from PySide6 import QtCore
 
+from typing import Generic, TypeVar
+
 from itaxotools.common.utility import AttrDict
 
-from ..types import ColumnFilter, FileFormat
-from .common import Item, Object, Property
+from ..types import ColumnFilter, FileFormat, FileInfo
+from .common import Object, Property, TreeItem
 from .input_file import InputFileModel
 
+FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
 
-class SequenceModel(Object):
-    file_item = Property(Item, None)
+
+class SequenceModel(Object, Generic[FileInfoType]):
+    file_item = Property(TreeItem, None)
     updated = QtCore.Signal()
 
-    def __init__(self, file_item=None):
+    def __init__(self, file_item: TreeItem[InputFileModel[FileInfoType]]):
         super().__init__()
         self.file_item = file_item
-        if file_item:
-            self.name = f'Sequences from {file_item.object.path.name}'
+        self.name = f'Sequences from {file_item.object.path.name}'
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
@@ -47,12 +50,15 @@ class SequenceModel(Object):
         )
 
 
-class Fasta(SequenceModel):
+class Fasta(SequenceModel[FileInfo.Fasta]):
     has_subsets = Property(bool, False)
     parse_organism = Property(bool, False)
 
-    def __init__(self, file_item, parse_organism=False):
-        assert isinstance(file_item.object, InputFileModel.Fasta)
+    def __init__(
+        self,
+        file_item: TreeItem[InputFileModel[FileInfo.Fasta]],
+        parse_organism=False
+    ):
         super().__init__(file_item)
         info = file_item.object.info
         self.has_subsets = info.has_subsets
@@ -66,14 +72,16 @@ class Fasta(SequenceModel):
         )
 
 
-class Tabfile(SequenceModel):
+class Tabfile(SequenceModel[FileInfo.Tabfile]):
     index_column = Property(int, -1)
     sequence_column = Property(int, -1)
     index_filter = Property(ColumnFilter, ColumnFilter.All)
     sequence_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(self, file_item):
-        assert isinstance(file_item.object, InputFileModel.Tabfile)
+    def __init__(
+        self,
+        file_item: TreeItem[InputFileModel[FileInfo.Tabfile]],
+    ):
         super().__init__(file_item)
         info = file_item.object.info
         self.index_column = self._header_get(info.headers, info.header_individuals)

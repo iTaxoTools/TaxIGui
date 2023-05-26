@@ -22,6 +22,8 @@ from itaxotools.common.bindings import Property, PropertyObject
 from itaxotools.common.types import Type
 from itaxotools.common.utility import override
 
+from ..types import TreeItem
+
 
 class _TypedPropertyObjectMeta(type(PropertyObject), type(Type)):
     def __new__(cls, name, bases, attrs):
@@ -63,25 +65,6 @@ class MainModel(PropertyObject):
     busy = Property(bool, False)
 
 
-class Item:
-    """Provides a hierarchical structure for Objects"""
-    def __init__(self, object: Object, parent=None):
-        self.children = list()
-        self.parent = parent
-        self.object = object
-
-    def add_child(self, object: Object):
-        child = Item(object, self)
-        self.children.append(child)
-        return child
-
-    @property
-    def row(self):
-        if self.parent:
-            return self.parent.children.index(self)
-        return 0
-
-
 class ItemModel(QtCore.QAbstractItemModel):
     """The main model that holds all Items"""
 
@@ -90,7 +73,7 @@ class ItemModel(QtCore.QAbstractItemModel):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.root = Item('')
+        self.root = TreeItem(None)
         self.tasks = self.root.add_child(Group('Tasks'))
         self.sequences = self.root.add_child(Group('Sequences'))
         self.files = self.root.add_child(Group('Imported Files'))

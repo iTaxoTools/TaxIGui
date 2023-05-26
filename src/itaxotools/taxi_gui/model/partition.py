@@ -20,24 +20,25 @@ from __future__ import annotations
 
 from PySide6 import QtCore
 
-from typing import Literal
+from typing import Generic, Literal, TypeVar
 
 from itaxotools.common.utility import AttrDict
 
-from ..types import ColumnFilter, FileFormat
-from .common import Item, Object, Property
+from ..types import ColumnFilter, FileFormat, FileInfo
+from .common import Object, Property, TreeItem
 from .input_file import InputFileModel
 
+FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
 
-class PartitionModel(Object):
-    file_item = Property(Item, None)
+
+class PartitionModel(Object, Generic[FileInfoType]):
+    file_item = Property(TreeItem, None)
     updated = QtCore.Signal()
 
-    def __init__(self, file_item=None):
+    def __init__(self, file_item: TreeItem[InputFileModel[FileInfoType]]):
         super().__init__()
         self.file_item = file_item
-        if file_item:
-            self.name = f'Partition from {file_item.object.path.name}'
+        self.name = f'Partition from {file_item.object.path.name}'
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
@@ -51,11 +52,14 @@ class PartitionModel(Object):
         )
 
 
-class Fasta(PartitionModel):
+class Fasta(PartitionModel[FileInfo.Fasta]):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(self, file_item, preference: Literal['species', 'genera'] = None):
-        assert isinstance(file_item.object, InputFileModel.Fasta)
+    def __init__(
+        self,
+        file_item: TreeItem[InputFileModel[FileInfo.Fasta]],
+        preference: Literal['species', 'genera'] = None
+    ):
         super().__init__(file_item)
         info = file_item.object.info
         assert info.has_subsets
@@ -70,14 +74,17 @@ class Fasta(PartitionModel):
         )
 
 
-class Tabfile(PartitionModel):
+class Tabfile(PartitionModel[FileInfo.Tabfile]):
     subset_column = Property(int, -1)
     individual_column = Property(int, -1)
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
     individual_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(self, file_item, preference: Literal['species', 'genera'] = None):
-        assert isinstance(file_item.object, InputFileModel.Tabfile)
+    def __init__(
+        self,
+        file_item: TreeItem[InputFileModel[FileInfo.Tabfile]],
+        preference: Literal['species', 'genera'] = None
+    ):
         super().__init__(file_item)
         info = file_item.object.info
 
@@ -127,12 +134,15 @@ class Tabfile(PartitionModel):
         return True
 
 
-class Spart(PartitionModel):
+class Spart(PartitionModel[FileInfo.Spart]):
     spartition = Property(str, None)
     is_xml = Property(bool, None)
 
-    def __init__(self, file_item, *args, **kwargs):
-        assert isinstance(file_item.object, InputFileModel.Spart)
+    def __init__(
+        self,
+        file_item: TreeItem[InputFileModel[FileInfo.Spart]],
+        *args, **kwargs
+    ):
         super().__init__(file_item)
         info = file_item.object.info
         assert len(info.spartitions) > 0

@@ -21,8 +21,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
+from itaxotools.taxi2.file_types import FileFormat
+
 from itaxotools.taxi_gui.types import ColumnFilter
-from itaxotools.taxi2.file_types import FileFormat, FileInfo
 
 
 def progress_handler(caption, index, total):

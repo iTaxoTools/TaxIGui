@@ -16,7 +16,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from .common import *
-from .files import *
-from .notifications import *
-from .tree import *
+from typing import Generic, TypeVar
+
+Type = TypeVar('Type')
+
+
+class TreeItem(Generic[Type]):
+    """Provides a hierarchical structure for Objects"""
+    def __init__(self, object: Type, parent=None):
+        self.children = list()
+        self.parent = parent
+        self.object = object
+
+    def add_child(self, object: Type):
+        child = TreeItem(object, self)
+        self.children.append(child)
+        return child
+
+    @property
+    def row(self):
+        if self.parent:
+            return self.parent.children.index(self)
+        return 0

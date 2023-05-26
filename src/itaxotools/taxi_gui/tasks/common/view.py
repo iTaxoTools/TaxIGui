@@ -24,7 +24,7 @@ from itaxotools.common.bindings import Binder
 from itaxotools.common.utility import AttrDict, Guard
 
 from itaxotools.taxi_gui import app
-from itaxotools.taxi_gui.model.common import Item, ItemModel
+from itaxotools.taxi_gui.model.common import ItemModel, TreeItem
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.types import ColumnFilter
@@ -167,7 +167,7 @@ class ColumnFilterCombobox(NoWheelComboBox):
 
 
 class InputSelector(Card):
-    itemChanged = QtCore.Signal(Item)
+    itemChanged = QtCore.Signal(TreeItem)
     addInputFile = QtCore.Signal(Path)
 
     def __init__(self, text, parent=None, model=app.model.items):

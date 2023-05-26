@@ -17,45 +17,37 @@
 # -----------------------------------------------------------------------------
 
 from pathlib import Path
+from typing import Generic, TypeVar
 
 from ..types import FileInfo
 from .common import Object, Property
 
+FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
 
-class InputFileModel(Object):
+
+class InputFileModel(Object, Generic[FileInfoType]):
+    info = Property(FileInfo, None)
     path = Property(Path)
     size = Property(int)
 
-    def __init__(self, path, size):
+    def __init__(self, info: FileInfoType):
         super().__init__()
-        self.path = path
-        self.name = f'{path.parent.name}/{path.name}'
-        self.size = size  # bytes
+        self.info = info
+        self.path = info.path
+        self.name = f'{info.path.parent.name}/{info.path.name}'
+        self.size = info.size  # bytes
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
 
 
-class Fasta(InputFileModel):
-    info = Property(FileInfo.Fasta, None)
-
-    def __init__(self, info: FileInfo.Fasta):
-        super().__init__(info.path, info.size)
-        self.info = info
+class Fasta(InputFileModel[FileInfo.Fasta]):
+    pass
 
 
-class Tabfile(InputFileModel):
-    info = Property(FileInfo.Tabfile, None)
-
-    def __init__(self, info: FileInfo.Tabfile):
-        assert len(info.headers) >= 2
-        super().__init__(info.path, info.size)
-        self.info = info
+class Tabfile(InputFileModel[FileInfo.Tabfile]):
+    pass
 
 
-class Spart(InputFileModel):
-    info = Property(FileInfo.Spart, None)
-
-    def __init__(self, info: FileInfo.Spart):
-        super().__init__(info.path, info.size)
-        self.info = info
+class Spart(InputFileModel[FileInfo.Spart]):
+    pass

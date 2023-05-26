@@ -21,7 +21,7 @@ from PySide6 import QtCore, QtWidgets
 from itaxotools.common.bindings import Binder
 
 from .. import app
-from ..model.common import Item
+from ..model.common import TreeItem
 from ..model.tasks import TaskModel
 from ..view.tasks import TaskView
 from .dashboard import Dashboard
@@ -59,7 +59,7 @@ class Body(QtWidgets.QStackedWidget):
         self.areas[object_type] = area
         self.addWidget(area)
 
-    def showItem(self, item: Item, index: QtCore.QModelIndex):
+    def showItem(self, item: TreeItem, index: QtCore.QModelIndex):
         self.activeItem = item
         self.activeIndex = index
         if not item or not index.isValid():

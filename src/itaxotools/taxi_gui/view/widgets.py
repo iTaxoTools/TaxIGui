@@ -279,7 +279,7 @@ class CategoryButton(QtWidgets.QAbstractButton):
         palette = QtGui.QGuiApplication.palette()
         weak = palette.color(QtGui.QPalette.Mid)
         mild = palette.color(QtGui.QPalette.Dark)
-        bold = palette.color(QtGui.QPalette.Shadow)
+        # bold = palette.color(QtGui.QPalette.Shadow)
 
         color = weak if self.grayed else mild
         if self.grayed:

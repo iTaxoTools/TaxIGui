@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from itaxotools.common.utility import override
 
 from .. import app
-from ..model.common import Group, Item, ItemModel
+from ..model.common import Group, ItemModel, TreeItem
 
 
 class ItemView(ABC):
@@ -31,7 +31,7 @@ class ItemView(ABC):
     width: int
     height: int
 
-    def __init__(self, item: Item):
+    def __init__(self, item: TreeItem):
         self.item = item
 
     @abstractmethod
@@ -170,7 +170,7 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class ItemTreeView(QtWidgets.QTreeView):
-    selected = QtCore.Signal(Item, QtCore.QModelIndex)
+    selected = QtCore.Signal(TreeItem, QtCore.QModelIndex)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -213,7 +213,7 @@ class ItemTreeView(QtWidgets.QTreeView):
 
 
 class SideBar(QtWidgets.QFrame):
-    selected = QtCore.Signal(Item, QtCore.QModelIndex)
+    selected = QtCore.Signal(TreeItem, QtCore.QModelIndex)
 
     def __init__(self, parent=None):
         super().__init__(parent)
