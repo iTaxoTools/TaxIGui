@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 from shutil import copytree
 
-from itaxotools.common.bindings import EnumObject, Instance, Property
+from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
 
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.model.common import ItemModel
@@ -31,7 +31,7 @@ from itaxotools.taxi_gui.model.tasks import TaskModel
 from itaxotools.taxi_gui.types import FileInfo, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
-from ..common.process import get_file_info
+from ..common.model import FileInfoSubtaskModel
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
 from .types import StatisticsGroup, VersusAllSubtask
@@ -98,16 +98,30 @@ class Model(TaskModel):
     plot_binwidth = Property(float, 0.05)
 
     busy_main = Property(bool, False)
-    busy_sequence = Property(bool, False)
-    busy_species = Property(bool, False)
-    busy_genera = Property(bool, False)
 
     dummy_results = Property(Path, None)
     dummy_time = Property(float, None)
 
     def __init__(self, name=None):
         super().__init__(name)
+        self.binder = Binder()
+
         self.exec(VersusAllSubtask.Initialize, process.initialize)
+        self.subtask_sequences = FileInfoSubtaskModel(self)
+        self.subtask_species = FileInfoSubtaskModel(self)
+        self.subtask_genera = FileInfoSubtaskModel(self)
+
+        self.binder.bind(self.subtask_sequences.properties.busy, self.properties.busy)
+        self.binder.bind(self.subtask_sequences.properties.busy, self.checkIfReady)
+        self.binder.bind(self.subtask_sequences.done, self.onDoneInfoSequences)
+
+        self.binder.bind(self.subtask_species.properties.busy, self.properties.busy)
+        self.binder.bind(self.subtask_species.properties.busy, self.checkIfReady)
+        self.binder.bind(self.subtask_species.done, self.onDoneInfoSpecies)
+
+        self.binder.bind(self.subtask_genera.properties.busy, self.properties.busy)
+        self.binder.bind(self.subtask_genera.properties.busy, self.checkIfReady)
+        self.binder.bind(self.subtask_genera.done, self.onDoneInfoGenera)
 
     def readyTriggers(self):
         return [
@@ -124,6 +138,12 @@ class Model(TaskModel):
         ]
 
     def isReady(self):
+        if self.subtask_sequences.busy:
+            return False
+        if self.subtask_species.busy:
+            return False
+        if self.subtask_genera.busy:
+            return False
         if self.input_sequences is None:
             return False
         if not isinstance(self.input_sequences, SequenceModel):
@@ -200,19 +220,13 @@ class Model(TaskModel):
         )
 
     def add_sequence_file(self, path):
-        self.busy = True
-        self.busy_sequence = True
-        self.exec(VersusAllSubtask.AddSequenceFile, get_file_info, path)
+        self.subtask_sequences.start(path)
 
     def add_species_file(self, path):
-        self.busy = True
-        self.busy_species = True
-        self.exec(VersusAllSubtask.AddSpeciesFile, get_file_info, path)
+        self.subtask_species.start(path)
 
     def add_genera_file(self, path):
-        self.busy = True
-        self.busy_genera = True
-        self.exec(VersusAllSubtask.AddGeneraFile, get_file_info, path)
+        self.subtask_genera.start(path)
 
     def add_file_item_from_info(self, info):
         if info.type == FileInfo.Tabfile:
@@ -307,40 +321,31 @@ class Model(TaskModel):
             self.dummy_time = report.result.seconds_taken
             self.busy_main = False
             self.done = True
-        if report.id == VersusAllSubtask.AddSequenceFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_sequence_file_from_file_item(file_item)
-            self.busy_sequence = False
-        if report.id == VersusAllSubtask.AddSpeciesFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_species_file_from_file_item(file_item)
-            self.busy_species = False
-        if report.id == VersusAllSubtask.AddGeneraFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_genera_file_from_file_item(file_item)
-            self.busy_genera = False
         self.busy = False
+
+    def onDoneInfoSequences(self, info):
+        file_item = self.add_file_item_from_info(info)
+        self.set_sequence_file_from_file_item(file_item)
+
+    def onDoneInfoSpecies(self, info):
+        file_item = self.add_file_item_from_info(info)
+        self.set_species_file_from_file_item(file_item)
+
+    def onDoneInfoGenera(self, info):
+        file_item = self.add_file_item_from_info(info)
+        self.set_genera_file_from_file_item(file_item)
 
     def onStop(self, report):
         super().onStop(report)
         self.busy_main = False
-        self.busy_sequence = False
-        self.busy_species = False
-        self.busy_genera = False
 
     def onFail(self, report):
         super().onFail(report)
         self.busy_main = False
-        self.busy_sequence = False
-        self.busy_species = False
-        self.busy_genera = False
 
     def onError(self, report):
         super().onError(report)
         self.busy_main = False
-        self.busy_sequence = False
-        self.busy_species = False
-        self.busy_genera = False
 
     def clear(self):
         self.dummy_results = None

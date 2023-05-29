@@ -18,7 +18,15 @@
 
 from PySide6 import QtCore
 
+from pathlib import Path
+
 from itaxotools.common.utility import override
+
+from itaxotools.taxi_gui.model.tasks import SubtaskModel
+from itaxotools.taxi_gui.threading import ReportDone
+from itaxotools.taxi_gui.types import FileInfo
+
+from .process import get_file_info
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):
@@ -93,3 +101,17 @@ class ItemProxyModel(QtCore.QAbstractProxyModel):
         if index.row() == 0:
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
         return super().flags(index)
+
+
+class FileInfoSubtaskModel(SubtaskModel):
+    task_name = 'FileInfoSubtask'
+
+    done = QtCore.Signal(FileInfo)
+
+    def start(self, path: Path):
+        super().start()
+        self.exec(get_file_info, path)
+
+    def onDone(self, report: ReportDone):
+        super().onDone(report)
+        self.done.emit(report.result)

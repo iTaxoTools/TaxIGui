@@ -24,7 +24,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, List
 
-from itaxotools.common.bindings import Property, PropertyRef
+from itaxotools.common.bindings import Binder, Property, PropertyRef
 
 from ..threading import (
     ReportDone, ReportExit, ReportFail, ReportProgress, ReportStop, Worker)
@@ -138,3 +138,76 @@ class TaskModel(Object):
     def exec(self, id: Any, task: Callable, *args, **kwargs):
         """Call this from start() to execute tasks"""
         self.worker.exec(id, task, *args, **kwargs)
+
+
+class SubtaskModel(Object):
+    task_name = 'Subtask'
+
+    notification = QtCore.Signal(Notification)
+    progression = QtCore.Signal(ReportProgress)
+
+    busy = Property(bool, False)
+
+    counters = defaultdict(lambda: itertools.count(1, 1))
+
+    def __init__(self, parent: TaskModel, name=None):
+        super().__init__(name or self._get_next_name())
+
+        self.temporary_path = parent.temporary_path
+        self.worker = parent.worker
+        self.binder = Binder()
+
+        self.binder.bind(self.worker.done, self.onDone, condition=self._matches_report_id)
+        self.binder.bind(self.worker.fail, self.onFail, condition=self._matches_report_id)
+        self.binder.bind(self.worker.error, self.onError, condition=self._matches_report_id)
+        self.binder.bind(self.worker.stop, self.onStop, condition=self._matches_report_id)
+        self.binder.bind(self.worker.progress, self.onProgress, condition=self._matches_report_id)
+
+    @classmethod
+    def _get_next_name(cls):
+        return f'{cls.task_name} #{next(cls.counters[cls.task_name])}'
+
+    def _matches_report_id(self, report) -> bool:
+        if not hasattr(report, 'id'):
+            return False
+        return report.id == id(self)
+
+    def __repr__(self):
+        return f'{self.task_name}({repr(self.name)})'
+
+    def onProgress(self, report: ReportProgress):
+        self.progression.emit(report)
+
+    def onFail(self, report: ReportFail):
+        if report.id == id(self):
+            self.onFail(report)
+        self.notification.emit(Notification.Fail(str(report.exception), report.traceback))
+        self.busy = False
+
+    def onError(self, report: ReportExit):
+        self.notification.emit(Notification.Fail(f'Process failed with exit code: {report.exit_code}'))
+        self.busy = False
+
+    def onStop(self, report: ReportStop):
+        self.notification.emit(Notification.Warn('Cancelled by user.'))
+        self.busy = False
+
+    def onDone(self, report: ReportDone):
+        """Overload this to handle results"""
+        self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
+        self.busy = False
+
+    def start(self):
+        """Slot for starting the task"""
+        self.progression.emit(ReportProgress('Preparing for execution...'))
+        self.busy = True
+
+    def stop(self):
+        """Slot for interrupting the task"""
+        if self.worker is None:
+            return
+        self.worker.reset()
+
+    def exec(self, task: Callable, *args, **kwargs):
+        """Call this from start() to execute tasks"""
+        self.worker.exec(id(self), task, *args, **kwargs)
