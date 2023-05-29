@@ -37,6 +37,7 @@ def progress_handler(caption, index, total):
 
 def get_file_info(path: Path):
     from itaxotools.taxi2.files import get_info
+    # from time import sleep; sleep(2)
     return get_info(path)
 
 

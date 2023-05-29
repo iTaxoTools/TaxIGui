@@ -40,9 +40,12 @@ class TaskModel(Object):
 
     can_open = Property(bool, False)
     can_save = Property(bool, True)
+    can_start = Property(bool, True)
+    can_stop = Property(bool, False)
 
     ready = Property(bool, True)
     busy = Property(bool, False)
+    busy_subtask = Property(bool, False)
     done = Property(bool, False)
     editable = Property(bool, True)
 
@@ -50,33 +53,43 @@ class TaskModel(Object):
 
     def __init__(self, name=None):
         super().__init__(name or self._get_next_name())
+        self.binder = Binder()
 
         self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
         self.temporary_path = Path(self.temporary_directory.name)
 
         self.worker = Worker(name=self.name, eager=True, log_path=self.temporary_path)
-        self.worker.done.connect(self.onDone)
-        self.worker.fail.connect(self.onFail)
-        self.worker.error.connect(self.onError)
-        self.worker.stop.connect(self.onStop)
-        self.worker.progress.connect(self.onProgress)
+
+        self.binder.bind(self.worker.done, self.onDone, condition=self._matches_report_id)
+        self.binder.bind(self.worker.fail, self.onFail, condition=self._matches_report_id)
+        self.binder.bind(self.worker.error, self.onError, condition=self._matches_report_id)
+        self.binder.bind(self.worker.stop, self.onStop, condition=self._matches_report_id)
+        self.binder.bind(self.worker.progress, self.onProgress)
 
         for property in self.readyTriggers():
             property.notify.connect(self.checkIfReady)
 
         for property in [
-            self.properties.busy,
             self.properties.done,
+            self.properties.busy,
+            self.properties.busy_subtask,
         ]:
             property.notify.connect(self.checkEditable)
+            property.notify.connect(self.checkRunnable)
+            property.notify.connect(self.checkStopable)
+
+    def __repr__(self):
+        return f'{self.task_name}({repr(self.name)})'
 
     @classmethod
     def _get_next_name(cls):
         # return f'{cls.task_name} #{next(cls.counters[cls.task_name])}'
         return cls.task_name
 
-    def __repr__(self):
-        return f'{self.task_name}({repr(self.name)})'
+    def _matches_report_id(self, report) -> bool:
+        if not hasattr(report, 'id'):
+            return False
+        return report.id == id(self)
 
     def onProgress(self, report: ReportProgress):
         self.progression.emit(report)
@@ -133,11 +146,17 @@ class TaskModel(Object):
         return False
 
     def checkEditable(self):
-        self.editable = not (self.busy or self.done)
+        self.editable = not (self.busy or self.busy_subtask or self.done)
 
-    def exec(self, id: Any, task: Callable, *args, **kwargs):
+    def checkRunnable(self):
+        self.can_start = not (self.busy or self.busy_subtask or self.done)
+
+    def checkStopable(self):
+        self.can_stop = self.busy or self.busy_subtask
+
+    def exec(self, task: Callable, *args, **kwargs):
         """Call this from start() to execute tasks"""
-        self.worker.exec(id, task, *args, **kwargs)
+        self.worker.exec(id(self), task, *args, **kwargs)
 
 
 class SubtaskModel(Object):
@@ -150,18 +169,27 @@ class SubtaskModel(Object):
 
     counters = defaultdict(lambda: itertools.count(1, 1))
 
-    def __init__(self, parent: TaskModel, name=None):
+    def __init__(self, parent: TaskModel, name=None, bind_busy=True):
         super().__init__(name or self._get_next_name())
+        self.binder = Binder()
 
         self.temporary_path = parent.temporary_path
         self.worker = parent.worker
-        self.binder = Binder()
 
         self.binder.bind(self.worker.done, self.onDone, condition=self._matches_report_id)
         self.binder.bind(self.worker.fail, self.onFail, condition=self._matches_report_id)
         self.binder.bind(self.worker.error, self.onError, condition=self._matches_report_id)
         self.binder.bind(self.worker.stop, self.onStop, condition=self._matches_report_id)
-        self.binder.bind(self.worker.progress, self.onProgress, condition=self._matches_report_id)
+        self.binder.bind(self.worker.progress, self.onProgress)
+
+        self.binder.bind(self.notification, parent.notification)
+        self.binder.bind(self.progression, parent.progression)
+
+        if bind_busy:
+            self.binder.bind(self.properties.busy, parent.properties.busy_subtask)
+
+    def __repr__(self):
+        return f'{self.task_name}({repr(self.name)})'
 
     @classmethod
     def _get_next_name(cls):
@@ -171,9 +199,6 @@ class SubtaskModel(Object):
         if not hasattr(report, 'id'):
             return False
         return report.id == id(self)
-
-    def __repr__(self):
-        return f'{self.task_name}({repr(self.name)})'
 
     def onProgress(self, report: ReportProgress):
         self.progression.emit(report)
@@ -194,13 +219,14 @@ class SubtaskModel(Object):
 
     def onDone(self, report: ReportDone):
         """Overload this to handle results"""
-        self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
+        # self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
         self.busy = False
 
-    def start(self):
+    def start(self, task: Callable, *args, **kwargs):
         """Slot for starting the task"""
         self.progression.emit(ReportProgress('Preparing for execution...'))
         self.busy = True
+        self.exec(task, *args, **kwargs)
 
     def stop(self):
         """Slot for interrupting the task"""

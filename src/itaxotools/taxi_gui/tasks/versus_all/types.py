@@ -16,17 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from enum import Enum, auto
-
 from itaxotools.taxi_gui.types import Entry, PropertyEnum
-
-
-class VersusAllSubtask(Enum):
-    Main = auto()
-    Initialize = auto()
-    AddSequenceFile = auto()
-    AddSpeciesFile = auto()
-    AddGeneraFile = auto()
 
 
 class StatisticsGroup(PropertyEnum):

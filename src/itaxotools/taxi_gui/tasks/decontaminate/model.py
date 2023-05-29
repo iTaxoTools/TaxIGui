@@ -27,14 +27,15 @@ from itaxotools.taxi_gui.model.common import ItemModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
-from itaxotools.taxi_gui.model.tasks import TaskModel
+from itaxotools.taxi_gui.model.tasks import TaskModel, SubtaskModel
 from itaxotools.taxi_gui.types import FileInfo, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
+from ..common.model import FileInfoSubtaskModel
 from ..common.process import get_file_info
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
-from .types import DecontaminateMode, DecontaminateSubtask
+from .types import DecontaminateMode
 
 
 class PairwiseScores(EnumObject):
@@ -81,20 +82,25 @@ class Model(TaskModel):
     outgroup_weight = Property(float, 1.00)
     ingroup_weight = Property(float, 1.00)
 
-    busy_main = Property(bool, False)
-    busy_input = Property(bool, False)
-    busy_outgroup = Property(bool, False)
-    busy_ingroup = Property(bool, False)
-
     dummy_results = Property(Path, None)
     dummy_time = Property(float, None)
 
     def __init__(self, name=None):
         super().__init__(name)
-        self.exec(DecontaminateSubtask.Initialize, process.initialize)
         self.binder = Binder()
+
+        self.subtask_init = SubtaskModel(self, bind_busy=False)
+        self.subtask_input = FileInfoSubtaskModel(self)
+        self.subtask_outgroup = FileInfoSubtaskModel(self)
+        self.subtask_ingroup = FileInfoSubtaskModel(self)
+
+        self.binder.bind(self.subtask_input.done, self.onDoneInfoInput)
+        self.binder.bind(self.subtask_outgroup.done, self.onDoneInfoOutgroup)
+        self.binder.bind(self.subtask_ingroup.done, self.onDoneInfoIngroup)
         self.binder.bind(self.properties.alignment_mode, self.set_metric_from_mode)
         self.binder.bind(self.properties.alignment_mode, self.set_similarity_from_mode)
+
+        self.subtask_init.start(process.initialize)
 
     def set_metric_from_mode(self, mode: AlignmentMode):
         if mode == AlignmentMode.AlignmentFree:
@@ -110,6 +116,7 @@ class Model(TaskModel):
 
     def readyTriggers(self):
         return [
+            self.properties.busy_subtask,
             self.properties.input_sequences,
             self.properties.outgroup_sequences,
             self.properties.ingroup_sequences,
@@ -122,6 +129,8 @@ class Model(TaskModel):
         ]
 
     def isReady(self):
+        if self.busy_subtask:
+            return False
         if self.input_sequences is None:
             return False
         if not isinstance(self.input_sequences, SequenceModel):
@@ -148,13 +157,11 @@ class Model(TaskModel):
 
     def start(self):
         super().start()
-        self.busy_main = True
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         work_dir = self.temporary_path / timestamp
         work_dir.mkdir()
 
         self.exec(
-            DecontaminateSubtask.Main,
             process.execute,
             work_dir=work_dir,
 
@@ -182,19 +189,13 @@ class Model(TaskModel):
         )
 
     def add_input_file(self, path):
-        self.busy = True
-        self.busy_input = True
-        self.exec(DecontaminateSubtask.AddInputFile, get_file_info, path)
+        self.subtask_input.start(path)
 
     def add_outgroup_file(self, path):
-        self.busy = True
-        self.busy_outgroup = True
-        self.exec(DecontaminateSubtask.AddOutgroupFile, get_file_info, path)
+        self.subtask_outgroup.start(path)
 
     def add_ingroup_file(self, path):
-        self.busy = True
-        self.busy_ingroup = True
-        self.exec(DecontaminateSubtask.AddIngroupFile, get_file_info, path)
+        self.subtask_ingroup.start(path)
 
     def add_file_item_from_info(self, info):
         if info.type == FileInfo.Tabfile:
@@ -214,19 +215,10 @@ class Model(TaskModel):
         if file_item is None:
             return None
         try:
-            model_type = {
-                InputFileModel.Tabfile: {
-                    SequenceModel: SequenceModel.Tabfile,
-                    PartitionModel: PartitionModel.Tabfile,
-                },
-                InputFileModel.Fasta: {
-                    SequenceModel: SequenceModel.Fasta,
-                },
-            }[type(file_item.object)][model_parent]
+            return model_parent.from_input_file(file_item, *args, **kwargs)
         except Exception:
             self.notification.emit(Notification.Warn('Unexpected file type.'))
             return None
-        return model_type(file_item, *args, **kwargs)
 
     def set_input_file_from_file_item(self, file_item):
         self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel)
@@ -238,28 +230,24 @@ class Model(TaskModel):
         self.ingroup_sequences = self.get_model_from_file_item(file_item, SequenceModel)
 
     def onDone(self, report):
-        if report.id == DecontaminateSubtask.Initialize:
-            return
-        if report.id == DecontaminateSubtask.Main:
-            time_taken = human_readable_seconds(report.result.seconds_taken)
-            self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
-            self.dummy_results = report.result.output_directory
-            self.dummy_time = report.result.seconds_taken
-            self.busy_main = False
-            self.done = True
-        if report.id == DecontaminateSubtask.AddInputFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_input_file_from_file_item(file_item)
-            self.busy_input = False
-        if report.id == DecontaminateSubtask.AddOutgroupFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_outgroup_file_from_file_item(file_item)
-            self.busy_outgroup = False
-        if report.id == DecontaminateSubtask.AddIngroupFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_ingroup_file_from_file_item(file_item)
-            self.busy_ingroup = False
+        time_taken = human_readable_seconds(report.result.seconds_taken)
+        self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
+        self.dummy_results = report.result.output_directory
+        self.dummy_time = report.result.seconds_taken
         self.busy = False
+        self.done = True
+
+    def onDoneInfoInput(self, info):
+        file_item = self.add_file_item_from_info(info)
+        self.set_input_file_from_file_item(file_item)
+
+    def onDoneInfoOutgroup(self, info):
+        file_item = self.add_file_item_from_info(info)
+        self.set_outgroup_file_from_file_item(file_item)
+
+    def onDoneInfoIngroup(self, info):
+        file_item = self.add_file_item_from_info(info)
+        self.set_ingroup_file_from_file_item(file_item)
 
     def onStop(self, report):
         super().onStop(report)

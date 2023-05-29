@@ -16,15 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from enum import Enum, auto
-
-
-class DecontaminateSubtask(Enum):
-    Main = auto()
-    Initialize = auto()
-    AddInputFile = auto()
-    AddOutgroupFile = auto()
-    AddIngroupFile = auto()
+from enum import Enum
 
 
 class DecontaminateMode(Enum):

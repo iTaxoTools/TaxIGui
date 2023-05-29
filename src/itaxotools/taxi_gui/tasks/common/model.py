@@ -109,9 +109,8 @@ class FileInfoSubtaskModel(SubtaskModel):
     done = QtCore.Signal(FileInfo)
 
     def start(self, path: Path):
-        super().start()
-        self.exec(get_file_info, path)
+        super().start(get_file_info, path)
 
     def onDone(self, report: ReportDone):
-        super().onDone(report)
         self.done.emit(report.result)
+        self.busy = False

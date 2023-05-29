@@ -437,12 +437,12 @@ class View(TaskView):
         self.binder.bind(object.progression, self.cards.progress.showProgress)
 
         self.binder.bind(object.properties.name, self.cards.title.setTitle)
-        self.binder.bind(object.properties.busy_main, self.cards.title.setBusy)
-        self.binder.bind(object.properties.busy_main, self.cards.progress.setEnabled)
-        self.binder.bind(object.properties.busy_main, self.cards.progress.setVisible)
-        self.binder.bind(object.properties.busy_input, self.cards.input_sequences.setBusy)
-        self.binder.bind(object.properties.busy_outgroup, self.cards.outgroup_sequences.setBusy)
-        self.binder.bind(object.properties.busy_ingroup, self.cards.ingroup_sequences.setBusy)
+        self.binder.bind(object.properties.busy, self.cards.title.setBusy)
+        self.binder.bind(object.properties.busy, self.cards.progress.setEnabled)
+        self.binder.bind(object.properties.busy, self.cards.progress.setVisible)
+        self.binder.bind(object.subtask_input.properties.busy, self.cards.input_sequences.setBusy)
+        self.binder.bind(object.subtask_outgroup.properties.busy, self.cards.outgroup_sequences.setBusy)
+        self.binder.bind(object.subtask_ingroup.properties.busy, self.cards.ingroup_sequences.setBusy)
 
         self.binder.bind(self.cards.mode_selector.toggled, self.object.properties.decontaminate_mode)
         self.binder.bind(self.object.properties.decontaminate_mode, self.cards.mode_selector.setDecontaminateMode)

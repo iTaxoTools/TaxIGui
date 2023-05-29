@@ -382,9 +382,9 @@ class View(TaskView):
         self.binder.bind(object.progression, self.cards.progress.showProgress)
 
         self.binder.bind(object.properties.name, self.cards.title.setTitle)
-        self.binder.bind(object.properties.busy_main, self.cards.title.setBusy)
-        self.binder.bind(object.properties.busy_main, self.cards.progress.setEnabled)
-        self.binder.bind(object.properties.busy_main, self.cards.progress.setVisible)
+        self.binder.bind(object.properties.busy, self.cards.title.setBusy)
+        self.binder.bind(object.properties.busy, self.cards.progress.setEnabled)
+        self.binder.bind(object.properties.busy, self.cards.progress.setVisible)
         self.binder.bind(object.subtask_sequences.properties.busy, self.cards.input_sequences.setBusy)
         self.binder.bind(object.subtask_species.properties.busy, self.cards.input_species.setBusy)
         self.binder.bind(object.subtask_genera.properties.busy, self.cards.input_genera.setBusy)

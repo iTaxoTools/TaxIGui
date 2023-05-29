@@ -20,20 +20,20 @@ from datetime import datetime
 from pathlib import Path
 from shutil import copytree
 
-from itaxotools.common.bindings import EnumObject, Instance, Property
+from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
 
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.model.common import ItemModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
-from itaxotools.taxi_gui.model.tasks import TaskModel
+from itaxotools.taxi_gui.model.tasks import TaskModel, SubtaskModel
 from itaxotools.taxi_gui.types import FileInfo, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
+from ..common.model import FileInfoSubtaskModel
 from ..common.process import get_file_info
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
-from .types import VersusReferenceSubtask
 
 
 class PairwiseScores(EnumObject):
@@ -84,19 +84,25 @@ class Model(TaskModel):
     distance_metrics = Property(DistanceMetrics, Instance)
     main_metric = Property(DistanceMetric, None)
 
-    busy_main = Property(bool, False)
-    busy_data = Property(bool, False)
-    busy_reference = Property(bool, False)
-
     dummy_results = Property(Path, None)
     dummy_time = Property(float, None)
 
     def __init__(self, name=None):
         super().__init__(name)
-        self.exec(VersusReferenceSubtask.Initialize, process.initialize)
+        self.binder = Binder()
+
+        self.subtask_init = SubtaskModel(self, bind_busy=False)
+        self.subtask_data = FileInfoSubtaskModel(self)
+        self.subtask_reference = FileInfoSubtaskModel(self)
+
+        self.binder.bind(self.subtask_data.done, self.onDoneInfoData)
+        self.binder.bind(self.subtask_reference.done, self.onDoneInfoReference)
+
+        self.subtask_init.start(process.initialize)
 
     def readyTriggers(self):
         return [
+            self.properties.busy_subtask,
             self.properties.input_data,
             self.properties.input_reference,
             self.properties.alignment_mode,
@@ -107,6 +113,8 @@ class Model(TaskModel):
         ]
 
     def isReady(self):
+        if self.busy_subtask:
+            return False
         if self.input_data is None:
             return False
         if self.input_reference is None:
@@ -127,13 +135,11 @@ class Model(TaskModel):
 
     def start(self):
         super().start()
-        self.busy_main = True
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         work_dir = self.temporary_path / timestamp
         work_dir.mkdir()
 
         self.exec(
-            VersusReferenceSubtask.Main,
             process.execute,
             work_dir=work_dir,
 
@@ -156,14 +162,10 @@ class Model(TaskModel):
         )
 
     def add_data_file(self, path):
-        self.busy = True
-        self.busy_data = True
-        self.exec(VersusReferenceSubtask.AddDataFile, get_file_info, path)
+        self.subtask_data.start(path)
 
     def add_reference_file(self, path):
-        self.busy = True
-        self.busy_reference = True
-        self.exec(VersusReferenceSubtask.AddReferenceFile, get_file_info, path)
+        self.subtask_reference.start(path)
 
     def add_file_item_from_info(self, info):
         if info.type == FileInfo.Tabfile:
@@ -183,18 +185,10 @@ class Model(TaskModel):
         if file_item is None:
             return None
         try:
-            model_type = {
-                InputFileModel.Tabfile: {
-                    SequenceModel: SequenceModel.Tabfile,
-                },
-                InputFileModel.Fasta: {
-                    SequenceModel: SequenceModel.Fasta,
-                },
-            }[type(file_item.object)][model_parent]
+            return model_parent.from_input_file(file_item, *args, **kwargs)
         except Exception:
             self.notification.emit(Notification.Warn('Unexpected file type.'))
             return None
-        return model_type(file_item, *args, **kwargs)
 
     def set_data_file_from_file_item(self, file_item):
         self.input_data = self.get_model_from_file_item(file_item, SequenceModel)
@@ -203,24 +197,20 @@ class Model(TaskModel):
         self.input_reference = self.get_model_from_file_item(file_item, SequenceModel)
 
     def onDone(self, report):
-        if report.id == VersusReferenceSubtask.Initialize:
-            return
-        if report.id == VersusReferenceSubtask.Main:
-            time_taken = human_readable_seconds(report.result.seconds_taken)
-            self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
-            self.dummy_results = report.result.output_directory
-            self.dummy_time = report.result.seconds_taken
-            self.busy_main = False
-            self.done = True
-        if report.id == VersusReferenceSubtask.AddDataFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_data_file_from_file_item(file_item)
-            self.busy_data = False
-        if report.id == VersusReferenceSubtask.AddReferenceFile:
-            file_item = self.add_file_item_from_info(report.result)
-            self.set_reference_file_from_file_item(file_item)
-            self.busy_reference = False
+        time_taken = human_readable_seconds(report.result.seconds_taken)
+        self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
+        self.dummy_results = report.result.output_directory
+        self.dummy_time = report.result.seconds_taken
         self.busy = False
+        self.done = True
+
+    def onDoneInfoData(self, info):
+        file_item = self.add_file_item_from_info(info)
+        self.set_data_file_from_file_item(file_item)
+
+    def onDoneInfoReference(self, info):
+        file_item = self.add_file_item_from_info(info)
+        self.set_reference_file_from_file_item(file_item)
 
     def onStop(self, report):
         super().onStop(report)
