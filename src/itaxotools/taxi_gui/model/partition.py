@@ -22,13 +22,15 @@ from PySide6 import QtCore
 
 from typing import Generic, Literal, TypeVar
 
-from itaxotools.common.utility import AttrDict
+from itaxotools.common.utility import AttrDict, DecoratorDict
 
 from ..types import ColumnFilter, FileFormat, FileInfo
 from .common import Object, Property, TreeItem
 from .input_file import InputFileModel
 
 FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
+
+models = DecoratorDict[FileInfo, Object]()
 
 
 class PartitionModel(Object, Generic[FileInfoType]):
@@ -51,7 +53,20 @@ class PartitionModel(Object, Generic[FileInfoType]):
             path = self.file_item.object.path,
         )
 
+    @classmethod
+    def from_input_file(
+        cls,
+        file_item: TreeItem[InputFileModel[FileInfoType]],
+        preference: Literal['species', 'genera'] = None,
+    ) -> PartitionModel[FileInfoType]:
 
+        info = file_item.object.info
+        if not type(info) in models:
+            raise Exception(f'No suitable {cls.__name__} for info: {info}')
+        return models[type(info)](file_item, preference)
+
+
+@models(FileInfo.Fasta)
 class Fasta(PartitionModel[FileInfo.Fasta]):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
 
@@ -74,6 +89,7 @@ class Fasta(PartitionModel[FileInfo.Fasta]):
         )
 
 
+@models(FileInfo.Tabfile)
 class Tabfile(PartitionModel[FileInfo.Tabfile]):
     subset_column = Property(int, -1)
     individual_column = Property(int, -1)
@@ -134,6 +150,7 @@ class Tabfile(PartitionModel[FileInfo.Tabfile]):
         return True
 
 
+@models(FileInfo.Spart)
 class Spart(PartitionModel[FileInfo.Spart]):
     spartition = Property(str, None)
     is_xml = Property(bool, None)

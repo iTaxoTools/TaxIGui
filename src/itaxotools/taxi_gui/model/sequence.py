@@ -16,17 +16,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from __future__ import annotations
+
 from PySide6 import QtCore
 
 from typing import Generic, TypeVar
 
-from itaxotools.common.utility import AttrDict
+from itaxotools.common.utility import AttrDict, DecoratorDict
 
 from ..types import ColumnFilter, FileFormat, FileInfo
 from .common import Object, Property, TreeItem
 from .input_file import InputFileModel
 
 FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
+
+models = DecoratorDict[FileInfo, Object]()
 
 
 class SequenceModel(Object, Generic[FileInfoType]):
@@ -49,7 +53,19 @@ class SequenceModel(Object, Generic[FileInfoType]):
             path = self.file_item.object.path,
         )
 
+    @classmethod
+    def from_input_file(
+        cls,
+        file_item: TreeItem[InputFileModel[FileInfoType]],
+    ) -> SequenceModel[FileInfoType]:
 
+        info = file_item.object.info
+        if not type(info) in models:
+            raise Exception(f'No suitable {cls.__name__} for info: {info}')
+        return models[type(info)](file_item)
+
+
+@models(FileInfo.Fasta)
 class Fasta(SequenceModel[FileInfo.Fasta]):
     has_subsets = Property(bool, False)
     parse_organism = Property(bool, False)
@@ -57,12 +73,11 @@ class Fasta(SequenceModel[FileInfo.Fasta]):
     def __init__(
         self,
         file_item: TreeItem[InputFileModel[FileInfo.Fasta]],
-        parse_organism=False
     ):
         super().__init__(file_item)
         info = file_item.object.info
         self.has_subsets = info.has_subsets
-        self.parse_organism = parse_organism
+        self.parse_organism = info.has_subsets
 
     def as_dict(self):
         return AttrDict(
@@ -72,6 +87,7 @@ class Fasta(SequenceModel[FileInfo.Fasta]):
         )
 
 
+@models(FileInfo.Tabfile)
 class Tabfile(SequenceModel[FileInfo.Tabfile]):
     index_column = Property(int, -1)
     sequence_column = Property(int, -1)

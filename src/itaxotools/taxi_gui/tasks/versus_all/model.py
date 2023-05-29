@@ -235,26 +235,10 @@ class Model(TaskModel):
         if file_item is None:
             return None
         try:
-            model_type = {
-                InputFileModel.Tabfile: {
-                    SequenceModel: SequenceModel.Tabfile,
-                    PartitionModel: PartitionModel.Tabfile,
-                },
-                InputFileModel.Fasta: {
-                    SequenceModel: SequenceModel.Fasta,
-                    PartitionModel: PartitionModel.Fasta,
-                },
-                InputFileModel.Spart: {
-                    PartitionModel: PartitionModel.Spart,
-                },
-            }[type(file_item.object)][model_parent]
+            return model_parent.from_input_file(file_item, *args, **kwargs)
         except Exception:
             self.notification.emit(Notification.Warn('Unexpected file type.'))
             return None
-        model = model_type(file_item, *args, **kwargs)
-        if model_type == SequenceModel.Fasta:
-            model.parse_organism = model.has_subsets
-        return model
 
     def set_sequence_file_from_file_item(self, file_item):
         if self.input_sequences is not None:
@@ -310,8 +294,8 @@ class Model(TaskModel):
         if isinstance(file_item.object, InputFileModel.Fasta) and file_item.object.info.has_subsets:
             self.perform_species = True
             self.perform_genera = True
-            self.input_species = self._set_species_file_from_file_item(file_item)
-            self.input_genera = self._set_genera_file_from_file_item(file_item)
+            self._set_species_file_from_file_item(file_item)
+            self._set_genera_file_from_file_item(file_item)
 
     def onDone(self, report):
         if report.id == VersusAllSubtask.Initialize:
