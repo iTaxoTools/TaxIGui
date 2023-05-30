@@ -89,7 +89,7 @@ def execute(
     task.progress_handler = progress_handler
 
     task.input = sequences_from_model(input_sequences)
-    task.set_output_format_from_path(input_sequences.path)
+    task.set_output_format_from_path(input_sequences.info.path)
     task.outgroup = sequences_from_model(outgroup_sequences)
 
     task.params.pairs.align = bool(alignment_mode == AlignmentMode.PairwiseAlignment)

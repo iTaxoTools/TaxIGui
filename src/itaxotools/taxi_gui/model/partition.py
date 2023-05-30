@@ -34,13 +34,17 @@ models = DecoratorDict[FileInfo, Object]()
 
 
 class PartitionModel(Object, Generic[FileInfoType]):
-    file_item = Property(TreeItem, None)
+    info = Property(FileInfo, None)
     updated = QtCore.Signal()
 
-    def __init__(self, file_item: TreeItem[InputFileModel[FileInfoType]]):
+    def __init__(
+        self,
+        info: FileInfo,
+        preference: Literal['species', 'genera'] = None,
+    ):
         super().__init__()
-        self.file_item = file_item
-        self.name = f'Partition from {file_item.object.path.name}'
+        self.info = info
+        self.name = f'Partition from {info.path.name}'
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
@@ -49,48 +53,37 @@ class PartitionModel(Object, Generic[FileInfoType]):
         return True
 
     def as_dict(self):
-        return AttrDict(
-            path = self.file_item.object.path,
-        )
+        return AttrDict({p.key: p.value for p in self.properties})
 
     @classmethod
-    def from_input_file(
+    def from_file_info(
         cls,
-        file_item: TreeItem[InputFileModel[FileInfoType]],
+        info: FileInfoType,
         preference: Literal['species', 'genera'] = None,
     ) -> PartitionModel[FileInfoType]:
 
-        info = file_item.object.info
         if not type(info) in models:
             raise Exception(f'No suitable {cls.__name__} for info: {info}')
-        return models[type(info)](file_item, preference)
+        return models[type(info)](info, preference)
 
 
 @models(FileInfo.Fasta)
-class Fasta(PartitionModel[FileInfo.Fasta]):
+class Fasta(PartitionModel):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
 
     def __init__(
         self,
-        file_item: TreeItem[InputFileModel[FileInfo.Fasta]],
-        preference: Literal['species', 'genera'] = None
+        info: FileInfo.Fasta,
+        preference: Literal['species', 'genera'] = None,
     ):
-        super().__init__(file_item)
-        info = file_item.object.info
+        super().__init__(info)
         assert info.has_subsets
         if preference == 'genera':
             self.subset_filter = ColumnFilter.First
 
-    def as_dict(self):
-        return AttrDict(
-            type = FileFormat.Fasta,
-            path = self.file_item.object.path,
-            subset_filter = self.subset_filter,
-        )
-
 
 @models(FileInfo.Tabfile)
-class Tabfile(PartitionModel[FileInfo.Tabfile]):
+class Tabfile(PartitionModel):
     subset_column = Property(int, -1)
     individual_column = Property(int, -1)
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
@@ -98,11 +91,10 @@ class Tabfile(PartitionModel[FileInfo.Tabfile]):
 
     def __init__(
         self,
-        file_item: TreeItem[InputFileModel[FileInfo.Tabfile]],
-        preference: Literal['species', 'genera'] = None
+        info: FileInfo.Tabfile,
+        preference: Literal['species', 'genera'] = None,
     ):
-        super().__init__(file_item)
-        info = file_item.object.info
+        super().__init__(info)
 
         subset = {
             'species': info.header_species,
@@ -129,16 +121,6 @@ class Tabfile(PartitionModel[FileInfo.Tabfile]):
         except ValueError:
             return -1
 
-    def as_dict(self):
-        return AttrDict(
-            type = FileFormat.Tabfile,
-            path = self.file_item.object.path,
-            subset_column = self.subset_column,
-            individual_column = self.individual_column,
-            subset_filter = self.subset_filter,
-            individual_filter = self.individual_filter,
-        )
-
     def is_valid(self):
         if self.subset_column < 0:
             return False
@@ -151,25 +133,16 @@ class Tabfile(PartitionModel[FileInfo.Tabfile]):
 
 
 @models(FileInfo.Spart)
-class Spart(PartitionModel[FileInfo.Spart]):
+class Spart(PartitionModel):
     spartition = Property(str, None)
     is_xml = Property(bool, None)
 
     def __init__(
         self,
-        file_item: TreeItem[InputFileModel[FileInfo.Spart]],
-        *args, **kwargs
+        info: FileInfo.Spart,
+        preference: Literal['species', 'genera'] = None,
     ):
-        super().__init__(file_item)
-        info = file_item.object.info
+        super().__init__(info)
         assert len(info.spartitions) > 0
         self.spartition = info.spartitions[0]
         self.is_xml = info.is_xml
-
-    def as_dict(self):
-        return AttrDict(
-            type = FileFormat.Spart,
-            path = self.file_item.object.path,
-            spartition = self.spartition,
-            is_xml = self.is_xml,
-        )

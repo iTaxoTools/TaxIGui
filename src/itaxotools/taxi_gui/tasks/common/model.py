@@ -16,33 +16,48 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from __future__ import annotations
+
 from PySide6 import QtCore
 
 from pathlib import Path
+from typing import Protocol, Type
 
-from itaxotools.common.utility import override
+from itaxotools.common.bindings import Binder, Property
+from itaxotools.common.utility import AttrDict, override
 
+from itaxotools.taxi_gui import app
+from itaxotools.taxi_gui.model.common import Object, ItemModel
+from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel
 from itaxotools.taxi_gui.threading import ReportDone
-from itaxotools.taxi_gui.types import FileInfo
+from itaxotools.taxi_gui.types import FileInfo, FileFormat, TreeItem, Notification
 
 from .process import get_file_info
 
 
 class ItemProxyModel(QtCore.QAbstractProxyModel):
+    ItemRole = ItemModel.ItemRole
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.root = None
+    def __init__(self, model=None, root=None):
+        super().__init__()
         self.unselected = '---'
+        self.root = None
+        if model and root:
+            self.setSourceModel(model, root)
 
     def sourceDataChanged(self, topLeft, bottomRight):
         self.dataChanged.emit(self.mapFromSource(topLeft), self.mapFromSource(bottomRight))
+
+    def add_file(self, file: InputFileModel):
+        index = self.source.add_file(file, focus=False)
+        return self.mapFromSource(index)
 
     @override
     def setSourceModel(self, model, root):
         super().setSourceModel(model)
         self.root = root
+        self.source = model
         model.dataChanged.connect(self.sourceDataChanged)
 
     @override
@@ -114,3 +129,85 @@ class FileInfoSubtaskModel(SubtaskModel):
     def onDone(self, report: ReportDone):
         self.done.emit(report.result)
         self.busy = False
+
+
+class DataFileProtocol(Protocol):
+    def is_valid(self) -> bool:
+        pass
+
+    def as_dict(self) -> AttrDict:
+        pass
+
+    @classmethod
+    def from_file_info(cls, info: FileInfo, *args, **kwargs) -> DataFileProtocol:
+        pass
+
+
+class ImportedInputModel(Object):
+    notification = QtCore.Signal(Notification)
+    updated = QtCore.Signal()
+
+    model = Property(QtCore.QAbstractItemModel, None)
+    index = Property(QtCore.QModelIndex, None)
+    object = Property(DataFileProtocol, None)
+    format = Property(FileFormat, None)
+
+    def __init__(self, cast_type: Type[DataFileProtocol], *cast_args, **cast_kwargs):
+        super().__init__()
+        self.cast_type = cast_type
+        self.cast_args = cast_args
+        self.cast_kwargs = cast_kwargs
+
+        item_model = app.model.items
+        self.model = ItemProxyModel(item_model, item_model.files)
+        self.binder = Binder()
+
+    def add_info(self, info: FileInfo):
+        index = self.model.add_file(InputFileModel(info))
+        self.set_index(index)
+
+    def set_index(self, index: QtCore.QModelIndex):
+        if index == self.index:
+            return
+        try:
+            object = self._cast_from_index(index)
+        except Exception:
+            self.notification.emit(Notification.Warn('Unexpected file format.'))
+            self.properties.index.update()
+            self.properties.object.update()
+            self.properties.format.update()
+            return
+
+        self.index = index
+        self._set_object(object)
+
+    def _set_object(self, object: DataFileProtocol):
+        if object == self.object:
+            return
+        self.format = object.info.format if object else None
+        self.binder.unbind_all()
+        if object:
+            for property in object.properties:
+                self.binder.bind(property, self.updated)
+        self.object = object
+        self.updated.emit()
+
+    def _cast_from_index(self, index: QtCore.QModelIndex) -> DataFileProtocol|None:
+        if not index:
+            return
+        item = self.model.data(index, ItemProxyModel.ItemRole)
+        if not item:
+            return None
+        info = item.object.info
+        return self.cast_type.from_file_info(
+            info, *self.cast_args, **self.cast_kwargs)
+
+    def is_valid(self) -> bool:
+        if self.object:
+            return self.object.is_valid()
+        return False
+
+    def as_dict(self) -> AttrDict|None:
+        if self.object:
+            return self.object.as_dict()
+        return None

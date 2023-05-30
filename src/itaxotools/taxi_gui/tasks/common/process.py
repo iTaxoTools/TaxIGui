@@ -37,6 +37,7 @@ def progress_handler(caption, index, total):
 
 def get_file_info(path: Path):
     from itaxotools.taxi2.files import get_info
+
     # from time import sleep; sleep(2)
     return get_info(path)
 
@@ -44,19 +45,19 @@ def get_file_info(path: Path):
 def sequences_from_model(input: AttrDict):
     from itaxotools.taxi2.sequences import SequenceHandler, Sequences
 
-    if input.type == FileFormat.Tabfile:
+    if input.info.format == FileFormat.Tabfile:
         return Sequences.fromPath(
-            input.path,
+            input.info.path,
             SequenceHandler.Tabfile,
             hasHeader = True,
             idColumn=input.index_column,
             seqColumn=input.sequence_column,
         )
-    elif input.type == FileFormat.Fasta:
+    elif input.info.format == FileFormat.Fasta:
         return Sequences.fromPath(
-            input.path,
+            input.info.path,
             SequenceHandler.Fasta,
-            parse_organism=True,
+            parse_organism=input.parse_organism,
         )
     raise Exception(f'Cannot create sequences from input: {input}')
 
@@ -64,32 +65,32 @@ def sequences_from_model(input: AttrDict):
 def partition_from_model(input: AttrDict):
     from itaxotools.taxi2.partitions import Partition, PartitionHandler
 
-    if input.type == FileFormat.Tabfile:
+    if input.info.format == FileFormat.Tabfile:
         filter = {
             ColumnFilter.All: None,
             ColumnFilter.First: PartitionHandler.subset_first_word,
         }[input.subset_filter]
         return Partition.fromPath(
-            input.path,
+            input.info.path,
             PartitionHandler.Tabfile,
             hasHeader = True,
             idColumn=input.individual_column,
             subColumn=input.subset_column,
             filter=filter,
         )
-    elif input.type == FileFormat.Fasta:
+    elif input.info.format == FileFormat.Fasta:
         filter = {
             ColumnFilter.All: None,
             ColumnFilter.First: PartitionHandler.subset_first_word,
         }[input.subset_filter]
         return Partition.fromPath(
-            input.path,
+            input.info.path,
             PartitionHandler.Fasta,
             filter=filter,
         )
-    elif input.type == FileFormat.Spart:
+    elif input.info.format == FileFormat.Spart:
         return Partition.fromPath(
-            input.path,
+            input.info.path,
             PartitionHandler.Spart,
             spartition=input.spartition,
         )

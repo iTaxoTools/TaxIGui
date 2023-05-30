@@ -27,7 +27,7 @@ from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.model.common import ItemModel, TreeItem
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
-from itaxotools.taxi_gui.types import ColumnFilter
+from itaxotools.taxi_gui.types import ColumnFilter, FileFormat
 from itaxotools.taxi_gui.utility import human_readable_size
 from itaxotools.taxi_gui.view.animations import VerticalRollAnimation
 from itaxotools.taxi_gui.view.cards import Card
@@ -83,7 +83,7 @@ class DummyResultsCard(Card):
         path.setReadOnly(True)
 
         browse = QtWidgets.QPushButton('Browse')
-        browse.clicked.connect(self.handleBrowse)
+        browse.clicked.connect(self._handle_browse)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(title)
@@ -95,7 +95,7 @@ class DummyResultsCard(Card):
         self.controls.path = path
         self.controls.browse = browse
 
-    def handleBrowse(self):
+    def _handle_browse(self):
         url = QtCore.QUrl.fromLocalFile(str(self.path))
         QtGui.QDesktopServices.openUrl(url)
 
@@ -156,9 +156,9 @@ class ColumnFilterCombobox(NoWheelComboBox):
 
         self.view().setMinimumWidth(100)
 
-        self.currentIndexChanged.connect(self.handleIndexChanged)
+        self.currentIndexChanged.connect(self._handle_index_changed)
 
-    def handleIndexChanged(self, index):
+    def _handle_index_changed(self, index):
         self.valueChanged.emit(self.itemData(index, self.DataRole))
 
     def setValue(self, value):
@@ -167,24 +167,23 @@ class ColumnFilterCombobox(NoWheelComboBox):
 
 
 class InputSelector(Card):
-    itemChanged = QtCore.Signal(TreeItem)
+    indexChanged = QtCore.Signal(QtCore.QModelIndex)
     addInputFile = QtCore.Signal(Path)
 
-    def __init__(self, text, parent=None, model=app.model.items):
+    def __init__(self, text, parent=None):
         super().__init__(parent)
+        self.model = None
         self.binder = Binder()
-        self._guard = Guard()
-        self.draw_main(text, model)
+        self.draw_main(text)
         self.draw_config()
 
-    def draw_main(self, text, model):
+    def draw_main(self, text):
         label = QtWidgets.QLabel(text + ':')
         label.setStyleSheet("""font-size: 16px;""")
-        label.setMinimumWidth(120)
+        label.setMinimumWidth(140)
 
         combo = NoWheelComboBox()
-        combo.currentIndexChanged.connect(self.handleItemChanged)
-        self.set_model(combo, model)
+        combo.currentIndexChanged.connect(self._handle_index_changed)
 
         wait = NoWheelComboBox()
         wait.addItem('Scanning file, please wait...')
@@ -192,7 +191,7 @@ class InputSelector(Card):
         wait.setVisible(False)
 
         browse = QtWidgets.QPushButton('Import')
-        browse.clicked.connect(self.handleBrowse)
+        browse.clicked.connect(self._handle_browse)
 
         loading = QtWidgets.QPushButton('Loading')
         loading.setEnabled(False)
@@ -216,40 +215,38 @@ class InputSelector(Card):
     def draw_config(self):
         self.controls.config = None
 
-    def set_model(self, combo, model):
-        combo.setModel(model)
-
-    def handleItemChanged(self, row):
-        if self._guard:
+    def set_model(self, model):
+        if model == self.model:
             return
-        if row > 0:
-            item = self.controls.combo.itemData(row, ItemModel.ItemRole)
-        else:
-            item = None
-        self.itemChanged.emit(item)
+        self.controls.combo.setModel(model)
+        self.model = model
+        index = model.index(0, 0)
+        self.set_index(index)
 
-    def handleBrowse(self, *args):
+    def set_index(self, index):
+        if not self.model:
+            return
+        if not index or not index.isValid():
+            index = self.model.index(0, 0)
+        self.controls.combo.setCurrentIndex(index.row())
+
+    def _handle_index_changed(self, row):
+        if not self.model:
+            return
+        index = self.model.index(row, 0)
+        self.indexChanged.emit(index)
+
+    def _handle_browse(self, *args):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
             self.window(), f'{app.config.title} - Import Sequence File')
         if not filename:
             return
         self.addInputFile.emit(Path(filename))
 
-    def setObject(self, object):
-        # Workaround to repaint bugged card line
-        QtCore.QTimer.singleShot(10, self.update)
-
-        if object is None:
-            row = 0
-        else:
-            file_item = object.file_item
-            row = file_item.row + 1 if file_item else 0
-        with self._guard:
-            self.controls.combo.setCurrentIndex(row)
-
+    def bind_object(self, object):
         self.binder.unbind_all()
 
-    def setBusy(self, busy: bool):
+    def set_busy(self, busy: bool):
         self.setEnabled(True)
         self.controls.combo.setVisible(not busy)
         self.controls.wait.setVisible(busy)
@@ -260,11 +257,6 @@ class InputSelector(Card):
 
 
 class SequenceSelector(InputSelector):
-    def set_model(self, combo, model):
-        proxy_model = ItemProxyModel()
-        proxy_model.setSourceModel(model, model.files)
-        combo.setModel(proxy_model)
-
     def draw_config(self):
         self.controls.config = MinimumStackedWidget()
         self.addWidget(self.controls.config)
@@ -315,15 +307,6 @@ class SequenceSelector(InputSelector):
         layout.setColumnStretch(column, 1)
         column += 1
 
-        index_filter = ColumnFilterCombobox()
-        index_filter.setFixedWidth(40)
-        sequence_filter = ColumnFilterCombobox()
-        sequence_filter.setFixedWidth(40)
-
-        layout.addWidget(index_filter, 0, column)
-        layout.addWidget(sequence_filter, 1, column)
-        column += 1
-
         layout.setColumnMinimumWidth(column, 16)
         column += 1
 
@@ -341,8 +324,6 @@ class SequenceSelector(InputSelector):
         self.controls.tabfile.widget = widget
         self.controls.tabfile.index_combo = index_combo
         self.controls.tabfile.sequence_combo = sequence_combo
-        self.controls.tabfile.index_filter = index_filter
-        self.controls.tabfile.sequence_filter = sequence_filter
         self.controls.tabfile.file_size = size_label_value
         self.controls.config.addWidget(widget)
 
@@ -380,32 +361,37 @@ class SequenceSelector(InputSelector):
         self.controls.fasta.parse_organism = parse_organism
         self.controls.config.addWidget(widget)
 
-    def setObject(self, object):
-        super().setObject(object)
-        if object and isinstance(object, SequenceModel.Tabfile):
-            self.populateCombos(object.file_item.object.info.headers)
-            self.binder.bind(object.properties.index_column, self.controls.tabfile.index_combo.setCurrentIndex)
-            self.binder.bind(self.controls.tabfile.index_combo.currentIndexChanged, object.properties.index_column)
-            self.binder.bind(object.properties.sequence_column, self.controls.tabfile.sequence_combo.setCurrentIndex)
-            self.binder.bind(self.controls.tabfile.sequence_combo.currentIndexChanged, object.properties.sequence_column)
-            self.binder.bind(object.properties.index_filter, self.controls.tabfile.index_filter.setValue)
-            self.binder.bind(self.controls.tabfile.index_filter.valueChanged, object.properties.index_filter)
-            self.binder.bind(object.properties.sequence_filter, self.controls.tabfile.sequence_filter.setValue)
-            self.binder.bind(self.controls.tabfile.sequence_filter.valueChanged, object.properties.sequence_filter)
-            self.binder.bind(object.file_item.object.properties.size, self.controls.tabfile.file_size.setText, lambda x: human_readable_size(x))
-            self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
-            self.controls.config.setVisible(True)
-        elif object and isinstance(object, SequenceModel.Fasta):
-            self.binder.bind(object.file_item.object.properties.size, self.controls.fasta.file_size.setText, lambda x: human_readable_size(x))
-            self.binder.bind(object.properties.parse_organism, self.controls.fasta.parse_organism.setChecked)
-            self.binder.bind(self.controls.fasta.parse_organism.toggled, object.properties.parse_organism)
-            self.controls.config.setCurrentWidget(self.controls.fasta.widget)
-            self.controls.config.setVisible(True)
-        else:
-            self.controls.config.setVisible(False)
+    def bind_object(self, object):
+        self.binder.unbind_all()
+        format = object.info.format if object else None
+        {
+            FileFormat.Tabfile: self._bind_tabfile,
+            FileFormat.Fasta: self._bind_fasta,
+            None: self._bind_none,
+        }[format](object)
         self.update()
 
-    def populateCombos(self, headers):
+    def _bind_tabfile(self, object):
+        self._populate_headers(object.info.headers)
+        self.binder.bind(object.properties.index_column, self.controls.tabfile.index_combo.setCurrentIndex)
+        self.binder.bind(self.controls.tabfile.index_combo.currentIndexChanged, object.properties.index_column)
+        self.binder.bind(object.properties.sequence_column, self.controls.tabfile.sequence_combo.setCurrentIndex)
+        self.binder.bind(self.controls.tabfile.sequence_combo.currentIndexChanged, object.properties.sequence_column)
+        self.binder.bind(object.properties.info, self.controls.tabfile.file_size.setText, lambda info: human_readable_size(info.size))
+        self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
+        self.controls.config.setVisible(True)
+
+    def _bind_fasta(self, object):
+        self.binder.bind(object.properties.parse_organism, self.controls.fasta.parse_organism.setChecked)
+        self.binder.bind(self.controls.fasta.parse_organism.toggled, object.properties.parse_organism)
+        self.binder.bind(object.properties.info, self.controls.fasta.file_size.setText, lambda info: human_readable_size(info.size))
+        self.controls.config.setCurrentWidget(self.controls.fasta.widget)
+        self.controls.config.setVisible(True)
+
+    def _bind_none(self, object):
+        self.controls.config.setVisible(False)
+
+    def _populate_headers(self, headers):
         self.controls.tabfile.index_combo.clear()
         self.controls.tabfile.sequence_combo.clear()
         for header in headers:
@@ -414,15 +400,10 @@ class SequenceSelector(InputSelector):
 
 
 class PartitionSelector(InputSelector):
-    def __init__(self, text, subset_text=None, individual_text=None, parent=None, model=app.model.items):
+    def __init__(self, text, subset_text=None, individual_text=None, parent=None):
         self._subset_text = subset_text or 'Subsets'
         self._individual_text = individual_text or 'Individuals'
-        super().__init__(text, parent, model)
-
-    def set_model(self, combo, model):
-        proxy_model = ItemProxyModel()
-        proxy_model.setSourceModel(model, model.files)
-        combo.setModel(proxy_model)
+        super().__init__(text, parent)
 
     def draw_config(self):
         self.controls.config = MinimumStackedWidget()
@@ -576,47 +557,64 @@ class PartitionSelector(InputSelector):
         self.controls.spart.spartition = spartition
         self.controls.config.addWidget(widget)
 
-    def setObject(self, object):
-        super().setObject(object)
-        self.object = object
-        if object and isinstance(object, PartitionModel.Tabfile):
-            self.populateCombos(object.file_item.object.info.headers)
-            self.binder.bind(object.properties.subset_column, self.controls.tabfile.subset_combo.setCurrentIndex)
-            self.binder.bind(self.controls.tabfile.subset_combo.currentIndexChanged, object.properties.subset_column)
-            self.binder.bind(object.properties.individual_column, self.controls.tabfile.individual_combo.setCurrentIndex)
-            self.binder.bind(self.controls.tabfile.individual_combo.currentIndexChanged, object.properties.individual_column)
-            self.binder.bind(object.properties.subset_filter, self.controls.tabfile.subset_filter.setValue)
-            self.binder.bind(self.controls.tabfile.subset_filter.valueChanged, object.properties.subset_filter)
-            self.binder.bind(object.properties.individual_filter, self.controls.tabfile.individual_filter.setValue)
-            self.binder.bind(self.controls.tabfile.individual_filter.valueChanged, object.properties.individual_filter)
-            self.binder.bind(object.file_item.object.properties.size, self.controls.tabfile.file_size.setText, lambda x: human_readable_size(x))
-            self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
-            self.controls.config.setVisible(True)
-        elif object and isinstance(object, PartitionModel.Fasta):
-            self.binder.bind(object.file_item.object.properties.size, self.controls.fasta.file_size.setText, lambda x: human_readable_size(x))
-            self.binder.bind(object.properties.subset_filter, self.controls.fasta.filter_first.setChecked, lambda x: x == ColumnFilter.First)
-            self.binder.bind(self.controls.fasta.filter_first.toggled, object.properties.subset_filter, lambda x: ColumnFilter.First if x else ColumnFilter.All)
-            self.controls.config.setCurrentWidget(self.controls.fasta.widget)
-            self.controls.config.setVisible(True)
-        elif object and isinstance(object, PartitionModel.Spart):
-            self.binder.bind(object.file_item.object.properties.size, self.controls.spart.file_size.setText, lambda x: human_readable_size(x))
-            self.binder.bind(object.properties.is_xml, self.controls.spart.file_type.setText, lambda x: 'Spart-XML' if x else 'Spart')
-            self.binder.bind(self.controls.spart.spartition.currentIndexChanged, object.properties.spartition, lambda x: self.controls.spart.spartition.itemData(x))
-            self.binder.bind(object.properties.spartition, self.controls.spart.spartition.setCurrentIndex, lambda x: self.controls.spart.spartition.findText(x))
-            self.populateSpartitions(object.file_item.object.info.spartitions)
-            self.controls.config.setCurrentWidget(self.controls.spart.widget)
-            self.controls.config.setVisible(True)
-        else:
-            self.controls.config.setVisible(False)
+    def bind_object(self, object):
+        self.binder.unbind_all()
+        format = object.info.format if object else None
+        {
+            FileFormat.Tabfile: self._bind_tabfile,
+            FileFormat.Fasta: self._bind_fasta,
+            FileFormat.Spart: self._bind_spart,
+            None: self._bind_none,
+        }[format](object)
+        self.update()
 
-    def populateCombos(self, headers):
+    def _bind_tabfile(self, object):
+        self._populate_headers(object.info.headers)
+
+        self.binder.bind(object.properties.subset_column, self.controls.tabfile.subset_combo.setCurrentIndex)
+        self.binder.bind(self.controls.tabfile.subset_combo.currentIndexChanged, object.properties.subset_column)
+        self.binder.bind(object.properties.individual_column, self.controls.tabfile.individual_combo.setCurrentIndex)
+        self.binder.bind(self.controls.tabfile.individual_combo.currentIndexChanged, object.properties.individual_column)
+
+        self.binder.bind(object.properties.subset_filter, self.controls.tabfile.subset_filter.setValue)
+        self.binder.bind(self.controls.tabfile.subset_filter.valueChanged, object.properties.subset_filter)
+        self.binder.bind(object.properties.individual_filter, self.controls.tabfile.individual_filter.setValue)
+        self.binder.bind(self.controls.tabfile.individual_filter.valueChanged, object.properties.individual_filter)
+
+        self.binder.bind(object.properties.info, self.controls.tabfile.file_size.setText, lambda info: human_readable_size(info.size))
+        self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
+        self.controls.config.setVisible(True)
+
+    def _bind_fasta(self, object):
+        self.binder.bind(object.properties.subset_filter, self.controls.fasta.filter_first.setChecked, lambda x: x == ColumnFilter.First)
+        self.binder.bind(self.controls.fasta.filter_first.toggled, object.properties.subset_filter, lambda x: ColumnFilter.First if x else ColumnFilter.All)
+
+        self.binder.bind(object.properties.info, self.controls.fasta.file_size.setText, lambda info: human_readable_size(info.size))
+        self.controls.config.setCurrentWidget(self.controls.fasta.widget)
+        self.controls.config.setVisible(True)
+
+    def _bind_spart(self, object):
+        self._populate_spartitions(object.info.spartitions)
+
+        self.binder.bind(object.properties.is_xml, self.controls.spart.file_type.setText, lambda x: 'Spart-XML' if x else 'Spart')
+        self.binder.bind(self.controls.spart.spartition.currentIndexChanged, object.properties.spartition, lambda x: self.controls.spart.spartition.itemData(x))
+        self.binder.bind(object.properties.spartition, self.controls.spart.spartition.setCurrentIndex, lambda x: self.controls.spart.spartition.findText(x))
+
+        self.binder.bind(object.properties.info, self.controls.spart.file_size.setText, lambda info: human_readable_size(info.size))
+        self.controls.config.setCurrentWidget(self.controls.spart.widget)
+        self.controls.config.setVisible(True)
+
+    def _bind_none(self, object):
+        self.controls.config.setVisible(False)
+
+    def _populate_headers(self, headers):
         self.controls.tabfile.subset_combo.clear()
         self.controls.tabfile.individual_combo.clear()
         for header in headers:
             self.controls.tabfile.subset_combo.addItem(header)
             self.controls.tabfile.individual_combo.addItem(header)
 
-    def populateSpartitions(self, spartitions: list[str]):
+    def _populate_spartitions(self, spartitions: list[str]):
         self.controls.spart.spartition.clear()
         for spartition in spartitions:
             self.controls.spart.spartition.addItem(spartition, spartition)

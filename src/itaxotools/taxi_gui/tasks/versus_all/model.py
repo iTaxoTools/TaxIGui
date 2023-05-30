@@ -27,11 +27,11 @@ from itaxotools.taxi_gui.model.common import ItemModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
-from itaxotools.taxi_gui.model.tasks import TaskModel, SubtaskModel
-from itaxotools.taxi_gui.types import FileInfo, Notification
+from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
+from itaxotools.taxi_gui.types import FileInfo, FileFormat, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
-from ..common.model import FileInfoSubtaskModel
+from ..common.model import FileInfoSubtaskModel, ImportedInputModel, ItemProxyModel
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
 from .types import StatisticsGroup
@@ -75,9 +75,9 @@ class Model(TaskModel):
     perform_species = Property(bool, False)
     perform_genera = Property(bool, False)
 
-    input_sequences = Property(SequenceModel, None)
-    input_species = Property(PartitionModel, None)
-    input_genera = Property(PartitionModel, None)
+    input_sequences = Property(ImportedInputModel, ImportedInputModel(SequenceModel))
+    input_species = Property(ImportedInputModel, ImportedInputModel(PartitionModel, 'species'))
+    input_genera = Property(ImportedInputModel, ImportedInputModel(PartitionModel, 'genera'))
 
     alignment_mode = Property(AlignmentMode, AlignmentMode.PairwiseAlignment)
     alignment_write_pairs = Property(bool, True)
@@ -113,14 +113,14 @@ class Model(TaskModel):
         self.binder.bind(self.subtask_species.done, self.onDoneInfoSpecies)
         self.binder.bind(self.subtask_genera.done, self.onDoneInfoGenera)
 
-        self.subtask_init.start(process.initialize)
+        self.binder.bind(self.input_sequences.notification, self.notification)
+        self.binder.bind(self.input_species.notification, self.notification)
+        self.binder.bind(self.input_genera.notification, self.notification)
 
-    def readyTriggers(self):
-        return [
+        self.binder.bind(self.input_sequences.properties.index, self.propagate_input_index)
+
+        for handle in [
             self.properties.busy_subtask,
-            self.properties.input_sequences,
-            self.properties.input_species,
-            self.properties.input_genera,
             self.properties.perform_species,
             self.properties.perform_genera,
             self.properties.alignment_mode,
@@ -128,35 +128,27 @@ class Model(TaskModel):
             self.distance_metrics.properties.bbc,
             self.distance_metrics.properties.bbc_k,
             self.properties.distance_precision,
-        ]
+            self.input_sequences.updated,
+            self.input_species.updated,
+            self.input_genera.updated,
+        ]:
+            self.binder.bind(handle, self.checkReady)
+
+        self.subtask_init.start(process.initialize)
 
     def isReady(self):
         if self.busy_subtask:
             return False
-        if self.input_sequences is None:
-            return False
-        if not isinstance(self.input_sequences, SequenceModel):
-            return False
-        if not self.input_sequences.file_item:
-            return False
         if not self.input_sequences.is_valid():
             return False
         if self.perform_species:
-            if not isinstance(self.input_species, PartitionModel):
-                return False
-            if not self.input_species.file_item:
-                return False
             if not self.input_species.is_valid():
                 return False
         if self.perform_genera:
-            if not isinstance(self.input_genera, PartitionModel):
-                return False
-            if not self.input_genera.file_item:
-                return False
             if not self.input_genera.is_valid():
                 return False
         if self.perform_species and self.perform_genera:
-            if self.input_species == self.input_genera:
+            if self.input_species.object == self.input_genera.object:
                 return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
@@ -182,8 +174,8 @@ class Model(TaskModel):
             perform_genera=self.perform_genera,
 
             input_sequences=self.input_sequences.as_dict(),
-            input_species=self.input_species.as_dict() if self.input_species else None,
-            input_genera=self.input_genera.as_dict() if self.input_genera else None,
+            input_species=self.input_species.as_dict(),
+            input_genera=self.input_genera.as_dict(),
 
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
@@ -206,97 +198,32 @@ class Model(TaskModel):
             plot_binwidth=self.plot_binwidth or self.properties.plot_binwidth.default,
         )
 
-    def add_sequence_file(self, path):
-        self.subtask_sequences.start(path)
-
-    def add_species_file(self, path):
-        self.subtask_species.start(path)
-
-    def add_genera_file(self, path):
-        self.subtask_genera.start(path)
-
-    def add_file_item_from_info(self, info):
-        if info.type == FileInfo.Tabfile:
-            if len(info.headers) < 2:
-                self.notification.emit(Notification.Warn('Not enough columns in tabfile.'))
-                return
-            index = app.model.items.add_file(InputFileModel.Tabfile(info), focus=False)
-            return index.data(ItemModel.ItemRole)
-        elif info.type == FileInfo.Fasta:
-            index = app.model.items.add_file(InputFileModel.Fasta(info), focus=False)
-            return index.data(ItemModel.ItemRole)
-        elif info.type == FileInfo.Spart:
-            index = app.model.items.add_file(InputFileModel.Spart(info), focus=False)
-            return index.data(ItemModel.ItemRole)
-        else:
-            self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
-            return None
-
-    def get_model_from_file_item(self, file_item, model_parent, *args, **kwargs):
-        if file_item is None:
-            return None
-        try:
-            return model_parent.from_input_file(file_item, *args, **kwargs)
-        except Exception:
-            self.notification.emit(Notification.Warn('Unexpected file type.'))
-            return None
-
-    def set_sequence_file_from_file_item(self, file_item):
-        if self.input_sequences is not None:
-            self.input_sequences.updated.disconnect(self.checkIfReady)
-        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel)
-        if self.input_sequences is not None:
-            self.input_sequences.updated.connect(self.checkIfReady)
-        self.propagate_file_item(file_item)
-
-    def _set_species_file_from_file_item(self, file_item):
-        if self.input_species is not None:
-            self.input_species.updated.disconnect(self.checkIfReady)
-        self.input_species = self.get_model_from_file_item(file_item, PartitionModel, 'species')
-        if self.input_species is not None:
-            self.input_species.updated.connect(self.checkIfReady)
-
-    def set_species_file_from_file_item(self, file_item):
-        try:
-            self._set_species_file_from_file_item(file_item)
-        except Exception:
-            self.notification.emit(Notification.Warn('No partition information found in file.'))
-            self.input_species = None
-            self.properties.input_species.update()
-
-    def _set_genera_file_from_file_item(self, file_item):
-        if self.input_genera is not None:
-            self.input_genera.updated.disconnect(self.checkIfReady)
-        self.input_genera = self.get_model_from_file_item(file_item, PartitionModel, 'genera')
-        if self.input_genera is not None:
-            self.input_genera.updated.connect(self.checkIfReady)
-
-    def set_genera_file_from_file_item(self, file_item):
-        try:
-            self._set_genera_file_from_file_item(file_item)
-        except Exception:
-            self.notification.emit(Notification.Warn('No partition information found in file.'))
-            self.input_genera = None
-            self.properties.input_genera.update()
-
-    def propagate_file_item(self, file_item):
-        if not file_item:
+    def propagate_input_index(self, index):
+        if not index:
             return
-        if isinstance(file_item.object, InputFileModel.Spart):
+        if not index.isValid():
             return
-        if isinstance(file_item.object, InputFileModel.Tabfile):
-            info = file_item.object.info
+
+        item = self.input_sequences.model.data(index, ItemProxyModel.ItemRole)
+        if not item:
+            self.perform_species = False
+            self.perform_genera = False
+            return
+
+        info = item.object.info
+
+        if info.format == FileFormat.Tabfile:
             if info.header_species is not None or info.header_organism is not None:
                 self.perform_species = True
-                self._set_species_file_from_file_item(file_item)
+                self.input_species.set_index(index)
             if info.header_genus is not None or info.header_organism is not None:
                 self.perform_genera = True
-                self._set_genera_file_from_file_item(file_item)
-        if isinstance(file_item.object, InputFileModel.Fasta) and file_item.object.info.has_subsets:
-            self.perform_species = True
-            self.perform_genera = True
-            self._set_species_file_from_file_item(file_item)
-            self._set_genera_file_from_file_item(file_item)
+                self.input_genera.set_index(index)
+        elif info.format == FileFormat.Fasta:
+                self.input_species.set_index(index)
+                self.input_genera.set_index(index)
+                self.perform_species = True
+                self.perform_genera = True
 
     def onDone(self, report):
         time_taken = human_readable_seconds(report.result.seconds_taken)
@@ -307,16 +234,13 @@ class Model(TaskModel):
         self.done = True
 
     def onDoneInfoSequences(self, info):
-        file_item = self.add_file_item_from_info(info)
-        self.set_sequence_file_from_file_item(file_item)
+        self.input_sequences.add_info(info)
 
     def onDoneInfoSpecies(self, info):
-        file_item = self.add_file_item_from_info(info)
-        self.set_species_file_from_file_item(file_item)
+        self.input_species.add_info(info)
 
     def onDoneInfoGenera(self, info):
-        file_item = self.add_file_item_from_info(info)
-        self.set_genera_file_from_file_item(file_item)
+        self.input_genera.add_info(info)
 
     def clear(self):
         self.dummy_results = None

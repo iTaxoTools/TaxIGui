@@ -39,15 +39,3 @@ class InputFileModel(Object, Generic[FileInfoType]):
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
-
-
-class Fasta(InputFileModel[FileInfo.Fasta]):
-    pass
-
-
-class Tabfile(InputFileModel[FileInfo.Tabfile]):
-    pass
-
-
-class Spart(InputFileModel[FileInfo.Spart]):
-    pass

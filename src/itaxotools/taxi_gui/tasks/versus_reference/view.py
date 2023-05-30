@@ -218,16 +218,11 @@ class View(TaskView):
         self.binder.bind(object.properties.busy, self.cards.title.setBusy)
         self.binder.bind(object.properties.busy, self.cards.progress.setEnabled)
         self.binder.bind(object.properties.busy, self.cards.progress.setVisible)
-        self.binder.bind(object.subtask_data.properties.busy, self.cards.input_data.setBusy)
-        self.binder.bind(object.subtask_reference.properties.busy, self.cards.input_reference.setBusy)
+        self.binder.bind(object.subtask_data.properties.busy, self.cards.input_data.set_busy)
+        self.binder.bind(object.subtask_reference.properties.busy, self.cards.input_reference.set_busy)
 
-        self.binder.bind(self.cards.input_data.itemChanged, object.set_data_file_from_file_item)
-        self.binder.bind(object.properties.input_data, self.cards.input_data.setObject)
-        self.binder.bind(self.cards.input_data.addInputFile, object.add_data_file)
-
-        self.binder.bind(self.cards.input_reference.itemChanged, object.set_reference_file_from_file_item)
-        self.binder.bind(object.properties.input_reference, self.cards.input_reference.setObject)
-        self.binder.bind(self.cards.input_reference.addInputFile, object.add_reference_file)
+        self._bind_input_selector(self.cards.input_data, object.input_data, object.subtask_data)
+        self._bind_input_selector(self.cards.input_reference, object.input_reference, object.subtask_reference)
 
         self.binder.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
         self.binder.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
@@ -272,6 +267,13 @@ class View(TaskView):
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible, lambda x: x is not None)
 
         self.binder.bind(object.properties.editable, self.setEditable)
+
+    def _bind_input_selector(self, card, object, subtask):
+        self.binder.bind(card.addInputFile, subtask.start)
+        self.binder.bind(card.indexChanged, object.set_index)
+        self.binder.bind(object.properties.model, card.set_model)
+        self.binder.bind(object.properties.index, card.set_index)
+        self.binder.bind(object.properties.object, card.bind_object)
 
     def setEditable(self, editable: bool):
         for card in self.cards:

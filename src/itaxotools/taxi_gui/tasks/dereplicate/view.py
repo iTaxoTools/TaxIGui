@@ -332,11 +332,9 @@ class View(TaskView):
         self.binder.bind(object.properties.busy, self.cards.title.setBusy)
         self.binder.bind(object.properties.busy, self.cards.progress.setEnabled)
         self.binder.bind(object.properties.busy, self.cards.progress.setVisible)
-        self.binder.bind(object.subtask_sequences.properties.busy, self.cards.input_sequences.setBusy)
+        self.binder.bind(object.subtask_sequences.properties.busy, self.cards.input_sequences.set_busy)
 
-        self.binder.bind(self.cards.input_sequences.itemChanged, object.set_sequence_file_from_file_item)
-        self.binder.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
-        self.binder.bind(self.cards.input_sequences.addInputFile, object.add_sequence_file)
+        self._bind_input_selector(self.cards.input_sequences, object.input_sequences, object.subtask_sequences)
 
         self.binder.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
         self.binder.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
@@ -391,6 +389,13 @@ class View(TaskView):
         self.binder.bind(object.properties.distance_metric, self.update_visible_cards)
 
         self.binder.bind(object.properties.editable, self.setEditable)
+
+    def _bind_input_selector(self, card, object, subtask):
+        self.binder.bind(card.addInputFile, subtask.start)
+        self.binder.bind(card.indexChanged, object.set_index)
+        self.binder.bind(object.properties.model, card.set_model)
+        self.binder.bind(object.properties.index, card.set_index)
+        self.binder.bind(object.properties.object, card.bind_object)
 
     def update_visible_cards(self, *args, **kwargs):
         uncorrected = any((

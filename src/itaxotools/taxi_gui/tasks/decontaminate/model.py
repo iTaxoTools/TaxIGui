@@ -25,14 +25,12 @@ from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.model.common import ItemModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
-from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
-from itaxotools.taxi_gui.model.tasks import TaskModel, SubtaskModel
+from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
 from itaxotools.taxi_gui.types import FileInfo, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
-from ..common.model import FileInfoSubtaskModel
-from ..common.process import get_file_info
+from ..common.model import FileInfoSubtaskModel, ImportedInputModel
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
 from .types import DecontaminateMode
@@ -59,9 +57,9 @@ class Model(TaskModel):
 
     decontaminate_mode = Property(DecontaminateMode, DecontaminateMode.DECONT)
 
-    input_sequences = Property(SequenceModel, None)
-    outgroup_sequences = Property(SequenceModel, None)
-    ingroup_sequences = Property(SequenceModel, None)
+    input_sequences = Property(ImportedInputModel, ImportedInputModel(SequenceModel))
+    outgroup_sequences = Property(ImportedInputModel, ImportedInputModel(SequenceModel))
+    ingroup_sequences = Property(ImportedInputModel, ImportedInputModel(SequenceModel))
 
     alignment_mode = Property(AlignmentMode, AlignmentMode.PairwiseAlignment)
     alignment_write_pairs = Property(bool, True)
@@ -100,6 +98,24 @@ class Model(TaskModel):
         self.binder.bind(self.properties.alignment_mode, self.set_metric_from_mode)
         self.binder.bind(self.properties.alignment_mode, self.set_similarity_from_mode)
 
+        self.binder.bind(self.input_sequences.notification, self.notification)
+        self.binder.bind(self.outgroup_sequences.notification, self.notification)
+        self.binder.bind(self.ingroup_sequences.notification, self.notification)
+
+        for handle in [
+            self.properties.busy_subtask,
+            self.properties.decontaminate_mode,
+            self.properties.alignment_mode,
+            *(property for property in self.pairwise_scores.properties),
+            self.properties.distance_metric,
+            self.properties.distance_metric_bbc_k,
+            self.properties.distance_precision,
+            self.input_sequences.updated,
+            self.outgroup_sequences.updated,
+            self.ingroup_sequences.updated,
+        ]:
+            self.binder.bind(handle, self.checkReady)
+
         self.subtask_init.start(process.initialize)
 
     def set_metric_from_mode(self, mode: AlignmentMode):
@@ -114,36 +130,18 @@ class Model(TaskModel):
         else:
             self.similarity_threshold = 0.03
 
-    def readyTriggers(self):
-        return [
-            self.properties.busy_subtask,
-            self.properties.input_sequences,
-            self.properties.outgroup_sequences,
-            self.properties.ingroup_sequences,
-            self.properties.decontaminate_mode,
-            self.properties.alignment_mode,
-            *(property for property in self.pairwise_scores.properties),
-            self.properties.distance_metric,
-            self.properties.distance_metric_bbc_k,
-            self.properties.distance_precision,
-        ]
-
     def isReady(self):
         if self.busy_subtask:
             return False
-        if self.input_sequences is None:
-            return False
-        if not isinstance(self.input_sequences, SequenceModel):
-            return False
-        if not self.input_sequences.file_item:
+        if not self.input_sequences.is_valid():
             return False
         if self.decontaminate_mode == DecontaminateMode.DECONT:
-            if self.outgroup_sequences is None:
+            if not self.outgroup_sequences.is_valid():
                 return False
         if self.decontaminate_mode == DecontaminateMode.DECONT2:
-            if self.outgroup_sequences is None:
+            if not self.outgroup_sequences.is_valid():
                 return False
-            if self.ingroup_sequences is None:
+            if not self.ingroup_sequences.is_valid():
                 return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
@@ -168,8 +166,8 @@ class Model(TaskModel):
             decontaminate_mode=self.decontaminate_mode,
 
             input_sequences=self.input_sequences.as_dict(),
-            outgroup_sequences=self.outgroup_sequences.as_dict() if self.outgroup_sequences else None,
-            ingroup_sequences=self.ingroup_sequences.as_dict() if self.ingroup_sequences else None,
+            outgroup_sequences=self.outgroup_sequences.as_dict(),
+            ingroup_sequences=self.ingroup_sequences.as_dict(),
 
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
@@ -188,47 +186,6 @@ class Model(TaskModel):
             ingroup_weight=self.ingroup_weight,
         )
 
-    def add_input_file(self, path):
-        self.subtask_input.start(path)
-
-    def add_outgroup_file(self, path):
-        self.subtask_outgroup.start(path)
-
-    def add_ingroup_file(self, path):
-        self.subtask_ingroup.start(path)
-
-    def add_file_item_from_info(self, info):
-        if info.type == FileInfo.Tabfile:
-            if len(info.headers) < 2:
-                self.notification.emit(Notification.Warn('Not enough columns in tabfile.'))
-                return
-            index = app.model.items.add_file(InputFileModel.Tabfile(info), focus=False)
-            return index.data(ItemModel.ItemRole)
-        elif info.type == FileInfo.Fasta:
-            index = app.model.items.add_file(InputFileModel.Fasta(info), focus=False)
-            return index.data(ItemModel.ItemRole)
-        else:
-            self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
-            return None
-
-    def get_model_from_file_item(self, file_item, model_parent, *args, **kwargs):
-        if file_item is None:
-            return None
-        try:
-            return model_parent.from_input_file(file_item, *args, **kwargs)
-        except Exception:
-            self.notification.emit(Notification.Warn('Unexpected file type.'))
-            return None
-
-    def set_input_file_from_file_item(self, file_item):
-        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel)
-
-    def set_outgroup_file_from_file_item(self, file_item):
-        self.outgroup_sequences = self.get_model_from_file_item(file_item, SequenceModel)
-
-    def set_ingroup_file_from_file_item(self, file_item):
-        self.ingroup_sequences = self.get_model_from_file_item(file_item, SequenceModel)
-
     def onDone(self, report):
         time_taken = human_readable_seconds(report.result.seconds_taken)
         self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
@@ -238,16 +195,13 @@ class Model(TaskModel):
         self.done = True
 
     def onDoneInfoInput(self, info):
-        file_item = self.add_file_item_from_info(info)
-        self.set_input_file_from_file_item(file_item)
+        self.input_sequences.add_info(info)
 
     def onDoneInfoOutgroup(self, info):
-        file_item = self.add_file_item_from_info(info)
-        self.set_outgroup_file_from_file_item(file_item)
+        self.outgroup_sequences.add_info(info)
 
     def onDoneInfoIngroup(self, info):
-        file_item = self.add_file_item_from_info(info)
-        self.set_ingroup_file_from_file_item(file_item)
+        self.ingroup_sequences.add_info(info)
 
     def onStop(self, report):
         super().onStop(report)

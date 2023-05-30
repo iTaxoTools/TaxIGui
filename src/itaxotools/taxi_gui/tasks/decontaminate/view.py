@@ -440,24 +440,16 @@ class View(TaskView):
         self.binder.bind(object.properties.busy, self.cards.title.setBusy)
         self.binder.bind(object.properties.busy, self.cards.progress.setEnabled)
         self.binder.bind(object.properties.busy, self.cards.progress.setVisible)
-        self.binder.bind(object.subtask_input.properties.busy, self.cards.input_sequences.setBusy)
-        self.binder.bind(object.subtask_outgroup.properties.busy, self.cards.outgroup_sequences.setBusy)
-        self.binder.bind(object.subtask_ingroup.properties.busy, self.cards.ingroup_sequences.setBusy)
+        self.binder.bind(object.subtask_input.properties.busy, self.cards.input_sequences.set_busy)
+        self.binder.bind(object.subtask_outgroup.properties.busy, self.cards.outgroup_sequences.set_busy)
+        self.binder.bind(object.subtask_ingroup.properties.busy, self.cards.ingroup_sequences.set_busy)
 
         self.binder.bind(self.cards.mode_selector.toggled, self.object.properties.decontaminate_mode)
         self.binder.bind(self.object.properties.decontaminate_mode, self.cards.mode_selector.setDecontaminateMode)
 
-        self.binder.bind(self.cards.input_sequences.itemChanged, object.set_input_file_from_file_item)
-        self.binder.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
-        self.binder.bind(self.cards.input_sequences.addInputFile, object.add_input_file)
-
-        self.binder.bind(self.cards.outgroup_sequences.itemChanged, object.set_outgroup_file_from_file_item)
-        self.binder.bind(object.properties.outgroup_sequences, self.cards.outgroup_sequences.setObject)
-        self.binder.bind(self.cards.outgroup_sequences.addInputFile, object.add_outgroup_file)
-
-        self.binder.bind(self.cards.ingroup_sequences.itemChanged, object.set_ingroup_file_from_file_item)
-        self.binder.bind(object.properties.ingroup_sequences, self.cards.ingroup_sequences.setObject)
-        self.binder.bind(self.cards.ingroup_sequences.addInputFile, object.add_ingroup_file)
+        self._bind_input_selector(self.cards.input_sequences, object.input_sequences, object.subtask_input)
+        self._bind_input_selector(self.cards.outgroup_sequences, object.outgroup_sequences, object.subtask_outgroup)
+        self._bind_input_selector(self.cards.ingroup_sequences, object.ingroup_sequences, object.subtask_ingroup)
 
         self.binder.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
         self.binder.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
@@ -515,6 +507,13 @@ class View(TaskView):
         self.binder.bind(object.properties.decontaminate_mode, self.update_visible_cards)
 
         self.binder.bind(object.properties.editable, self.setEditable)
+
+    def _bind_input_selector(self, card, object, subtask):
+        self.binder.bind(card.addInputFile, subtask.start)
+        self.binder.bind(card.indexChanged, object.set_index)
+        self.binder.bind(object.properties.model, card.set_model)
+        self.binder.bind(object.properties.index, card.set_index)
+        self.binder.bind(object.properties.object, card.bind_object)
 
     def update_visible_cards(self, *args, **kwargs):
         uncorrected = any((

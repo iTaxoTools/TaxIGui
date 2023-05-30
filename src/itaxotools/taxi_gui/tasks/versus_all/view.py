@@ -20,6 +20,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
+from itaxotools.taxi_gui.model.tasks import SubtaskModel
 from itaxotools.taxi_gui.types import Notification
 from itaxotools.taxi_gui.utility import type_convert
 from itaxotools.taxi_gui.view.cards import Card
@@ -30,7 +31,8 @@ from itaxotools.taxi_gui.view.widgets import (
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from ..common.view import (
     AlignmentModeSelector, DummyResultsCard, PartitionSelector, ProgressCard,
-    SequenceSelector, TitleCard)
+    SequenceSelector, InputSelector, TitleCard)
+from ..common.model import ImportedInputModel
 from .types import StatisticsGroup
 
 
@@ -385,29 +387,21 @@ class View(TaskView):
         self.binder.bind(object.properties.busy, self.cards.title.setBusy)
         self.binder.bind(object.properties.busy, self.cards.progress.setEnabled)
         self.binder.bind(object.properties.busy, self.cards.progress.setVisible)
-        self.binder.bind(object.subtask_sequences.properties.busy, self.cards.input_sequences.setBusy)
-        self.binder.bind(object.subtask_species.properties.busy, self.cards.input_species.setBusy)
-        self.binder.bind(object.subtask_genera.properties.busy, self.cards.input_genera.setBusy)
-
-        self.binder.bind(self.cards.input_sequences.itemChanged, object.set_sequence_file_from_file_item)
-        self.binder.bind(object.properties.input_sequences, self.cards.input_sequences.setObject)
-        self.binder.bind(self.cards.input_sequences.addInputFile, object.add_sequence_file)
+        self.binder.bind(object.subtask_sequences.properties.busy, self.cards.input_sequences.set_busy)
+        self.binder.bind(object.subtask_species.properties.busy, self.cards.input_species.set_busy)
+        self.binder.bind(object.subtask_genera.properties.busy, self.cards.input_genera.set_busy)
 
         self.binder.bind(self.cards.perform_species.toggled, object.properties.perform_species)
         self.binder.bind(object.properties.perform_species, self.cards.perform_species.setChecked)
         self.binder.bind(object.properties.perform_species, self.cards.input_species.roll_animation.setAnimatedVisible)
 
-        self.binder.bind(self.cards.input_species.itemChanged, object.set_species_file_from_file_item)
-        self.binder.bind(object.properties.input_species, self.cards.input_species.setObject)
-        self.binder.bind(self.cards.input_species.addInputFile, object.add_species_file)
-
         self.binder.bind(self.cards.perform_genera.toggled, object.properties.perform_genera)
         self.binder.bind(object.properties.perform_genera, self.cards.perform_genera.setChecked)
         self.binder.bind(object.properties.perform_genera, self.cards.input_genera.roll_animation.setAnimatedVisible)
 
-        self.binder.bind(self.cards.input_genera.itemChanged, object.set_genera_file_from_file_item)
-        self.binder.bind(object.properties.input_genera, self.cards.input_genera.setObject)
-        self.binder.bind(self.cards.input_genera.addInputFile, object.add_genera_file)
+        self._bind_input_selector(self.cards.input_sequences, object.input_sequences, object.subtask_sequences)
+        self._bind_input_selector(self.cards.input_species, object.input_species, object.subtask_species)
+        self._bind_input_selector(self.cards.input_genera, object.input_genera, object.subtask_genera)
 
         self.binder.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
         self.binder.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
@@ -464,6 +458,13 @@ class View(TaskView):
         self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.roll_animation.setAnimatedVisible, lambda x: x is not None)
 
         self.binder.bind(object.properties.editable, self.setEditable)
+
+    def _bind_input_selector(self, card, object, subtask):
+        self.binder.bind(card.addInputFile, subtask.start)
+        self.binder.bind(card.indexChanged, object.set_index)
+        self.binder.bind(object.properties.model, card.set_model)
+        self.binder.bind(object.properties.index, card.set_index)
+        self.binder.bind(object.properties.object, card.bind_object)
 
     def setEditable(self, editable: bool):
         for card in self.cards:

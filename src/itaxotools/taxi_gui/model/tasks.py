@@ -22,7 +22,7 @@ import itertools
 from collections import defaultdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, List
+from typing import Callable, List
 
 from itaxotools.common.bindings import Binder, Property, PropertyRef
 
@@ -65,9 +65,6 @@ class TaskModel(Object):
         self.binder.bind(self.worker.error, self.onError, condition=self._matches_report_id)
         self.binder.bind(self.worker.stop, self.onStop, condition=self._matches_report_id)
         self.binder.bind(self.worker.progress, self.onProgress)
-
-        for property in self.readyTriggers():
-            property.notify.connect(self.checkIfReady)
 
         for property in [
             self.properties.done,
@@ -137,7 +134,7 @@ class TaskModel(Object):
         """Overload this to set properties as ready triggers"""
         return []
 
-    def checkIfReady(self, *args):
+    def checkReady(self):
         """Slot to check if ready"""
         self.ready = self.isReady()
 

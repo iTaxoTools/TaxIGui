@@ -25,14 +25,12 @@ from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.model.common import ItemModel
 from itaxotools.taxi_gui.model.input_file import InputFileModel
-from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
-from itaxotools.taxi_gui.model.tasks import TaskModel, SubtaskModel
+from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
 from itaxotools.taxi_gui.types import FileInfo, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
-from ..common.model import FileInfoSubtaskModel
-from ..common.process import get_file_info
+from ..common.model import FileInfoSubtaskModel, ImportedInputModel
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
 
@@ -56,7 +54,7 @@ class PairwiseScores(EnumObject):
 class Model(TaskModel):
     task_name = 'Dereplicate'
 
-    input_sequences = Property(SequenceModel, None)
+    input_sequences = Property(ImportedInputModel, ImportedInputModel(SequenceModel))
 
     alignment_mode = Property(AlignmentMode, AlignmentMode.PairwiseAlignment)
     alignment_write_pairs = Property(bool, True)
@@ -90,6 +88,19 @@ class Model(TaskModel):
         self.binder.bind(self.properties.alignment_mode, self.set_metric_from_mode)
         self.binder.bind(self.properties.alignment_mode, self.set_similarity_from_mode)
 
+        self.binder.bind(self.input_sequences.notification, self.notification)
+
+        for handle in [
+            self.properties.busy_subtask,
+            self.properties.alignment_mode,
+            *(property for property in self.pairwise_scores.properties),
+            self.properties.distance_metric,
+            self.properties.distance_metric_bbc_k,
+            self.properties.distance_precision,
+            self.input_sequences.updated,
+        ]:
+            self.binder.bind(handle, self.checkReady)
+
         self.subtask_init.start(process.initialize)
 
     def set_metric_from_mode(self, mode: AlignmentMode):
@@ -104,25 +115,10 @@ class Model(TaskModel):
         else:
             self.similarity_threshold = 0.03
 
-    def readyTriggers(self):
-        return [
-            self.properties.busy_subtask,
-            self.properties.input_sequences,
-            self.properties.alignment_mode,
-            *(property for property in self.pairwise_scores.properties),
-            self.properties.distance_metric,
-            self.properties.distance_metric_bbc_k,
-            self.properties.distance_precision,
-        ]
-
     def isReady(self):
         if self.busy_subtask:
             return False
-        if self.input_sequences is None:
-            return False
-        if not isinstance(self.input_sequences, SequenceModel):
-            return False
-        if not self.input_sequences.file_item:
+        if not self.input_sequences.is_valid():
             return False
         if self.alignment_mode == AlignmentMode.PairwiseAlignment:
             if not self.pairwise_scores.is_valid():
@@ -162,35 +158,6 @@ class Model(TaskModel):
             length_threshold=self.length_threshold,
         )
 
-    def add_sequence_file(self, path):
-        self.subtask_sequences.start(path)
-
-    def add_file_item_from_info(self, info):
-        if info.type == FileInfo.Tabfile:
-            if len(info.headers) < 2:
-                self.notification.emit(Notification.Warn('Not enough columns in tabfile.'))
-                return
-            index = app.model.items.add_file(InputFileModel.Tabfile(info), focus=False)
-            return index.data(ItemModel.ItemRole)
-        elif info.type == FileInfo.Fasta:
-            index = app.model.items.add_file(InputFileModel.Fasta(info), focus=False)
-            return index.data(ItemModel.ItemRole)
-        else:
-            self.notification.emit(Notification.Warn('Unknown sequence-file format.'))
-            return None
-
-    def get_model_from_file_item(self, file_item, model_parent, *args, **kwargs):
-        if file_item is None:
-            return None
-        try:
-            return model_parent.from_input_file(file_item, *args, **kwargs)
-        except Exception:
-            self.notification.emit(Notification.Warn('Unexpected file type.'))
-            return None
-
-    def set_sequence_file_from_file_item(self, file_item):
-        self.input_sequences = self.get_model_from_file_item(file_item, SequenceModel)
-
     def onDone(self, report):
         time_taken = human_readable_seconds(report.result.seconds_taken)
         self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
@@ -201,8 +168,7 @@ class Model(TaskModel):
         self.done = True
 
     def onDoneInfoSequences(self, info):
-        file_item = self.add_file_item_from_info(info)
-        self.set_sequence_file_from_file_item(file_item)
+        self.input_sequences.add_info(info)
 
     def onStop(self, report):
         super().onStop(report)

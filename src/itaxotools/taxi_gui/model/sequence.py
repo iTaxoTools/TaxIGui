@@ -34,13 +34,12 @@ models = DecoratorDict[FileInfo, Object]()
 
 
 class SequenceModel(Object, Generic[FileInfoType]):
-    file_item = Property(TreeItem, None)
-    updated = QtCore.Signal()
+    info = Property(FileInfo, None)
 
-    def __init__(self, file_item: TreeItem[InputFileModel[FileInfoType]]):
+    def __init__(self, info: FileInfo):
         super().__init__()
-        self.file_item = file_item
-        self.name = f'Sequences from {file_item.object.path.name}'
+        self.info = info
+        self.name = f'Sequences from {info.path.name}'
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
@@ -49,64 +48,35 @@ class SequenceModel(Object, Generic[FileInfoType]):
         return True
 
     def as_dict(self):
-        return AttrDict(
-            path = self.file_item.object.path,
-        )
+        return AttrDict({p.key: p.value for p in self.properties})
 
     @classmethod
-    def from_input_file(
-        cls,
-        file_item: TreeItem[InputFileModel[FileInfoType]],
-    ) -> SequenceModel[FileInfoType]:
-
-        info = file_item.object.info
+    def from_file_info(cls, info: FileInfoType) -> SequenceModel[FileInfoType]:
         if not type(info) in models:
             raise Exception(f'No suitable {cls.__name__} for info: {info}')
-        return models[type(info)](file_item)
+        return models[type(info)](info)
 
 
 @models(FileInfo.Fasta)
-class Fasta(SequenceModel[FileInfo.Fasta]):
+class Fasta(SequenceModel):
     has_subsets = Property(bool, False)
     parse_organism = Property(bool, False)
 
-    def __init__(
-        self,
-        file_item: TreeItem[InputFileModel[FileInfo.Fasta]],
-    ):
-        super().__init__(file_item)
-        info = file_item.object.info
+    def __init__(self, info: FileInfo.Fasta):
+        super().__init__(info)
         self.has_subsets = info.has_subsets
         self.parse_organism = info.has_subsets
 
-    def as_dict(self):
-        return AttrDict(
-            type = FileFormat.Fasta,
-            path = self.file_item.object.path,
-            parse_organism = self.parse_organism,
-        )
-
 
 @models(FileInfo.Tabfile)
-class Tabfile(SequenceModel[FileInfo.Tabfile]):
+class Tabfile(SequenceModel):
     index_column = Property(int, -1)
     sequence_column = Property(int, -1)
-    index_filter = Property(ColumnFilter, ColumnFilter.All)
-    sequence_filter = Property(ColumnFilter, ColumnFilter.All)
 
-    def __init__(
-        self,
-        file_item: TreeItem[InputFileModel[FileInfo.Tabfile]],
-    ):
-        super().__init__(file_item)
-        info = file_item.object.info
+    def __init__(self, info: FileInfo.Tabfile):
+        super().__init__(info)
         self.index_column = self._header_get(info.headers, info.header_individuals)
         self.sequence_column = self._header_get(info.headers, info.header_sequences)
-
-        self.properties.index_column.notify.connect(self.updated)
-        self.properties.sequence_column.notify.connect(self.updated)
-        self.properties.index_filter.notify.connect(self.updated)
-        self.properties.sequence_filter.notify.connect(self.updated)
 
     @staticmethod
     def _header_get(headers: list[str], field: str):
@@ -115,20 +85,11 @@ class Tabfile(SequenceModel[FileInfo.Tabfile]):
         except ValueError:
             return -1
 
-    def as_dict(self):
-        return AttrDict(
-            type = FileFormat.Tabfile,
-            path = self.file_item.object.path,
-            index_column = self.index_column,
-            sequence_column = self.sequence_column,
-        )
-
     def is_valid(self):
         if self.index_column < 0:
             return False
         if self.sequence_column < 0:
             return False
         if self.index_column == self.sequence_column:
-            if self.index_filter == self.sequence_filter:
-                return False
+            return False
         return True
