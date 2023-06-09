@@ -151,6 +151,11 @@ class Card(QtWidgets.QFrame):
         super().update()
 
     @override
+    def setVisible(self, value):
+        super().setVisible(value)
+        self.update()
+
+    @override
     def paintEvent(self, event):
         super().paintEvent(event)
 
