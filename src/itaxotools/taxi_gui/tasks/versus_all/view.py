@@ -24,15 +24,15 @@ from itaxotools.taxi_gui.model.tasks import SubtaskModel
 from itaxotools.taxi_gui.types import Notification
 from itaxotools.taxi_gui.utility import type_convert
 from itaxotools.taxi_gui.view.cards import Card
-from itaxotools.taxi_gui.view.tasks import TaskView
+from itaxotools.taxi_gui.view.tasks import ScrollTaskView
 from itaxotools.taxi_gui.view.widgets import (
     GLineEdit, NoWheelComboBox, RadioButtonGroup)
 
+from ..common.model import ImportedInputModel
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from ..common.view import (
-    AlignmentModeSelector, DummyResultsCard, PartitionSelector, ProgressCard,
-    SequenceSelector, InputSelector, TitleCard)
-from ..common.model import ImportedInputModel
+    AlignmentModeSelector, DummyResultsCard, InputSelector, PartitionSelector,
+    ProgressCard, SequenceSelector, TitleCard)
 from .types import StatisticsGroup
 
 
@@ -336,7 +336,7 @@ class PlotSelector(Card):
         self.controls.binwidth = binwidth
 
 
-class View(TaskView):
+class View(ScrollTaskView):
 
     def __init__(self, parent=None):
         super().__init__(parent)

@@ -25,6 +25,7 @@ from itaxotools.common.bindings import Binder
 from .. import app
 from ..model.common import Object
 from ..types import Notification
+from .widgets import ScrollArea
 
 
 class ObjectView(QtWidgets.QFrame):
@@ -35,6 +36,9 @@ class ObjectView(QtWidgets.QFrame):
         self.container = parent
         self.binder = Binder()
         self.object = None
+
+    def ensureVisible(self):
+        pass
 
     def setObject(self, object: Object):
         self.object = object
@@ -92,7 +96,6 @@ class ObjectView(QtWidgets.QFrame):
 class TaskView(ObjectView):
 
     def start(self):
-        self.container.ensureVisible(0, 0)
         self.object.start()
 
     def stop(self):
@@ -119,3 +122,31 @@ class TaskView(ObjectView):
             'Are you sure you want to clear all results and try again?'
         ):
             self.object.clear()
+
+
+class ScrollTaskView(TaskView):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.area = ScrollArea(self)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.area, 1)
+        super().setLayout(layout)
+
+    def ensureVisible(self):
+        self.area.ensureVisible(0, 0)
+
+    def start(self):
+        self.area.ensureVisible(0, 0)
+        super().start()
+
+    def setWidget(self, widget):
+        """Children may populate the view here"""
+        self.area.setWidget(widget)
+
+    def setLayout(self, layout):
+        """Children may populate the view here"""
+        self.area.setLayout(layout)

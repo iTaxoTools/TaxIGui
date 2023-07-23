@@ -28,10 +28,11 @@ from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
-from itaxotools.taxi_gui.types import FileInfo, FileFormat, Notification
+from itaxotools.taxi_gui.types import FileFormat, FileInfo, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
-from ..common.model import FileInfoSubtaskModel, ImportedInputModel, ItemProxyModel
+from ..common.model import (
+    FileInfoSubtaskModel, ImportedInputModel, ItemProxyModel)
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
 from .types import StatisticsGroup

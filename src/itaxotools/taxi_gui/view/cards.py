@@ -99,7 +99,7 @@ class CardLayout(QtWidgets.QBoxLayout):
 
         width = rect.width()
         height = rect.height()
-        yy_incr = height / self.count()
+        yy_incr = height / self.count() if self.count() else 0
         xx = rect.x()
         yy = rect.y()
         for item in self:

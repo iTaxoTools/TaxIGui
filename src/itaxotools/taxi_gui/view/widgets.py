@@ -23,6 +23,27 @@ from time import time_ns
 from itaxotools.common.utility import Guard, override
 
 
+class DarkWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("""DarkWidget {background: Palette(Dark);}""")
+
+
+class ScrollArea(QtWidgets.QScrollArea):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWidgetResizable(True)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.setContentsMargins(40, 0, 0, 0)
+        self.setStyleSheet("""ScrollArea {border: none;}""")
+
+    def setLayout(self, layout):
+        widget = DarkWidget()
+        widget.setLayout(layout)
+        self.setWidget(widget)
+
+
 class NoWheelComboBox(QtWidgets.QComboBox):
     def wheelEvent(self, event):
         event.ignore()

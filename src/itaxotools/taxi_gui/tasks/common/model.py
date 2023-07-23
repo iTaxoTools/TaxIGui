@@ -27,11 +27,12 @@ from itaxotools.common.bindings import Binder, Property
 from itaxotools.common.utility import AttrDict, override
 
 from itaxotools.taxi_gui import app
-from itaxotools.taxi_gui.model.common import Object, ItemModel
+from itaxotools.taxi_gui.model.common import ItemModel, Object
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel
 from itaxotools.taxi_gui.threading import ReportDone
-from itaxotools.taxi_gui.types import FileInfo, FileFormat, TreeItem, Notification
+from itaxotools.taxi_gui.types import (
+    FileFormat, FileInfo, Notification, TreeItem)
 
 from .process import get_file_info
 

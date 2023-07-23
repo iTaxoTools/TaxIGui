@@ -22,7 +22,7 @@ from itaxotools.common.utility import AttrDict
 
 from itaxotools.taxi_gui.utility import type_convert
 from itaxotools.taxi_gui.view.cards import Card
-from itaxotools.taxi_gui.view.tasks import TaskView
+from itaxotools.taxi_gui.view.tasks import ScrollTaskView
 from itaxotools.taxi_gui.view.widgets import (
     GLineEdit, GSpinBox, NoWheelRadioButton, RadioButtonGroup)
 
@@ -292,7 +292,7 @@ class LengthThresholdCard(Card):
         self.controls.lengthThreshold = threshold
 
 
-class View(TaskView):
+class View(ScrollTaskView):
 
     def __init__(self, parent=None):
         super().__init__(parent)

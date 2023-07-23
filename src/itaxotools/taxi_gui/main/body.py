@@ -27,16 +27,6 @@ from ..view.tasks import TaskView
 from .dashboard import Dashboard
 
 
-class ScrollArea(QtWidgets.QScrollArea):
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWidgetResizable(True)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.setContentsMargins(40, 0, 0, 0)
-        self.setStyleSheet("""ScrollArea {border: none;}""")
-
-
 class Body(QtWidgets.QStackedWidget):
 
     def __init__(self, parent):
@@ -45,7 +35,7 @@ class Body(QtWidgets.QStackedWidget):
         self.activeItem = None
         self.activeIndex = None
         self.binder = Binder()
-        self.areas = dict()
+        self.views = dict()
 
         self.dashboard = Dashboard(self)
         self.addWidget(self.dashboard)
@@ -53,11 +43,9 @@ class Body(QtWidgets.QStackedWidget):
         self.showDashboard()
 
     def addView(self, object_type, view_type, *args, **kwargs):
-        area = ScrollArea(self)
-        view = view_type(parent=area, *args, **kwargs)
-        area.setWidget(view)
-        self.areas[object_type] = area
-        self.addWidget(area)
+        view = view_type(parent=self, *args, **kwargs)
+        self.views[object_type] = view
+        self.addWidget(view)
 
     def showItem(self, item: TreeItem, index: QtCore.QModelIndex):
         self.activeItem = item
@@ -66,14 +54,13 @@ class Body(QtWidgets.QStackedWidget):
             self.showDashboard()
             return False
         object = item.object
-        area = self.areas.get(type(object))
-        if not area:
+        view = self.views.get(type(object))
+        if not view:
             self.showDashboard()
             return False
-        view = area.widget()
+        view.ensureVisible()
         view.setObject(object)
-        self.setCurrentWidget(area)
-        area.ensureVisible(0, 0)
+        self.setCurrentWidget(view)
         if isinstance(object, TaskModel):
             self.bindTask(object, view)
         return True
