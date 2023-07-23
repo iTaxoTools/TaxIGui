@@ -201,8 +201,6 @@ class SubtaskModel(Object):
         self.progression.emit(report)
 
     def onFail(self, report: ReportFail):
-        if report.id == id(self):
-            self.onFail(report)
         self.notification.emit(Notification.Fail(str(report.exception), report.traceback))
         self.busy = False
 
