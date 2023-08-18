@@ -26,8 +26,8 @@ from itaxotools.common.utility import override
 
 from .io import PipeWrite, StreamGroup
 from .loop import (
-    Command, ReportDone, ReportExit, ReportFail, ReportProgress, ReportQuit,
-    ReportStop, loop)
+    Command, DataQuery, ReportDone, ReportExit, ReportFail, ReportProgress,
+    ReportQuit, ReportStop, loop)
 
 
 class Worker(QtCore.QThread):
@@ -37,6 +37,7 @@ class Worker(QtCore.QThread):
     error = QtCore.Signal(ReportExit)
     stop = QtCore.Signal(ReportStop)
     progress = QtCore.Signal(ReportProgress)
+    query = QtCore.Signal(DataQuery)
 
     def __init__(self, name='Worker', eager=True, log_path=None):
         """Immediately starts thread execution"""
@@ -50,6 +51,7 @@ class Worker(QtCore.QThread):
         self.commands = None
         self.results = None
         self.reports = None
+        self.queries = None
         self.process = None
         self.resetting = False
         self.quitting = False
@@ -92,6 +94,7 @@ class Worker(QtCore.QThread):
             sentinel: None,
             self.results: None,
             self.reports: self.progress.emit,
+            self.queries: self.query.emit,
             self.pipe_out: self.handle_output,
         }
         report = None
@@ -194,9 +197,10 @@ class Worker(QtCore.QThread):
         commands, self.commands = mp.Pipe(duplex=False)
         self.results, results = mp.Pipe(duplex=False)
         self.reports, reports = mp.Pipe(duplex=False)
+        self.queries, queries = mp.Pipe(duplex=True)
         self.process = mp.Process(
             target=loop, daemon=True, name=self.name,
-            args=(commands, results, reports, pipe_out))
+            args=(commands, results, reports, queries, pipe_out))
         self.process.start()
 
     def exec(self, id, function, *args, **kwargs):
@@ -210,6 +214,10 @@ class Worker(QtCore.QThread):
             self.streamOut.flush()
             self.streamErr.flush()
             self.process.terminate()
+
+    def answer(self, data):
+        """Respond to a query signal"""
+        self.queries.send(data)
 
     @override
     def quit(self):

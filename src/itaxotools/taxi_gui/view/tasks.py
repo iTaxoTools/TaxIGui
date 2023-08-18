@@ -114,7 +114,7 @@ class TaskView(ObjectView):
         path = self.getExistingDirectory(
             'Save All', str(self.object.suggested_directory))
         if path:
-            self.object.save_all(path)
+            self.object.save(path)
 
     def clear(self):
         if self.getConfirmation(

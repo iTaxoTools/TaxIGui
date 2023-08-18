@@ -27,7 +27,7 @@ from typing import Callable, List
 from itaxotools.common.bindings import Binder, Property, PropertyRef
 
 from ..threading import (
-    ReportDone, ReportExit, ReportFail, ReportProgress, ReportStop, Worker)
+    DataQuery, ReportDone, ReportExit, ReportFail, ReportProgress, ReportStop, Worker)
 from ..types import Notification
 from .common import Object
 
@@ -37,6 +37,7 @@ class TaskModel(Object):
 
     notification = QtCore.Signal(Notification)
     progression = QtCore.Signal(ReportProgress)
+    query = QtCore.Signal(DataQuery)
 
     can_open = Property(bool, False)
     can_save = Property(bool, True)
@@ -64,7 +65,8 @@ class TaskModel(Object):
         self.binder.bind(self.worker.fail, self.onFail, condition=self._matches_report_id)
         self.binder.bind(self.worker.error, self.onError, condition=self._matches_report_id)
         self.binder.bind(self.worker.stop, self.onStop, condition=self._matches_report_id)
-        self.binder.bind(self.worker.progress, self.onProgress)
+        self.binder.bind(self.worker.query, self.query.emit, condition=self._matches_report_id)
+        self.binder.bind(self.worker.progress, self.progression.emit)
 
         for property in [
             self.properties.done,
@@ -87,9 +89,6 @@ class TaskModel(Object):
         if not hasattr(report, 'id'):
             return False
         return report.id == id(self)
-
-    def onProgress(self, report: ReportProgress):
-        self.progression.emit(report)
 
     def onFail(self, report: ReportFail):
         self.notification.emit(Notification.Fail(str(report.exception), report.traceback))
@@ -142,6 +141,10 @@ class TaskModel(Object):
         """Overload this to check if ready"""
         return False
 
+    def answer(self, data):
+        """Slot for answering queries"""
+        self.worker.answer(data)
+
     def checkEditable(self):
         self.editable = not (self.busy or self.busy_subtask or self.done)
 
@@ -161,6 +164,7 @@ class SubtaskModel(Object):
 
     notification = QtCore.Signal(Notification)
     progression = QtCore.Signal(ReportProgress)
+    query = QtCore.Signal(DataQuery)
 
     busy = Property(bool, False)
 
@@ -177,10 +181,12 @@ class SubtaskModel(Object):
         self.binder.bind(self.worker.fail, self.onFail, condition=self._matches_report_id)
         self.binder.bind(self.worker.error, self.onError, condition=self._matches_report_id)
         self.binder.bind(self.worker.stop, self.onStop, condition=self._matches_report_id)
-        self.binder.bind(self.worker.progress, self.onProgress)
+        self.binder.bind(self.worker.query, self.query.emit, condition=self._matches_report_id)
+        self.binder.bind(self.worker.progress, self.progression.emit)
 
         self.binder.bind(self.notification, parent.notification)
         self.binder.bind(self.progression, parent.progression)
+        self.binder.bind(self.query, parent.query)
 
         if bind_busy:
             self.binder.bind(self.properties.busy, parent.properties.busy_subtask)
@@ -196,9 +202,6 @@ class SubtaskModel(Object):
         if not hasattr(report, 'id'):
             return False
         return report.id == id(self)
-
-    def onProgress(self, report: ReportProgress):
-        self.progression.emit(report)
 
     def onFail(self, report: ReportFail):
         self.notification.emit(Notification.Fail(str(report.exception), report.traceback))
@@ -232,3 +235,7 @@ class SubtaskModel(Object):
     def exec(self, task: Callable, *args, **kwargs):
         """Call this from start() to execute tasks"""
         self.worker.exec(id(self), task, *args, **kwargs)
+
+    def answer(self, data):
+        """Slot for answering queries"""
+        self.worker.answer()

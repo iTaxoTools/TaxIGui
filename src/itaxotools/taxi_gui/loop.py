@@ -69,7 +69,16 @@ class ReportProgress(NamedTuple):
     maximum: int = 0
 
 
-def loop(commands, results, progress, pipe_out):
+class DataQuery(NamedTuple):
+    id: Any
+    data: object
+
+
+class AbortCommand(Exception):
+    pass
+
+
+def loop(commands, results, progress, queries, pipe_out):
     """Wait for commands, send back results"""
 
     out = PipeWriterIO(pipe_out, 1)
@@ -82,13 +91,28 @@ def loop(commands, results, progress, pipe_out):
         report = ReportProgress(*args, **kwargs)
         progress.send(report)
 
+    def get_feedback(data: object):
+        id = itaxotools.current_command_id
+        query = DataQuery(id, data)
+        queries.send(query)
+        return queries.recv()
+
+    def abort():
+        raise AbortCommand()
+
+    itaxotools.current_command_id = None
     itaxotools.progress_handler = progress_handler
+    itaxotools.get_feedback = get_feedback
+    itaxotools.abort = abort
 
     while True:
         id, function, args, kwargs = commands.recv()
+        itaxotools.current_command_id = id
         try:
             result = function(*args, **kwargs)
             report = ReportDone(id, result)
+        except AbortCommand:
+            report = ReportStop(id)
         except Exception as exception:
             trace = traceback.format_exc()
             report = ReportFail(id, exception, trace)
