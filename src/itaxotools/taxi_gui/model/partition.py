@@ -53,7 +53,9 @@ class PartitionModel(Object, Generic[FileInfoType]):
         return True
 
     def as_dict(self):
-        return AttrDict({p.key: p.value for p in self.properties})
+        return AttrDict(
+            {p.key: p.value for p in self.properties} |
+            dict(partition_name=self.partition_name))
 
     @classmethod
     def from_file_info(
@@ -65,6 +67,10 @@ class PartitionModel(Object, Generic[FileInfoType]):
         if not type(info) in models:
             raise Exception(f'No suitable {cls.__name__} for info: {info}')
         return models[type(info)](info, preference)
+
+    @property
+    def partition_name(self):
+        return 'unknown'
 
 
 @models(FileInfo.Fasta)
@@ -80,6 +86,10 @@ class Fasta(PartitionModel):
         assert info.has_subsets
         if preference == 'genera':
             self.subset_filter = ColumnFilter.First
+
+    @property
+    def partition_name(self):
+        return 'from fasta'
 
 
 @models(FileInfo.Tabfile)
@@ -131,6 +141,10 @@ class Tabfile(PartitionModel):
                 return False
         return True
 
+    @property
+    def partition_name(self):
+        return self.info.headers[self.subset_column]
+
 
 @models(FileInfo.Spart)
 class Spart(PartitionModel):
@@ -146,3 +160,7 @@ class Spart(PartitionModel):
         assert len(info.spartitions) > 0
         self.spartition = info.spartitions[0]
         self.is_xml = info.is_xml
+
+    @property
+    def partition_name(self):
+        return self.spartition
