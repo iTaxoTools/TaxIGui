@@ -125,11 +125,13 @@ class RadioButtonGroup(QtCore.QObject):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.members = dict()
+        self.buttons = QtWidgets.QButtonGroup()
         self.value = None
 
     def add(self, widget, value):
         self.members[widget] = value
         widget.toggled.connect(self.handleToggle)
+        self.buttons.addButton(widget)
 
     def handleToggle(self, checked):
         if not checked:
