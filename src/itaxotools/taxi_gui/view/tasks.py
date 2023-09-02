@@ -62,21 +62,24 @@ class ObjectView(QtWidgets.QFrame):
 
     def getOpenPath(self, caption='Open File', dir='', filter=''):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self.window(), f'{app.config.title} - {caption}', dir, filter=filter)
+            self.window(), f'{app.config.title} - {caption}',
+            dir=dir, filter=filter)
         if not filename:
             return None
         return Path(filename)
 
-    def getSavePath(self, caption='Open File', dir=''):
+    def getSavePath(self, caption='Save File', dir='', filter=''):
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self.window(), f'{app.config.title} - {caption}', dir)
+            self.window(), f'{app.config.title} - {caption}',
+            dir=dir, filter=filter)
         if not filename:
             return None
         return Path(filename)
 
-    def getExistingDirectory(self, caption='Open File', dir=''):
+    def getExistingDirectory(self, caption='Open Folder', dir='', filter=''):
         filename = QtWidgets.QFileDialog.getExistingDirectory(
-            self.window(), f'{app.config.title} - {caption}', dir)
+            self.window(), f'{app.config.title} - {caption}',
+            dir=dir, filter=filter)
         if not filename:
             return None
         return Path(filename)
