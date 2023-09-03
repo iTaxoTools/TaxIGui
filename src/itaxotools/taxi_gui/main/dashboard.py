@@ -225,7 +225,7 @@ class DashItemConstrained(DashItem):
 
     def paintText(self, painter, rect, palette):
         painter.save()
-        rect = rect.adjusted(self.pad_text, self.pad_y, -self.pad_x, -self.pad_y * 2)
+        rect = rect.adjusted(self.pad_text, self.pad_y, -self.pad_x, -self.pad_y)
         rect.setHeight(rect.height() / 2)
 
         painter.setFont(self._text_font)
@@ -244,7 +244,7 @@ class DashItemConstrained(DashItem):
         text_color = palette.color(QtGui.QPalette.Shadow)
         painter.setPen(text_color)
 
-        rect = rect.adjusted(self.pad_text, self.pad_y, -self.pad_x, -self.pad_y * 2)
+        rect = rect.adjusted(self.pad_text, self.pad_y, -self.pad_x, -self.pad_y)
         rect.setTop(rect.top() + self.pad_y + rect.height() / 2)
 
         painter.drawText(rect, QtCore.Qt.AlignTop, self.subtext)

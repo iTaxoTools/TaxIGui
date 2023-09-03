@@ -354,28 +354,35 @@ class MinimumStackedWidget(QtWidgets.QStackedWidget):
 
 
 class DisplayFrame(QtWidgets.QFrame):
-    def __init__(self, stretch=9, *args, **kwargs):
+    def __init__(
+        self, stretch=9,
+        center_vertical=True,
+        center_horizontal=True,
+        *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
+        self.setStyleSheet("DisplayFrame {background: Palette(dark);}")
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
             QtWidgets.QSizePolicy.Policy.MinimumExpanding)
 
         layout = QtWidgets.QGridLayout()
         layout.setSpacing(6)
-        layout.setContentsMargins(6, 6, 6, 6)
-        layout.setColumnStretch(0, 1)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setColumnStretch(1, stretch)
-        layout.setColumnStretch(2, 1)
-        layout.setRowStretch(0, 1)
         layout.setRowStretch(1, stretch)
-        layout.setRowStretch(2, 1)
+        if center_horizontal:
+            layout.setColumnStretch(0, 1)
+            layout.setColumnStretch(2, 1)
+        if center_vertical:
+            layout.setRowStretch(0, 1)
+            layout.setRowStretch(2, 1)
         self.setLayout(layout)
 
         self.widget = None
 
     def setWidget(self, widget):
-        if self.widget:
+        if self.widget is not None:
             self.widget.deleteLater()
         self.layout().addWidget(widget, 1, 1)
         self.widget = widget
-

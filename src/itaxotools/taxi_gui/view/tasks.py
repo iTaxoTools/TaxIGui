@@ -21,6 +21,7 @@ from PySide6 import QtWidgets
 from pathlib import Path
 
 from itaxotools.common.bindings import Binder
+from itaxotools.taxi_gui.view.widgets import DisplayFrame
 
 from .. import app
 from ..model.common import Object
@@ -129,15 +130,23 @@ class TaskView(ObjectView):
 
 class ScrollTaskView(TaskView):
 
-    def __init__(self, parent):
+    def __init__(self, parent=None, max_width=920):
         super().__init__(parent)
-
+        self.max_width = max_width
         self.area = ScrollArea(self)
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.area, 1)
         super().setLayout(layout)
+
+        self.frame = DisplayFrame(stretch=999, center_vertical=False)
+        self.inner_frame = DisplayFrame(stretch=99, center_vertical=False)
+        self.inner_frame.setStyleSheet('DisplayFrame {background: Palette(mid);}')
+        self.inner_frame.setMaximumWidth(self.max_width)
+        self.inner_frame.setContentsMargins(4, 8, 4, 8)
+        self.area.setWidget(self.frame)
+        self.frame.setWidget(self.inner_frame)
 
     def ensureVisible(self):
         self.area.ensureVisible(0, 0)
@@ -148,8 +157,10 @@ class ScrollTaskView(TaskView):
 
     def setWidget(self, widget):
         """Children may populate the view here"""
-        self.area.setWidget(widget)
+        self.inner_frame.setWidget(widget)
 
     def setLayout(self, layout):
         """Children may populate the view here"""
-        self.area.setLayout(layout)
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+        self.setWidget(widget)
