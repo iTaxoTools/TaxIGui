@@ -351,3 +351,31 @@ class MinimumStackedWidget(QtWidgets.QStackedWidget):
 
     def minimumSizeHint(self):
         return self.currentWidget().sizeHint()
+
+
+class DisplayFrame(QtWidgets.QFrame):
+    def __init__(self, stretch=9, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+
+        layout = QtWidgets.QGridLayout()
+        layout.setSpacing(6)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, stretch)
+        layout.setColumnStretch(2, 1)
+        layout.setRowStretch(0, 1)
+        layout.setRowStretch(1, stretch)
+        layout.setRowStretch(2, 1)
+        self.setLayout(layout)
+
+        self.widget = None
+
+    def setWidget(self, widget):
+        if self.widget:
+            self.widget.deleteLater()
+        self.layout().addWidget(widget, 1, 1)
+        self.widget = widget
+

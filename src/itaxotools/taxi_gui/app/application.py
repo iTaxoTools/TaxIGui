@@ -20,6 +20,7 @@ from PySide6 import QtWidgets, QtGui
 
 from sys import exit
 from types import ModuleType
+from typing import Literal
 
 from . import config
 from .resources import LazyResource
@@ -41,6 +42,9 @@ class Application(QtWidgets.QApplication):
     def set_pixmap(self, pixmap: LazyResource[QtGui.QPixmap]):
         config.pixmap = pixmap
 
+    def set_dashboard(self, dashboard: Literal['legacy', 'constrained']):
+        config.dashboard = dashboard
+
     def set_tasks(self, tasks: list[ModuleType]):
         config.tasks = tasks
 
@@ -48,6 +52,7 @@ class Application(QtWidgets.QApplication):
         self.set_title(getattr(config, 'title', 'Application'))
         self.set_icon(getattr(config, 'icon', LazyResource(None)))
         self.set_pixmap(getattr(config, 'pixmap', LazyResource(None)))
+        self.set_dashboard(getattr(config, 'dashboard', 'legacy'))
         self.set_tasks(getattr(config, 'tasks', []))
 
     def set_skin(self, skin: ModuleType):

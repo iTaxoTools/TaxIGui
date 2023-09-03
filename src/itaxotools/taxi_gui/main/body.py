@@ -24,7 +24,7 @@ from .. import app
 from ..model.common import TreeItem
 from ..model.tasks import TaskModel
 from ..view.tasks import TaskView
-from .dashboard import Dashboard
+from .dashboard import DashboardConstrained, DashboardLegacy
 
 
 class Body(QtWidgets.QStackedWidget):
@@ -37,7 +37,14 @@ class Body(QtWidgets.QStackedWidget):
         self.binder = Binder()
         self.views = dict()
 
-        self.dashboard = Dashboard(self)
+        match app.config.dashboard:
+            case 'legacy':
+                dashboard_class = DashboardLegacy
+            case 'constrained':
+                dashboard_class = DashboardConstrained
+            case _:
+                raise ValueError(f'Invalid dashboard config: {repr(app.config.dashboard)}')
+        self.dashboard = dashboard_class(self)
         self.addWidget(self.dashboard)
 
         self.showDashboard()

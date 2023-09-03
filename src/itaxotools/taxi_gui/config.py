@@ -23,6 +23,8 @@ title = 'TaxI2.1'
 icon = icons.taxi2
 pixmap = pixmaps.taxi2
 
+dashboard = 'legacy'
+
 tasks = [
     versus_all,
     versus_reference,
