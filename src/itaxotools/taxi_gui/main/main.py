@@ -64,13 +64,14 @@ class Main(ToolDialog):
         action.setIcon(app.resources.icons.open.resource)
         action.setShortcut(QtGui.QKeySequence.Open)
         action.setStatusTip('Open an existing file')
-        action.setVisible(False)
+        action.setVisible(app.config.show_open)
         self.actions.open = action
 
         action = QtGui.QAction('&Save', self)
         action.setIcon(app.resources.icons.save.resource)
         action.setShortcut(QtGui.QKeySequence.Save)
         action.setStatusTip('Save results')
+        action.setVisible(app.config.show_save)
         self.actions.save = action
 
         action = QtGui.QAction('&Run', self)

@@ -30,4 +30,7 @@ pixmap: LazyResource[QtGui.QPixmap] = LazyResource()
 
 dashboard: Literal['legacy', 'constrained'] = 'legacy'
 
+show_open: bool = False
+show_save: bool = False
+
 tasks: list[ModuleType] = []

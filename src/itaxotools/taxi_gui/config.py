@@ -24,6 +24,8 @@ icon = icons.taxi2
 pixmap = pixmaps.taxi2
 
 dashboard = 'legacy'
+show_open = False
+show_save = False
 
 tasks = [
     versus_all,

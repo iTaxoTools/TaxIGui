@@ -45,6 +45,12 @@ class Application(QtWidgets.QApplication):
     def set_dashboard(self, dashboard: Literal['legacy', 'constrained']):
         config.dashboard = dashboard
 
+    def set_show_open(self, open: bool):
+        config.show_open = open
+
+    def set_show_save(self, save: bool):
+        config.show_save = save
+
     def set_tasks(self, tasks: list[ModuleType]):
         config.tasks = tasks
 
@@ -53,6 +59,8 @@ class Application(QtWidgets.QApplication):
         self.set_icon(getattr(config, 'icon', LazyResource(None)))
         self.set_pixmap(getattr(config, 'pixmap', LazyResource(None)))
         self.set_dashboard(getattr(config, 'dashboard', 'legacy'))
+        self.set_show_open(getattr(config, 'show_open', False))
+        self.set_show_save(getattr(config, 'show_save', False))
         self.set_tasks(getattr(config, 'tasks', []))
 
     def set_skin(self, skin: ModuleType):
