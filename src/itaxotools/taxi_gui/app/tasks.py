@@ -16,23 +16,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from PySide6 import QtGui
+
 from importlib import import_module
 from typing import NamedTuple
+
+from itaxotools.taxi_gui.app.resources import LazyResource
+from itaxotools.taxi_gui.model.tasks import TaskModel
+from itaxotools.taxi_gui.view.tasks import TaskView
 
 
 class Task(NamedTuple):
     title: str
     description: str
-    model: object
-    view: object
+    pixmap: LazyResource[QtGui.QPixmap]
+    model: TaskModel
+    view: TaskView
 
     @classmethod
     def from_module(cls, module):
         import_module('.model', module.__package__)
         import_module('.view', module.__package__)
         return cls(
-            title = module.title,
-            description = module.description,
+            title = getattr(module, 'title', 'Task'),
+            description = getattr(module, 'description', 'Description'),
+            pixmap = getattr(module, 'pixmap', LazyResource(None)),
             model = module.model.Model,
             view = module.view.View,
         )

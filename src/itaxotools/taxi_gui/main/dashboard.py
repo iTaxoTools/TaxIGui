@@ -26,10 +26,11 @@ from ..model.tasks import TaskModel
 
 class DashItem(QtWidgets.QAbstractButton):
 
-    def __init__(self, text, subtext, slot, parent=None):
+    def __init__(self, text, subtext, pixmap, slot, parent=None):
         super().__init__(parent)
         self.setText(text)
         self.subtext = subtext
+        self.pixmap = pixmap
         self.clicked.connect(slot)
         self.setMouseTracking(True)
         self.setSizePolicy(
@@ -38,7 +39,8 @@ class DashItem(QtWidgets.QAbstractButton):
         self._mouseOver = False
         self.pad_x = 4
         self.pad_y = 4
-        self.pad_text = 18
+        self.pad_text = 20
+        self.pad_pixmap = 8
         self.bookmark_width = 2
 
     @override
@@ -61,9 +63,12 @@ class DashItem(QtWidgets.QAbstractButton):
     @override
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
         rect = QtCore.QRect(0, 0, self.width(), self.height())
         palette = QtGui.QGuiApplication.palette()
         self.paintBack(painter, rect, palette)
+        self.paintPixmap(painter, rect, palette)
         self.paintText(painter, rect, palette)
         self.paintSubtext(painter, rect, palette)
 
@@ -76,6 +81,16 @@ class DashItem(QtWidgets.QAbstractButton):
         rect = rect.adjusted(self.pad_x, self.pad_y, 0, -self.pad_y)
         rect.setWidth(self.bookmark_width)
         painter.fillRect(rect, palette.color(QtGui.QPalette.Mid))
+
+    def paintPixmap(self, painter, rect, palette):
+        if self.pixmap is None:
+            return
+        pix_rect = QtCore.QRect(rect)
+        pix_rect.setWidth(pix_rect.height())
+        pix_rect.moveLeft(self.pad_text / 2)
+        pix_rect.adjust(self.pad_pixmap, self.pad_pixmap, -self.pad_pixmap, -self.pad_pixmap)
+        painter.drawPixmap(pix_rect, self.pixmap)
+        rect.adjust(pix_rect.width() + self.pad_text, 0, 0, 0)
 
     def paintText(self, painter, rect, palette):
         painter.save()
@@ -129,10 +144,11 @@ class Dashboard(QtWidgets.QFrame):
     def addTaskItem(self, task):
         row, column = divmod(self._task_count, 2)
         item = DashItem(
-            task.title,
-            task.description,
-            lambda: self.addTaskIfNew(task.model),
-            self)
+            text = task.title,
+            subtext = task.description,
+            pixmap = task.pixmap.resource,
+            slot = lambda: self.addTaskIfNew(task.model),
+            parent = self)
         self.layout().addWidget(item, row, column)
         self._task_count += 1
 
