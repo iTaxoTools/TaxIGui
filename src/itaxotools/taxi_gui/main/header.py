@@ -24,19 +24,20 @@ from .. import app
 
 
 class ToolLogo(QtWidgets.QLabel):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, pixmap, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # self.setFixedWidth(210)
         self.setFixedWidth(160)
         self.setAlignment(QtCore.Qt.AlignCenter)
-        self.setPixmap(app.resources.pixmaps.logo_tool)
+        if pixmap is not None:
+            self.setPixmap(pixmap)
 
 
 class ProjectLogo(ScalingImage):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.setFixedHeight(64)
-        self.logo = app.resources.pixmaps.logo_project
+        self.logo = app.resources.pixmaps.logo_project.resource
 
 
 class ToolBar(QtWidgets.QToolBar):
@@ -117,7 +118,7 @@ class Header(QtWidgets.QFrame):
                 border-bottom: 1px solid palette(Dark);
                 }
             """)
-        self.toolLogo = ToolLogo(self)
+        self.toolLogo = ToolLogo(app.config.pixmap.resource, self)
         self.projectLogo = ProjectLogo(self)
         self.toolBar = ToolBar(self)
 

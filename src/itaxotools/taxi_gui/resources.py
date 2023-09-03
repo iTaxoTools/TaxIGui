@@ -18,13 +18,20 @@
 
 from PySide6 import QtGui
 
-from types import ModuleType
+from itaxotools.common.resources import get_local
+from itaxotools.common.widgets import VectorPixmap
+from itaxotools.taxi_gui.app.resources import LazyResourceCollection
+from itaxotools.taxi_gui.app import skin
 
-from .resources import LazyResource
+
+icons = LazyResourceCollection(
+    taxi2 = lambda: QtGui.QIcon(
+        get_local(__package__, 'logos/taxi2.ico')),
+)
 
 
-title: str = 'Application'
-icon: LazyResource[QtGui.QIcon] = LazyResource()
-pixmap: LazyResource[QtGui.QPixmap] = LazyResource()
-
-tasks: list[ModuleType] = []
+pixmaps = LazyResourceCollection(
+    taxi2 = lambda: VectorPixmap(
+        get_local(__package__, 'logos/taxi2.svg'),
+        colormap=skin.colormap_icon)
+)

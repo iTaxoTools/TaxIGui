@@ -36,7 +36,9 @@ class Main(ToolDialog):
     def __init__(self, parent=None):
         super(Main, self).__init__(parent)
 
-        self.setWindowIcon(app.resources.icons.app)
+        icon = app.config.icon.resource
+        if icon is not None:
+            self.setWindowIcon(icon)
         self.setWindowTitle(app.config.title)
         self.resize(680, 500)
 
@@ -50,39 +52,39 @@ class Main(ToolDialog):
         self.actions = AttrDict()
 
         action = QtGui.QAction('&Home', self)
-        action.setIcon(app.resources.icons.home)
+        action.setIcon(app.resources.icons.home.resource)
         action.setStatusTip('Open the dashboard')
         action.triggered.connect(self.handleHome)
         action.setVisible(len(app.config.tasks) > 1)
         self.actions.home = action
 
         action = QtGui.QAction('&Open', self)
-        action.setIcon(app.resources.icons.open)
+        action.setIcon(app.resources.icons.open.resource)
         action.setShortcut(QtGui.QKeySequence.Open)
         action.setStatusTip('Open an existing file')
         action.setVisible(False)
         self.actions.open = action
 
         action = QtGui.QAction('&Save', self)
-        action.setIcon(app.resources.icons.save)
+        action.setIcon(app.resources.icons.save.resource)
         action.setShortcut(QtGui.QKeySequence.Save)
         action.setStatusTip('Save results')
         self.actions.save = action
 
         action = QtGui.QAction('&Run', self)
-        action.setIcon(app.resources.icons.run)
+        action.setIcon(app.resources.icons.run.resource)
         action.setShortcut('Ctrl+R')
         action.setStatusTip('Run MolD')
         self.actions.start = action
 
         action = QtGui.QAction('S&top', self)
-        action.setIcon(app.resources.icons.stop)
+        action.setIcon(app.resources.icons.stop.resource)
         action.setShortcut(QtGui.QKeySequence.Cancel)
         action.setStatusTip('Stop MolD')
         self.actions.stop = action
 
         action = QtGui.QAction('Cl&ear', self)
-        action.setIcon(app.resources.icons.clear)
+        action.setIcon(app.resources.icons.clear.resource)
         action.setShortcut('Ctrl+E')
         action.setStatusTip('Stop MolD')
         self.actions.clear = action

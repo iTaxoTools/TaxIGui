@@ -16,7 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+from __future__ import annotations
+
 from PySide6 import QtGui
+
+from typing import Callable, Generic, TypeVar
 
 from itaxotools.common import resources
 from itaxotools.common.widgets import VectorIcon, VectorPixmap
@@ -24,18 +28,32 @@ from itaxotools.common.widgets import VectorIcon, VectorPixmap
 from . import skin
 
 
-class ResourceLoader:
-    def __init__(self, **kwargs):
+ResourceType = TypeVar('ResourceType')
+
+
+class LazyResource(Generic[ResourceType]):
+    def __init__(self, loader: Callable[[], ResourceType] = None):
+        self._loader = loader
+
+    @property
+    def resource(self) -> ResourceType | None:
+        if self._loader is None:
+            return None
+        return self._loader()
+
+
+class LazyResourceCollection(Generic[ResourceType]):
+    def __init__(self, **kwargs: dict[str, Callable[[], ResourceType]]):
         super().__setattr__('attrs', kwargs)
 
     def __dir__(self):
         return super().__dir__() + self.attrs
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr) -> LazyResource[ResourceType]:
         if attr in self.attrs:
-            return self.attrs[attr]()
+            return LazyResource(self.attrs[attr])
 
-    def __setattr__(self, attr, value):
+    def __setattr__(self, attr, value: Callable[[], ResourceType]):
         self.attrs[attr] = value
 
 
@@ -43,21 +61,13 @@ def _get_common(path):
     return resources.get_common(path)
 
 
-def _get_local(path):
-    root = '.'.join(__package__.split('.')[:-1])
-    return resources.get_local(root, path)
-
-
-pixmaps = ResourceLoader(
+pixmaps = LazyResourceCollection(
     logo_project = lambda: QtGui.QPixmap(
         _get_common('logos/itaxotools-logo-64px.png')),
-    logo_tool = lambda: VectorPixmap(
-        _get_local('logos/taxi2.svg'),
-        # size=QtCore.QSize(132, 44),
-        colormap=skin.colormap_icon)
 )
 
-icons = ResourceLoader(
+
+icons = LazyResourceCollection(
     arrow = lambda: VectorIcon(
         _get_common('icons/svg/arrow-right.svg'), skin.colormap),
     open = lambda: VectorIcon(
@@ -72,6 +82,4 @@ icons = ResourceLoader(
         _get_common('icons/svg/clear.svg'), skin.colormap),
     home = lambda: VectorIcon(
         _get_common('icons/svg/home.svg'), skin.colormap),
-    app = lambda: QtGui.QIcon(
-        _get_local('logos/taxi2.ico')),
 )

@@ -16,12 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-from PySide6 import QtWidgets
+from PySide6 import QtWidgets, QtGui
 
 from sys import exit
 from types import ModuleType
 
 from . import config
+from .resources import LazyResource
 
 
 class Application(QtWidgets.QApplication):
@@ -34,12 +35,20 @@ class Application(QtWidgets.QApplication):
     def set_title(self, title: str):
         config.title = title
 
+    def set_icon(self, icon: LazyResource[QtGui.QIcon]):
+        config.icon = icon
+
+    def set_pixmap(self, pixmap: LazyResource[QtGui.QPixmap]):
+        config.pixmap = pixmap
+
     def set_tasks(self, tasks: list[ModuleType]):
         config.tasks = tasks
 
     def set_config(self, config: ModuleType):
-        self.set_title(config.title)
-        self.set_tasks(config.tasks)
+        self.set_title(getattr(config, 'title', 'Application'))
+        self.set_icon(getattr(config, 'icon', LazyResource(None)))
+        self.set_pixmap(getattr(config, 'pixmap', LazyResource(None)))
+        self.set_tasks(getattr(config, 'tasks', []))
 
     def set_skin(self, skin: ModuleType):
         skin.apply(self)
