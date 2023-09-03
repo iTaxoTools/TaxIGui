@@ -20,6 +20,8 @@
 
 from PySide6 import QtGui, QtWidgets
 
+from types import ModuleType
+
 from itaxotools.common.utility import AttrDict
 from itaxotools.common.widgets import ToolDialog
 
@@ -113,10 +115,16 @@ class Main(ToolDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
-    def addTasks(self, tasks):
+    def addTasks(self, tasks: list[ModuleType | list[ModuleType]]):
         for task in tasks:
-            task = app.Task.from_module(task)
-            self.addTask(task)
+            if isinstance(task, list):
+                for subtask in task:
+                    subtask = app.Task.from_module(subtask)
+                    self.addTask(subtask)
+                self.widgets.body.dashboard.addSeparator()
+            else:
+                task = app.Task.from_module(task)
+                self.addTask(task)
 
         if len(tasks) == 1:
             self.widgets.body.dashboard.addTaskIfNew(task.model)

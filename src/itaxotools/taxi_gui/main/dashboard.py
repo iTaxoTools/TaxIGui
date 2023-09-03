@@ -251,21 +251,32 @@ class DashItemConstrained(DashItem):
         painter.restore()
 
 
+class Dashboard(QtWidgets.QWidget):
 
-class DashboardLegacy(QtWidgets.QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setStyleSheet("Dashboard {background: Palette(dark);}")
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Minimum)
+
+    def addTaskItem(self, task: app.Task):
+        raise NotImplementedError()
+
+    def addTaskIfNew(self, task: app.Task):
+        raise NotImplementedError()
+
+    def addSeparator(self):
+        raise NotImplementedError()
+
+
+class DashboardLegacy(QtWidgets.QFrame, Dashboard):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._task_count = 0
 
-        self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
-        self.setStyleSheet("""
-            DashboardLegacy {
-                background: Palette(dark);
-            }
-            """)
+        self.setStyleSheet("DashboardLegacy {background: Palette(dark);}")
 
         layout = QtWidgets.QGridLayout()
         layout.setSpacing(6)
@@ -292,17 +303,17 @@ class DashboardLegacy(QtWidgets.QFrame):
             index = app.model.items.add_task(type())
         app.model.items.focus(index)
 
+    def addSeparator(self):
+        pass
 
-class DashboardConstrained(DisplayFrame):
+
+class DashboardConstrained(DisplayFrame, Dashboard):
 
     def __init__(self, parent=None):
         super().__init__(stretch=5, parent=parent)
 
-        self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
+        self.setStyleSheet("DashboardConstrained {background: Palette(dark);}")
         self.layout().setContentsMargins(0, 0, 0, 0)
-        self.setStyleSheet("""DashboardConstrained {background: Palette(dark);}""")
 
         task_widget = QtWidgets.QFrame()
 
@@ -328,10 +339,14 @@ class DashboardConstrained(DisplayFrame):
             pixmap = task.pixmap.resource,
             slot = lambda: self.addTaskIfNew(task.model),
             parent = self)
-        self.task_layout.addWidget(item)
+        self.task_layout.addWidget(item, 7)
 
     def addTaskIfNew(self, type: TaskModel):
         index = app.model.items.find_task(type)
         if index is None:
             index = app.model.items.add_task(type())
         app.model.items.focus(index)
+
+    def addSeparator(self):
+        self.task_layout.addSpacing(16)
+        self.task_layout.addStretch(1)
