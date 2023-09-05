@@ -227,7 +227,7 @@ class InputSelector(Card):
         if not self.model:
             return
         if not index or not index.isValid():
-            index = self.model.index(0, 0)
+            index = self.model.get_default_index()
         self.controls.combo.setCurrentIndex(index.row())
 
     def _handle_index_changed(self, row):

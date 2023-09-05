@@ -47,6 +47,9 @@ class ItemProxyModel(QtCore.QAbstractProxyModel):
         if model and root:
             self.setSourceModel(model, root)
 
+    def get_default_index(self):
+        return self.index(0, 0)
+
     def sourceDataChanged(self, topLeft, bottomRight):
         self.dataChanged.emit(self.mapFromSource(topLeft), self.mapFromSource(bottomRight))
 
@@ -193,7 +196,7 @@ class ImportedInputModel(Object):
         self.object = object
         self.updated.emit()
 
-    def _cast_from_index(self, index: QtCore.QModelIndex) -> DataFileProtocol|None:
+    def _cast_from_index(self, index: QtCore.QModelIndex) -> DataFileProtocol | None:
         if not index:
             return
         item = self.model.data(index, ItemProxyModel.ItemRole)
@@ -208,7 +211,7 @@ class ImportedInputModel(Object):
             return self.object.is_valid()
         return False
 
-    def as_dict(self) -> AttrDict|None:
+    def as_dict(self) -> AttrDict | None:
         if self.object:
             return self.object.as_dict()
         return None
