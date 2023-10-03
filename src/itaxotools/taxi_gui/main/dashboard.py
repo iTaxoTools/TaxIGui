@@ -251,7 +251,7 @@ class DashItemConstrained(DashItem):
         painter.restore()
 
 
-class Dashboard(QtWidgets.QWidget):
+class Dashboard(QtWidgets.QFrame):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -270,7 +270,7 @@ class Dashboard(QtWidgets.QWidget):
         raise NotImplementedError()
 
 
-class DashboardLegacy(QtWidgets.QFrame, Dashboard):
+class DashboardLegacy(Dashboard):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -307,15 +307,10 @@ class DashboardLegacy(QtWidgets.QFrame, Dashboard):
         pass
 
 
-class DashboardConstrained(DisplayFrame, Dashboard):
+class DashboardConstrained(Dashboard):
 
     def __init__(self, parent=None):
-        super().__init__(stretch=5, parent=parent)
-
-        self.setStyleSheet("DashboardConstrained {background: Palette(dark);}")
-        self.layout().setContentsMargins(0, 0, 0, 0)
-
-        task_widget = QtWidgets.QFrame()
+        super().__init__(parent=parent)
 
         task_layout = QtWidgets.QVBoxLayout()
         task_layout.setContentsMargins(6, 6, 6, 6)
@@ -326,11 +321,20 @@ class DashboardConstrained(DisplayFrame, Dashboard):
         stretch_layout.addLayout(task_layout, 9)
         stretch_layout.addStretch(1)
 
+        task_widget = QtWidgets.QFrame()
+        task_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         task_widget.setLayout(stretch_layout)
 
-        self.setWidget(task_widget)
-        self.task_layout = task_layout
+        frame = DisplayFrame(stretch=5, parent=self)
+        frame.setWidget(task_widget)
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(frame, 1)
+        self.setLayout(layout)
 
+        self.task_layout = task_layout
 
     def addTaskItem(self, task):
         item = DashItemConstrained(
