@@ -24,9 +24,8 @@ from typing import Generic, Literal, TypeVar
 
 from itaxotools.common.utility import AttrDict, DecoratorDict
 
-from ..types import ColumnFilter, FileFormat, FileInfo
-from .common import Object, Property, TreeItem
-from .input_file import InputFileModel
+from ..types import ColumnFilter, FileInfo
+from .common import Object, Property
 
 FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
 
@@ -76,6 +75,7 @@ class PartitionModel(Object, Generic[FileInfoType]):
 @models(FileInfo.Fasta)
 class Fasta(PartitionModel):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
+    subset_separator = Property(str, '|')
 
     def __init__(
         self,
@@ -84,6 +84,7 @@ class Fasta(PartitionModel):
     ):
         super().__init__(info)
         assert info.has_subsets
+        self.subset_separator = info.subset_separator
         if preference == 'genera':
             self.subset_filter = ColumnFilter.First
 

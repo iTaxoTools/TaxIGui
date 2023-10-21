@@ -18,15 +18,12 @@
 
 from __future__ import annotations
 
-from PySide6 import QtCore
-
 from typing import Generic, TypeVar
 
 from itaxotools.common.utility import AttrDict, DecoratorDict
 
-from ..types import ColumnFilter, FileFormat, FileInfo
-from .common import Object, Property, TreeItem
-from .input_file import InputFileModel
+from ..types import FileInfo
+from .common import Object, Property
 
 FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
 
@@ -60,12 +57,14 @@ class SequenceModel(Object, Generic[FileInfoType]):
 @models(FileInfo.Fasta)
 class Fasta(SequenceModel):
     has_subsets = Property(bool, False)
-    parse_organism = Property(bool, False)
+    subset_separator = Property(str, '|')
+    parse_subset = Property(bool, False)
 
     def __init__(self, info: FileInfo.Fasta):
         super().__init__(info)
         self.has_subsets = info.has_subsets
-        self.parse_organism = info.has_subsets
+        self.subset_separator = info.subset_separator
+        self.parse_subset = info.has_subsets
 
 
 @models(FileInfo.Tabfile)

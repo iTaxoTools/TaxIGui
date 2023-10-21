@@ -31,8 +31,7 @@ from itaxotools.taxi_gui.model.common import ItemModel, Object
 from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel
 from itaxotools.taxi_gui.threading import ReportDone
-from itaxotools.taxi_gui.types import (
-    FileFormat, FileInfo, Notification, TreeItem)
+from itaxotools.taxi_gui.types import FileFormat, FileInfo, Notification
 
 from .process import get_file_info
 

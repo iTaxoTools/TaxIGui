@@ -18,11 +18,10 @@
 
 from PySide6 import QtGui
 
-from typing import Literal
 from types import ModuleType
+from typing import Literal
 
 from .resources import LazyResource
-
 
 title: str = 'Application'
 icon: LazyResource[QtGui.QIcon] = LazyResource()

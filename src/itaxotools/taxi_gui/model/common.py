@@ -44,7 +44,7 @@ class Object(PropertyObject, Type, metaclass=_TypedPropertyObjectMeta):
         return Type.__repr__(self)
 
     def __eq__(self, other):
-        if type(self) != type(other):
+        if type(self) is not type(other):
             return False
         for a, b in zip(self.properties, other.properties):
             if a.key != b.key:
@@ -124,7 +124,7 @@ class ItemModel(QtCore.QAbstractItemModel):
 
     def find_task(self, task_type):
         for row, task_item in enumerate(self.tasks.children):
-            if type(task_item.object) == task_type:
+            if type(task_item.object) is task_type:
                 parent = self.createIndex(self.tasks.row, 0, self.tasks)
                 return self.index(row, 0, parent)
         return None

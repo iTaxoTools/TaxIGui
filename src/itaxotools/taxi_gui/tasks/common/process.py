@@ -57,7 +57,9 @@ def sequences_from_model(input: AttrDict):
         return Sequences.fromPath(
             input.info.path,
             SequenceHandler.Fasta,
-            parse_organism=input.parse_organism,
+            parse_organism=input.parse_subset,
+            organism_separator=input.subset_separator,
+            organism_tag='organism',
         )
     raise Exception(f'Cannot create sequences from input: {input}')
 
@@ -87,6 +89,7 @@ def partition_from_model(input: AttrDict):
             input.info.path,
             PartitionHandler.Fasta,
             filter=filter,
+            separator=input.subset_separator,
         )
     elif input.info.format == FileFormat.Spart:
         return Partition.fromPath(

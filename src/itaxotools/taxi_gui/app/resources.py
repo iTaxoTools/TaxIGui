@@ -23,10 +23,9 @@ from PySide6 import QtGui
 from typing import Callable, Generic, TypeVar
 
 from itaxotools.common import resources
-from itaxotools.common.widgets import VectorIcon, VectorPixmap
+from itaxotools.common.widgets import VectorIcon
 
 from . import skin
-
 
 ResourceType = TypeVar('ResourceType')
 

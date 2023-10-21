@@ -20,7 +20,6 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import AttrDict
 
-from itaxotools.taxi_gui.model.tasks import SubtaskModel
 from itaxotools.taxi_gui.types import Notification
 from itaxotools.taxi_gui.utility import type_convert
 from itaxotools.taxi_gui.view.cards import Card
@@ -28,11 +27,10 @@ from itaxotools.taxi_gui.view.tasks import ScrollTaskView
 from itaxotools.taxi_gui.view.widgets import (
     GLineEdit, NoWheelComboBox, RadioButtonGroup)
 
-from ..common.model import ImportedInputModel
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from ..common.view import (
-    AlignmentModeSelector, DummyResultsCard, InputSelector, PartitionSelector,
-    ProgressCard, SequenceSelector, TitleCard)
+    AlignmentModeSelector, DummyResultsCard, PartitionSelector, ProgressCard,
+    SequenceSelector, TitleCard)
 from .types import StatisticsGroup
 
 

@@ -22,12 +22,9 @@ from shutil import copytree
 
 from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
 
-from itaxotools.taxi_gui import app
-from itaxotools.taxi_gui.model.common import ItemModel
-from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
-from itaxotools.taxi_gui.types import FileInfo, Notification
+from itaxotools.taxi_gui.types import Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
 from ..common.model import FileInfoSubtaskModel, ImportedInputModel

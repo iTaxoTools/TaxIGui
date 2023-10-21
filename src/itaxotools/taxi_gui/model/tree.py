@@ -18,15 +18,12 @@
 
 from __future__ import annotations
 
-from PySide6 import QtCore
-
 from typing import Generic, TypeVar
 
 from itaxotools.common.utility import AttrDict, DecoratorDict
 
-from ..types import ColumnFilter, FileFormat, FileInfo
-from .common import Object, Property, TreeItem
-from .input_file import InputFileModel
+from ..types import FileInfo
+from .common import Object, Property
 
 FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
 

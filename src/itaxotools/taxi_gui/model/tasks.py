@@ -27,7 +27,8 @@ from typing import Callable, List
 from itaxotools.common.bindings import Binder, Property, PropertyRef
 
 from ..threading import (
-    DataQuery, ReportDone, ReportExit, ReportFail, ReportProgress, ReportStop, Worker)
+    DataQuery, ReportDone, ReportExit, ReportFail, ReportProgress, ReportStop,
+    Worker)
 from ..types import Notification
 from .common import Object
 

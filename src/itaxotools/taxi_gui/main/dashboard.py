@@ -17,9 +17,9 @@
 # -----------------------------------------------------------------------------
 
 from PySide6 import QtCore, QtGui, QtWidgets
-import PySide6.QtGui
 
 from itaxotools.common.utility import override
+
 from itaxotools.taxi_gui.view.widgets import DisplayFrame
 
 from .. import app

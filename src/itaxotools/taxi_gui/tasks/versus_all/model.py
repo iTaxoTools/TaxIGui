@@ -22,13 +22,10 @@ from shutil import copytree
 
 from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
 
-from itaxotools.taxi_gui import app
-from itaxotools.taxi_gui.model.common import ItemModel
-from itaxotools.taxi_gui.model.input_file import InputFileModel
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
-from itaxotools.taxi_gui.types import FileFormat, FileInfo, Notification
+from itaxotools.taxi_gui.types import FileFormat, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
 from ..common.model import (
@@ -221,6 +218,7 @@ class Model(TaskModel):
                 self.perform_genera = True
                 self.input_genera.set_index(index)
         elif info.format == FileFormat.Fasta:
+            if info.has_subsets:
                 self.input_species.set_index(index)
                 self.input_genera.set_index(index)
                 self.perform_species = True

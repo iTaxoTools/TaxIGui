@@ -21,6 +21,7 @@ from PySide6 import QtWidgets
 from pathlib import Path
 
 from itaxotools.common.bindings import Binder
+
 from itaxotools.taxi_gui.view.widgets import DisplayFrame
 
 from .. import app
