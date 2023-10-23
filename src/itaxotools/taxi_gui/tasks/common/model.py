@@ -181,8 +181,8 @@ class ImportedInputModel(Object):
             self.properties.format.update()
             return
 
-        self.index = index
         self._set_object(object)
+        self.index = index
 
     def _set_object(self, object: DataFileProtocol):
         if object == self.object:
