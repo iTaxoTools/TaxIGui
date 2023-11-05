@@ -386,3 +386,13 @@ class DisplayFrame(QtWidgets.QFrame):
             self.widget.deleteLater()
         self.layout().addWidget(widget, 1, 1)
         self.widget = widget
+
+
+class UnscrollableSpinBox(QtWidgets.QSpinBox):
+    def wheelEvent(self, event):
+        event.ignore()
+
+
+class UnscrollableDoubleSpinBox(QtWidgets.QDoubleSpinBox):
+    def wheelEvent(self, event):
+        event.ignore()

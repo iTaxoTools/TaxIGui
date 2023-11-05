@@ -174,7 +174,8 @@ class ImportedInputModel(Object):
             return
         try:
             object = self._cast_from_index(index)
-        except Exception:
+        except Exception as e:
+            # raise e
             self.notification.emit(Notification.Warn('Unexpected file format.'))
             self.properties.index.update()
             self.properties.object.update()
