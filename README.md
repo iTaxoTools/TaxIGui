@@ -9,6 +9,7 @@ Calculation and analysis of pairwise sequence distances:
 
 This is a Qt GUI for [TaxI2](https://github.com/iTaxoTools/TaxI2).
 
+![Screenshot](images/screenshot.png)
 
 ### Windows and macOS Executables
 Download and run the standalone executables without installing Python.</br>
@@ -16,13 +17,14 @@ Download and run the standalone executables without installing Python.</br>
 
 
 ### Installing from source
-Clone and install the latest version (requires Python 3.8.6 or later):
+Clone and install the latest version (requires Python 3.10.2 or later):
 ```
 git clone https://github.com/iTaxoTools/TaxIGui.git
 cd TaxIGui
 pip install . -f packages.html
 ```
 
+If you are also building Taxi2 from source, you will need [Rust](https://www.rust-lang.org/tools/install).
 
 ## Usage
 To launch the GUI, please use:
