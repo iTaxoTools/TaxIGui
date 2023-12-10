@@ -19,7 +19,7 @@
 from .resources import icons, pixmaps
 from .tasks import decontaminate, dereplicate, versus_all, versus_reference
 
-title = "TaxI2.1"
+title = "TaxI2.2"
 icon = icons.taxi2
 pixmap = pixmaps.taxi2
 
