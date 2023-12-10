@@ -72,13 +72,26 @@ def download_and_fuse_wheels(wheel: dict, tmp_dir: Path):
     x86_64_path.unlink()
 
 
+def download_source_tarball(wheel: dict, tmp_dir: Path):
+    egg = wheel["egg"]
+    url = wheel["source_url"]
+    hash = wheel["source_sha256"]
+
+    print(f"Downloading source for {egg}...")
+    file_path = download_file(egg, url, tmp_dir)
+    if not verify_file(file_path, hash):
+        raise Exception(f"Source hash does not match for: {egg}")
+
+
 def download_wheel(wheel: dict, tmp_dir: Path):
     egg = wheel["egg"]
     if "universal2_url" in wheel:
         return download_universal2_wheel(wheel, tmp_dir)
     if "arm64_url" in wheel and "x86_64_url" in wheel:
         return download_and_fuse_wheels(wheel, tmp_dir)
-    raise Exception(f"No wheel resolution for: {egg}")
+    if "source_url" in wheel:
+        return download_source_tarball(wheel, tmp_dir)
+    raise Exception(f"Bad wheel definition for: {egg}")
 
 
 def download_wheels(wheels: list[dict], tmp_dir: Path):
@@ -87,7 +100,7 @@ def download_wheels(wheels: list[dict], tmp_dir: Path):
 
 
 def install_all(tmp_dir: Path):
-    wheels = list(tmp_dir.glob("*.whl"))
+    wheels = list(tmp_dir.glob("*.whl")) + list(tmp_dir.glob("*.tar.gz"))
     cmd = [sys.executable, "-m", "pip", "install", "--force-reinstall"]
     cmd.extend(wheel.name for wheel in wheels)
     print("Running:", " ".join(cmd))
