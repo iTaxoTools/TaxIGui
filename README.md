@@ -10,6 +10,8 @@
     https://github.com/iTaxoTools/TaxIGui/actions/workflows/test.yml)
 [![GitHub - Windows](https://img.shields.io/github/actions/workflow/status/iTaxoTools/TaxIGui/windows.yml?label=windows)](
     https://github.com/iTaxoTools/TaxIGui/actions/workflows/windows.yml)
+[![GitHub - macOS](https://img.shields.io/github/actions/workflow/status/iTaxoTools/TaxIGui/macos.yml?label=macos)](
+    https://github.com/iTaxoTools/TaxIGui/actions/workflows/macos.yml)
 
 Calculation and analysis of pairwise sequence distances:
 

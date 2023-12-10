@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.request import urlopen
 
 from delocate.fuse import fuse_wheels
-import yaml
+from yaml import safe_load
 
 
 def calculate_sha256(file_path):
@@ -98,7 +98,7 @@ def main(path: str):
     with open(path) as file:
         text = file.read()
 
-    wheels = yaml.safe_load(text)
+    wheels = safe_load(text)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         download_wheels(wheels, Path(tmp_dir))
