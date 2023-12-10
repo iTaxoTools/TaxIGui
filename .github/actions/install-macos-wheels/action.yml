@@ -10,5 +10,5 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        pip install pyyaml
+        pip install pyyaml delocate
         python tools/wheels/install.py tools/wheels/macos.yml

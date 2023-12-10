@@ -12,7 +12,7 @@ env:
 jobs:
 
   build-bundle:
-    name: Build Windows executable
+    name: Build macOS executable
     runs-on: macos-11
 
     steps:
@@ -30,7 +30,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-live.txt
-          pip install ".[dev]"
+          pip install .
 
       - name: Install macOS wheels
         uses: ./.github/actions/install-macos-wheels

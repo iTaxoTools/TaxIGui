@@ -30,7 +30,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-live.txt
-          pip install ".[dev]"
+          pip install .
 
       - name: Make executable
         uses: ./.github/actions/make-executable
