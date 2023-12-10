@@ -42,6 +42,10 @@
   universal2_url: https://files.pythonhosted.org/packages/f3/7a/debbce859be1a2711eb8437818107137192007b88d17b5cfdb556f457b42/kiwisolver-1.4.5-cp312-cp312-macosx_10_9_universal2.whl
   universal2_sha256: 32d5cf40c4f7c7b3ca500f8985eb3fb3a7dfc023215e876f207956b5ea26632a
 
+- egg: fonttools
+  universal2_url: https://files.pythonhosted.org/packages/48/a6/59dc64f3fabc9267de712256aa5337edb3aa96e245192f3d16599adaa015/fonttools-4.46.0-cp312-cp312-macosx_10_9_universal2.whl
+  universal2_sha256: 7b460720ce81773da1a3e7cc964c48e1e11942b280619582a897fa0117b56a62
+
 - egg: biopython
   source_url: https://files.pythonhosted.org/packages/ad/a4/237edd5f5e5b68d9543c79bcd695ef881e6317fbd0eae1b1e53e694f9d54/biopython-1.81.tar.gz
   source_sha256: 2cf38112b6d8415ad39d6a611988cd11fb5f33eb09346666a87263beba9614e0
