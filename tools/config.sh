@@ -4,22 +4,29 @@
 [ ! "$CODESIGN_IDENTITY" ] && CODESIGN_IDENTITY="UNKNOWN"
 
 # program specifics
-APP_NAME="Taxi2.1"
+APP_NAME="Taxi2.2"
 APP_IDENTIFIER="org.itaxotools.taxi2.gui"
-APP_SCRIPT="../taxi2.py"
+APP_SCRIPT="run.py"
 APP_ENTITLEMENTS="data/entitlements.plist"
-APP_ICON="data/taxi2.icns"
-
+APP_ICON_ICO="data/taxi2.ico"
+APP_ICON_ICNS="data/taxi2.icns"
 
 # expand and export
 export CODESIGN_IDENTITY=$CODESIGN_IDENTITY
 export APP_NAME="$APP_NAME"
 export APP_IDENTIFIER="$APP_IDENTIFIER"
 
-DIR=$(readlink -f $(dirname $0))
+export APP_FILENAME="$APP_NAME"
+export APP_SUFFIX=$(IFS=-; echo "$*")
+if [ -n "$APP_SUFFIX" ]; then
+    export APP_FILENAME="$APP_NAME-$APP_SUFFIX"
+fi
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
 export APP_SCRIPT="$DIR/$APP_SCRIPT"
 export APP_ENTITLEMENTS="$DIR/$APP_ENTITLEMENTS"
-export APP_ICON="$DIR/$APP_ICON"
+export APP_ICON_ICNS="$DIR/$APP_ICON_ICNS"
+export APP_ICON_ICO="$DIR/$APP_ICON_ICO"
 
 export APP_BUNDLE="$PWD/dist/$APP_NAME.app"
-export APP_IMAGE="$PWD/dist/$APP_NAME.dmg"
+export APP_IMAGE="$PWD/dist/$APP_FILENAME.dmg"

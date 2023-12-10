@@ -3,19 +3,15 @@
 from os import environ
 
 NAME = environ.get('APP_NAME', None)
-ICON = environ.get('APP_ICON', None)
+FILENAME = environ.get('APP_FILENAME', None)
+ICON = environ.get('APP_ICON_ICO', None)
 SCRIPT = environ.get('APP_SCRIPT', None)
-IDENTIFIER = environ.get('APP_IDENTIFIER', None)
-ENTITLEMENTS = environ.get('APP_ENTITLEMENTS', None)
-
-# Code must be signed manually after building
-CODESIGN_IDENTITY = None
 
 
 block_cipher = None
 
+# Could also use pyinstaller's Entrypoint()
 a = Analysis([SCRIPT],
-             pathex=[],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -32,28 +28,16 @@ pyz = PYZ(a.pure, a.zipped_data,
 
 exe = EXE(pyz,
           a.scripts,
+          a.binaries,
+          a.zipfiles,
+          a.datas,
           [],
-          exclude_binaries=True,
-          name=NAME,
+          name=FILENAME,
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
+          upx_exclude=[],
+          runtime_tmpdir=None,
           console=False,
-          disable_windowed_traceback=False,
-          target_arch='universal2',
-          codesign_identity=CODESIGN_IDENTITY,
-          entitlements_file=ENTITLEMENTS,
           icon=ICON)
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               upx_exclude=[],
-               name=NAME)
-app = BUNDLE(coll,
-             name=f'{NAME}.app',
-             icon=ICON,
-             bundle_identifier=IDENTIFIER)
