@@ -1,10 +1,72 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel"]
+requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
-[tool.autoflake]
-remove-all-unused-imports = true
+[project]
+name = "itaxotools-taxi-gui"
+dynamic = ["version"]
+description = "A Qt GUI for Taxi2"
+readme = "README.md"
+requires-python = ">=3.10.2, <4"
+keywords = []
+authors = [
+    { name = "Stefanos Patmanidis", email = "stefanpatman91@gmail.com" },
+]
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+    "itaxotools-common",
+    "itaxotools-taxi2",
+    "pyside6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "setuptools-scm",
+    "pre-commit",
+    "ruff",
+    "pytest",
+    "pytest-qt",
+    "pytest-xvfb",
+    "pyinstaller",
+    "memory-profiler",
+    "matplotlib",
+]
+
+[project.gui-scripts]
+taxi-gui = "itaxotools.taxi_gui:run"
+
+[project.urls]
+Homepage = "https://itaxotools.org/"
+Source = "https://github.com/iTaxoTools/TaxIGui"
+
+[tool.setuptools.packages.find]
+namespaces = true
+where = ["src"]
+
+[tool.setuptools_scm]
+
+[tool.ruff]
 ignore-init-module-imports = true
-remove-unused-variables = true
-recursive = true
-in-place = true
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["itaxotools"]
+section-order = [
+    "future",
+    "pyqt",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+pyqt = ["PySide6"]
