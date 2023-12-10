@@ -38,6 +38,12 @@
   x86_64_url: https://files.pythonhosted.org/packages/4f/03/839da46999173226bead08794cbd7b4d37c9e6b02686ca74c93556b43258/contourpy-1.2.0-cp312-cp312-macosx_10_9_x86_64.whl
   x86_64_sha256: 575bcaf957a25d1194903a10bc9f316c136c19f24e0985a2b9b5608bdf5dbfe0
 
+- egg: psutil
+  arm64_url: https://files.pythonhosted.org/packages/9e/cb/e4b83c27eea66bc255effc967053f6fce7c14906dd9b43a348ead9f0cfea/psutil-5.9.6-cp38-abi3-macosx_11_0_arm64.whl
+  arm64_sha256: daecbcbd29b289aac14ece28eca6a3e60aa361754cf6da3dfb20d4d32b6c7f57
+  x86_64_url: https://files.pythonhosted.org/packages/f8/36/35b12441ba1bc6684c9215191f955415196ca57ca85d88e313bec7f2cf8e/psutil-5.9.6-cp36-abi3-macosx_10_9_x86_64.whl
+  x86_64_sha256: c69596f9fc2f8acd574a12d5f8b7b1ba3765a641ea5d60fb4736bf3c08a8214a
+
 - egg: kiwisolver
   universal2_url: https://files.pythonhosted.org/packages/f3/7a/debbce859be1a2711eb8437818107137192007b88d17b5cfdb556f457b42/kiwisolver-1.4.5-cp312-cp312-macosx_10_9_universal2.whl
   universal2_sha256: 32d5cf40c4f7c7b3ca500f8985eb3fb3a7dfc023215e876f207956b5ea26632a
