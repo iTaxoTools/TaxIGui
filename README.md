@@ -8,7 +8,7 @@
     https://pypi.org/project/itaxotools-taxi-gui)
 [![GitHub - Tests](https://img.shields.io/github/actions/workflow/status/iTaxoTools/TaxIGui/test.yml?label=tests)](
     https://github.com/iTaxoTools/TaxIGui/actions/workflows/test.yml)
-[![GitHub - Windows](https://img.shields.io/github/actions/workflow/status/iTaxoTools/TaxIGui/windows.yml?logo=windows&logoColor=white&label=windows)](
+[![GitHub - Windows](https://img.shields.io/github/actions/workflow/status/iTaxoTools/TaxIGui/windows.yml?label=windows)](
     https://github.com/iTaxoTools/TaxIGui/actions/workflows/windows.yml)
 
 Calculation and analysis of pairwise sequence distances:
