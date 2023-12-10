@@ -11,9 +11,10 @@ __pycache__/
 
 .DS_Store
 
-# due to using tox and pytest
 .tox
 .cache
+.ruff_cache
+.pytest_cache
 
 Pipfile
 Pipfile.lock
