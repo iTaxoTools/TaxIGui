@@ -28,7 +28,6 @@ from .dashboard import DashboardConstrained, DashboardLegacy
 
 
 class Body(QtWidgets.QStackedWidget):
-
     def __init__(self, parent):
         super().__init__(parent)
         self.actions = parent.actions
@@ -38,12 +37,14 @@ class Body(QtWidgets.QStackedWidget):
         self.views = dict()
 
         match app.config.dashboard:
-            case 'legacy':
+            case "legacy":
                 dashboard_class = DashboardLegacy
-            case 'constrained':
+            case "constrained":
                 dashboard_class = DashboardConstrained
             case _:
-                raise ValueError(f'Invalid dashboard config: {repr(app.config.dashboard)}')
+                raise ValueError(
+                    f"Invalid dashboard config: {repr(app.config.dashboard)}"
+                )
         self.dashboard = dashboard_class(self)
         self.addWidget(self.dashboard)
 
@@ -82,8 +83,14 @@ class Body(QtWidgets.QStackedWidget):
         self.binder.bind(task.properties.done, self.actions.clear.setVisible)
 
         self.binder.bind(task.properties.ready, self.actions.start.setEnabled)
-        self.binder.bind(task.properties.busy, self.actions.home.setEnabled, lambda busy: not busy)
-        self.binder.bind(task.properties.busy, self.actions.open.setEnabled, lambda busy: not busy and task.can_open)
+        self.binder.bind(
+            task.properties.busy, self.actions.home.setEnabled, lambda busy: not busy
+        )
+        self.binder.bind(
+            task.properties.busy,
+            self.actions.open.setEnabled,
+            lambda busy: not busy and task.can_open,
+        )
         self.binder.bind(task.properties.done, self.actions.save.setEnabled)
 
         self.binder.bind(self.actions.start.triggered, view.start)

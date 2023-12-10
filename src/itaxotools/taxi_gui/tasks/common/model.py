@@ -25,7 +25,6 @@ from typing import Protocol, Type
 
 from itaxotools.common.bindings import Binder, Property
 from itaxotools.common.utility import AttrDict, override
-
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.model.common import ItemModel, Object
 from itaxotools.taxi_gui.model.input_file import InputFileModel
@@ -41,7 +40,7 @@ class ItemProxyModel(QtCore.QAbstractProxyModel):
 
     def __init__(self, model=None, root=None):
         super().__init__()
-        self.unselected = '---'
+        self.unselected = "---"
         self.root = None
         if model and root:
             self.setSourceModel(model, root)
@@ -50,7 +49,9 @@ class ItemProxyModel(QtCore.QAbstractProxyModel):
         return self.index(0, 0)
 
     def sourceDataChanged(self, topLeft, bottomRight):
-        self.dataChanged.emit(self.mapFromSource(topLeft), self.mapFromSource(bottomRight))
+        self.dataChanged.emit(
+            self.mapFromSource(topLeft), self.mapFromSource(bottomRight)
+        )
 
     def add_file(self, file: InputFileModel):
         index = self.source.add_file(file, focus=False)
@@ -81,7 +82,9 @@ class ItemProxyModel(QtCore.QAbstractProxyModel):
         return source.createIndex(item.row, 0, item)
 
     @override
-    def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
+    def index(
+        self, row: int, column: int, parent=QtCore.QModelIndex()
+    ) -> QtCore.QModelIndex:
         if parent.isValid() or column != 0:
             return QtCore.QModelIndex()
         if row < 0 or row > len(self.root.children):
@@ -122,7 +125,7 @@ class ItemProxyModel(QtCore.QAbstractProxyModel):
 
 
 class FileInfoSubtaskModel(SubtaskModel):
-    task_name = 'FileInfoSubtask'
+    task_name = "FileInfoSubtask"
 
     done = QtCore.Signal(FileInfo)
 
@@ -174,9 +177,9 @@ class ImportedInputModel(Object):
             return
         try:
             object = self._cast_from_index(index)
-        except Exception as e:
+        except Exception:
             # raise e
-            self.notification.emit(Notification.Warn('Unexpected file format.'))
+            self.notification.emit(Notification.Warn("Unexpected file format."))
             self.properties.index.update()
             self.properties.object.update()
             self.properties.format.update()
@@ -203,8 +206,7 @@ class ImportedInputModel(Object):
         if not item:
             return None
         info = item.object.info
-        return self.cast_type.from_file_info(
-            info, *self.cast_args, **self.cast_kwargs)
+        return self.cast_type.from_file_info(info, *self.cast_args, **self.cast_kwargs)
 
     def is_valid(self) -> bool:
         if self.object:

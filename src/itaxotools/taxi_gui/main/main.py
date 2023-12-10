@@ -53,43 +53,43 @@ class Main(ToolDialog):
         """Populate dialog actions"""
         self.actions = AttrDict()
 
-        action = QtGui.QAction('&Home', self)
+        action = QtGui.QAction("&Home", self)
         action.setIcon(app.resources.icons.home.resource)
-        action.setStatusTip('Open the dashboard')
+        action.setStatusTip("Open the dashboard")
         action.triggered.connect(self.handleHome)
         action.setVisible(len(app.config.tasks) > 1)
         self.actions.home = action
 
-        action = QtGui.QAction('&Open', self)
+        action = QtGui.QAction("&Open", self)
         action.setIcon(app.resources.icons.open.resource)
         action.setShortcut(QtGui.QKeySequence.Open)
-        action.setStatusTip('Open an existing file')
+        action.setStatusTip("Open an existing file")
         action.setVisible(app.config.show_open)
         self.actions.open = action
 
-        action = QtGui.QAction('&Save', self)
+        action = QtGui.QAction("&Save", self)
         action.setIcon(app.resources.icons.save.resource)
         action.setShortcut(QtGui.QKeySequence.Save)
-        action.setStatusTip('Save results')
+        action.setStatusTip("Save results")
         action.setVisible(app.config.show_save)
         self.actions.save = action
 
-        action = QtGui.QAction('&Run', self)
+        action = QtGui.QAction("&Run", self)
         action.setIcon(app.resources.icons.run.resource)
-        action.setShortcut('Ctrl+R')
-        action.setStatusTip('Run MolD')
+        action.setShortcut("Ctrl+R")
+        action.setStatusTip("Run MolD")
         self.actions.start = action
 
-        action = QtGui.QAction('S&top', self)
+        action = QtGui.QAction("S&top", self)
         action.setIcon(app.resources.icons.stop.resource)
         action.setShortcut(QtGui.QKeySequence.Cancel)
-        action.setStatusTip('Stop MolD')
+        action.setStatusTip("Stop MolD")
         self.actions.stop = action
 
-        action = QtGui.QAction('Cl&ear', self)
+        action = QtGui.QAction("Cl&ear", self)
         action.setIcon(app.resources.icons.clear.resource)
-        action.setShortcut('Ctrl+E')
-        action.setStatusTip('Stop MolD')
+        action.setShortcut("Ctrl+E")
+        action.setStatusTip("Stop MolD")
         self.actions.clear = action
 
     def draw(self):

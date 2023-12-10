@@ -33,7 +33,8 @@ class _TypedPropertyObjectMeta(type(PropertyObject), type(Type)):
 
 class Object(PropertyObject, Type, metaclass=_TypedPropertyObjectMeta):
     """Interface for backend structures"""
-    name = Property(str, '')
+
+    name = Property(str, "")
 
     def __init__(self, name=None):
         super().__init__()
@@ -74,9 +75,9 @@ class ItemModel(QtCore.QAbstractItemModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.root = TreeItem(None)
-        self.tasks = self.root.add_child(Group('Tasks'))
-        self.sequences = self.root.add_child(Group('Sequences'))
-        self.files = self.root.add_child(Group('Imported Files'))
+        self.tasks = self.root.add_child(Group("Tasks"))
+        self.sequences = self.root.add_child(Group("Sequences"))
+        self.files = self.root.add_child(Group("Imported Files"))
 
     @property
     def tasks_index(self):
@@ -148,7 +149,9 @@ class ItemModel(QtCore.QAbstractItemModel):
         return self.root
 
     @override
-    def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
+    def index(
+        self, row: int, column: int, parent=QtCore.QModelIndex()
+    ) -> QtCore.QModelIndex:
         if parent.isValid() and column != 0:
             return QtCore.QModelIndex()
 
@@ -201,5 +204,5 @@ class ItemModel(QtCore.QAbstractItemModel):
         item = index.internalPointer()
         flags = super().flags(index)
         if item in self.root.children:
-            flags = flags & ~ QtCore.Qt.ItemIsEnabled
+            flags = flags & ~QtCore.Qt.ItemIsEnabled
         return flags

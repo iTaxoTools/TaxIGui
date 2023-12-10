@@ -22,12 +22,12 @@ from pathlib import Path
 
 from itaxotools.common.utility import AttrDict
 from itaxotools.taxi2.file_types import FileFormat
-
 from itaxotools.taxi_gui.types import ColumnFilter
 
 
 def progress_handler(caption, index, total):
     import itaxotools
+
     itaxotools.progress_handler(
         text=caption,
         value=index,
@@ -49,7 +49,7 @@ def sequences_from_model(input: AttrDict):
         return Sequences.fromPath(
             input.info.path,
             SequenceHandler.Tabfile,
-            hasHeader = True,
+            hasHeader=True,
             idColumn=input.index_column,
             seqColumn=input.sequence_column,
         )
@@ -59,9 +59,9 @@ def sequences_from_model(input: AttrDict):
             SequenceHandler.Fasta,
             parse_organism=input.parse_subset,
             organism_separator=input.subset_separator,
-            organism_tag='organism',
+            organism_tag="organism",
         )
-    raise Exception(f'Cannot create sequences from input: {input}')
+    raise Exception(f"Cannot create sequences from input: {input}")
 
 
 def partition_from_model(input: AttrDict):
@@ -75,7 +75,7 @@ def partition_from_model(input: AttrDict):
         return Partition.fromPath(
             input.info.path,
             PartitionHandler.Tabfile,
-            hasHeader = True,
+            hasHeader=True,
             idColumn=input.individual_column,
             subColumn=input.subset_column,
             filter=filter,
@@ -97,4 +97,4 @@ def partition_from_model(input: AttrDict):
             PartitionHandler.Spart,
             spartition=input.spartition,
         )
-    raise Exception(f'Cannot create partition from input: {input}')
+    raise Exception(f"Cannot create partition from input: {input}")

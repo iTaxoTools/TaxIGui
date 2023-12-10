@@ -35,12 +35,12 @@ class Task(NamedTuple):
 
     @classmethod
     def from_module(cls, module):
-        import_module('.model', module.__package__)
-        import_module('.view', module.__package__)
+        import_module(".model", module.__package__)
+        import_module(".view", module.__package__)
         return cls(
-            title = getattr(module, 'title', 'Task'),
-            description = getattr(module, 'description', 'Description'),
-            pixmap = getattr(module, 'pixmap', LazyResource(None)),
-            model = module.model.Model,
-            view = module.view.View,
+            title=getattr(module, "title", "Task"),
+            description=getattr(module, "description", "Description"),
+            pixmap=getattr(module, "pixmap", LazyResource(None)),
+            model=module.model.Model,
+            view=module.view.View,
         )

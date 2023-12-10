@@ -27,7 +27,6 @@ from ..model.common import Group, ItemModel, TreeItem
 
 
 class ItemView(ABC):
-
     width: int
     height: int
 
@@ -47,7 +46,6 @@ class ItemView(ABC):
 
 
 class GroupView(ItemView):
-
     width = 210
     height = 32
     marginLeft = 16
@@ -74,7 +72,6 @@ class GroupView(ItemView):
 
 
 class EntryView(ItemView):
-
     width = 210
     height = 44
     marginLeft = 14
@@ -111,15 +108,15 @@ class EntryView(ItemView):
         mode = QtGui.QIcon.Disabled
         if option.state & QtWidgets.QStyle.State_Selected:
             mode = QtGui.QIcon.Normal
-        pix = self.icon.pixmap(QtCore.QSize(* [self.iconSize] * 2), mode)
+        pix = self.icon.pixmap(QtCore.QSize(*[self.iconSize] * 2), mode)
         painter.drawPixmap(rect, pix)
 
     def iconRect(self, option):
         left = option.rect.left() + self.marginLeft
         vCenter = option.rect.center().y()
         return QtCore.QRect(
-            left, vCenter - self.iconSize / 2 + 1,
-            self.iconSize, self.iconSize)
+            left, vCenter - self.iconSize / 2 + 1, self.iconSize, self.iconSize
+        )
 
     def textRect(self, option):
         rect = QtCore.QRect(option.rect)
@@ -129,11 +126,10 @@ class EntryView(ItemView):
         rect = self.iconRect(option)
         if rect.contains(event.pos()):
             name = index.data(QtCore.Qt.DisplayRole)
-            print('clicked on', name)
+            print("clicked on", name)
 
 
 class ItemDelegate(QtWidgets.QStyledItemDelegate):
-
     def __init__(self, parent):
         super().__init__(parent)
         self.icon = app.resources.icons.arrow
@@ -160,8 +156,8 @@ class ItemDelegate(QtWidgets.QStyledItemDelegate):
     @override
     def editorEvent(self, event, model, option, index):
         if not (
-            event.type() == QtCore.QEvent.MouseButtonRelease and
-            event.button() == QtCore.Qt.LeftButton
+            event.type() == QtCore.QEvent.MouseButtonRelease
+            and event.button() == QtCore.Qt.LeftButton
         ):
             return super().event(event)
         view = self.indexView(index)
@@ -179,14 +175,16 @@ class ItemTreeView(QtWidgets.QTreeView):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         # self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Maximum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
-        self.setStyleSheet("""
+            QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Minimum
+        )
+        self.setStyleSheet(
+            """
             ItemTreeView {
                 background: palette(Midlight);
                 border: 0px solid transparent;
             }
-        """)
+        """
+        )
         # self.setSpacing(2)
         self.setHeaderHidden(True)
         self.setIndentation(0)
@@ -218,15 +216,17 @@ class SideBar(QtWidgets.QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             SideBar {
                 border: 0px solid transparent;
                 border-right: 1px solid palette(Dark);
             }
-        """)
+        """
+        )
         self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
+        )
 
         self.view = ItemTreeView(self)
         self.view.setModel(app.model.items)

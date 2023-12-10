@@ -22,7 +22,7 @@ from typing import Generic, TypeVar
 from ..types import FileInfo
 from .common import Object, Property
 
-FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
+FileInfoType = TypeVar("FileInfoType", bound=FileInfo)
 
 
 class InputFileModel(Object, Generic[FileInfoType]):
@@ -34,7 +34,7 @@ class InputFileModel(Object, Generic[FileInfoType]):
         super().__init__()
         self.info = info
         self.path = info.path
-        self.name = f'{info.path.parent.name}/{info.path.name}'
+        self.name = f"{info.path.parent.name}/{info.path.name}"
         self.size = info.size  # bytes
 
     def __repr__(self):

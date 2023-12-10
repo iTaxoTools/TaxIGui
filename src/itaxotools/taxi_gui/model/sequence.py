@@ -25,7 +25,7 @@ from itaxotools.common.utility import AttrDict, DecoratorDict
 from ..types import FileInfo
 from .common import Object, Property
 
-FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
+FileInfoType = TypeVar("FileInfoType", bound=FileInfo)
 
 models = DecoratorDict[FileInfo, Object]()
 
@@ -36,7 +36,7 @@ class SequenceModel(Object, Generic[FileInfoType]):
     def __init__(self, info: FileInfo):
         super().__init__()
         self.info = info
-        self.name = f'Sequences from {info.path.name}'
+        self.name = f"Sequences from {info.path.name}"
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
@@ -49,15 +49,15 @@ class SequenceModel(Object, Generic[FileInfoType]):
 
     @classmethod
     def from_file_info(cls, info: FileInfoType) -> SequenceModel[FileInfoType]:
-        if not type(info) in models:
-            raise Exception(f'No suitable {cls.__name__} for info: {info}')
+        if type(info) not in models:
+            raise Exception(f"No suitable {cls.__name__} for info: {info}")
         return models[type(info)](info)
 
 
 @models(FileInfo.Fasta)
 class Fasta(SequenceModel):
     has_subsets = Property(bool, False)
-    subset_separator = Property(str, '|')
+    subset_separator = Property(str, "|")
     parse_subset = Property(bool, False)
 
     def __init__(self, info: FileInfo.Fasta):

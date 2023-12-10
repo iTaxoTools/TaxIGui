@@ -23,11 +23,11 @@ from typing import Literal
 
 from .resources import LazyResource
 
-title: str = 'Application'
+title: str = "Application"
 icon: LazyResource[QtGui.QIcon] = LazyResource()
 pixmap: LazyResource[QtGui.QPixmap] = LazyResource()
 
-dashboard: Literal['legacy', 'constrained'] = 'legacy'
+dashboard: Literal["legacy", "constrained"] = "legacy"
 
 show_open: bool = False
 show_save: bool = False

@@ -21,7 +21,7 @@ from itaxotools.common.types import Type
 
 
 class Notification(Type):
-    def __init__(self, text: str, info: str = ''):
+    def __init__(self, text: str, info: str = ""):
         self.text = text
         self.info = info
 

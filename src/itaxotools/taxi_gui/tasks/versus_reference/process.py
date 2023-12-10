@@ -34,36 +34,29 @@ class VersusReferenceResults:
 
 def initialize():
     import itaxotools
-    itaxotools.progress_handler('Initializing...')
+
+    itaxotools.progress_handler("Initializing...")
     from itaxotools.taxi2.tasks.versus_reference import VersusReference  # noqa
 
 
 def execute(
-
     work_dir: Path,
-
     input_data: AttrDict,
     input_reference: AttrDict,
-
     alignment_mode: AlignmentMode,
     alignment_write_pairs: bool,
     alignment_pairwise_scores: dict,
-
     distance_metrics: list[DistanceMetric],
     distance_metrics_bbc_k: int,
     main_metric: DistanceMetric,
-
     distance_linear: bool,
     distance_matricial: bool,
     distance_percentile: bool,
     distance_precision: int,
     distance_missing: str,
-
 ) -> tuple[Path, float]:
-
     from itaxotools.taxi2.align import Scores
-    from itaxotools.taxi2.distances import \
-        DistanceMetric as BackendDistanceMetric
+    from itaxotools.taxi2.distances import DistanceMetric as BackendDistanceMetric
     from itaxotools.taxi2.tasks.versus_reference import VersusReference
 
     task = VersusReference()
@@ -97,19 +90,23 @@ def execute(
             DistanceMetric.BBC,
         ],
     }[alignment_mode]
-    distance_metrics = (metric for metric in distance_metrics if metric in metrics_filter)
+    distance_metrics = (
+        metric for metric in distance_metrics if metric in metrics_filter
+    )
 
     metrics_tr = {
         DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
-        DistanceMetric.UncorrectedWithGaps: (BackendDistanceMetric.UncorrectedWithGaps, []),
+        DistanceMetric.UncorrectedWithGaps: (
+            BackendDistanceMetric.UncorrectedWithGaps,
+            [],
+        ),
         DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
         DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
         DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
         DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metrics_bbc_k]),
     }
     metrics = [
-        metrics_tr[metric][0](*metrics_tr[metric][1])
-        for metric in distance_metrics
+        metrics_tr[metric][0](*metrics_tr[metric][1]) for metric in distance_metrics
     ]
 
     task.params.distances.metric = metrics[0]  # <-- todo: from main_metric
@@ -117,8 +114,8 @@ def execute(
     task.params.distances.write_linear = distance_linear
     task.params.distances.write_matricial = distance_matricial
 
-    task.params.format.float = f'{{:.{distance_precision}f}}'
-    task.params.format.percentage = f'{{:.{distance_precision}f}}%'
+    task.params.format.float = f"{{:.{distance_precision}f}}"
+    task.params.format.percentage = f"{{:.{distance_precision}f}}%"
     task.params.format.missing = distance_missing
     task.params.format.percentage_multiply = distance_percentile
 

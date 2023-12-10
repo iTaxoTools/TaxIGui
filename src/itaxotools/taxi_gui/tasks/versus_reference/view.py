@@ -19,7 +19,6 @@
 from PySide6 import QtWidgets
 
 from itaxotools.common.utility import AttrDict
-
 from itaxotools.taxi_gui.utility import type_convert
 from itaxotools.taxi_gui.view.cards import Card
 from itaxotools.taxi_gui.view.tasks import ScrollTaskView
@@ -27,12 +26,15 @@ from itaxotools.taxi_gui.view.widgets import GLineEdit, RadioButtonGroup
 
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from ..common.view import (
-    CrossAlignmentModeSelector, DummyResultsCard, ProgressCard,
-    SequenceSelector, TitleCard)
+    CrossAlignmentModeSelector,
+    DummyResultsCard,
+    ProgressCard,
+    SequenceSelector,
+    TitleCard,
+)
 
 
 class DistanceMetricSelector(Card):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.draw_main()
@@ -40,21 +42,22 @@ class DistanceMetricSelector(Card):
         self.draw_format()
 
     def draw_main(self):
-        label = QtWidgets.QLabel('Distance metrics')
+        label = QtWidgets.QLabel("Distance metrics")
         label.setStyleSheet("""font-size: 16px;""")
 
         description = QtWidgets.QLabel(
-            'Select the types of distances that should be calculated for each pair of sequences:')
+            "Select the types of distances that should be calculated for each pair of sequences:"
+        )
         description.setWordWrap(True)
 
         metrics = QtWidgets.QGridLayout()
         metrics.setContentsMargins(0, 0, 0, 0)
         metrics.setSpacing(8)
 
-        metric_p = QtWidgets.QCheckBox('Uncorrected (p-distance)')
-        metric_pg = QtWidgets.QCheckBox('Uncorrected with gaps')
-        metric_jc = QtWidgets.QCheckBox('Jukes Cantor (jc)')
-        metric_k2p = QtWidgets.QCheckBox('Kimura 2-Parameter (k2p)')
+        metric_p = QtWidgets.QCheckBox("Uncorrected (p-distance)")
+        metric_pg = QtWidgets.QCheckBox("Uncorrected with gaps")
+        metric_jc = QtWidgets.QCheckBox("Jukes Cantor (jc)")
+        metric_k2p = QtWidgets.QCheckBox("Kimura 2-Parameter (k2p)")
         metrics.addWidget(metric_p, 0, 0)
         metrics.addWidget(metric_pg, 1, 0)
         metrics.setColumnStretch(0, 2)
@@ -64,11 +67,11 @@ class DistanceMetricSelector(Card):
         metrics.addWidget(metric_k2p, 1, 2)
         metrics.setColumnStretch(2, 2)
 
-        metric_ncd = QtWidgets.QCheckBox('Normalized Compression Distance (NCD)')
-        metric_bbc = QtWidgets.QCheckBox('Base-Base Correlation (BBC)')
+        metric_ncd = QtWidgets.QCheckBox("Normalized Compression Distance (NCD)")
+        metric_bbc = QtWidgets.QCheckBox("Base-Base Correlation (BBC)")
 
-        metric_bbc_k_label = QtWidgets.QLabel('BBC k parameter:')
-        metric_bbc_k_field = GLineEdit('10')
+        metric_bbc_k_label = QtWidgets.QLabel("BBC k parameter:")
+        metric_bbc_k_field = GLineEdit("10")
 
         metric_bbc_k = QtWidgets.QHBoxLayout()
         metric_bbc_k.setContentsMargins(0, 0, 0, 0)
@@ -115,8 +118,12 @@ class DistanceMetricSelector(Card):
         self.addLayout(layout)
 
     def draw_file_type(self):
-        write_linear = QtWidgets.QCheckBox('Write distances in linear format (all metrics in the same file)')
-        write_matricial = QtWidgets.QCheckBox('Write distances in matricial format (one metric per matrix file)')
+        write_linear = QtWidgets.QCheckBox(
+            "Write distances in linear format (all metrics in the same file)"
+        )
+        write_matricial = QtWidgets.QCheckBox(
+            "Write distances in matricial format (one metric per matrix file)"
+        )
 
         self.controls.write_linear = write_linear
         self.controls.write_matricial = write_matricial
@@ -132,8 +139,8 @@ class DistanceMetricSelector(Card):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
-        unit_radio = QtWidgets.QRadioButton('Distances from 0.0 to 1.0')
-        percent_radio = QtWidgets.QRadioButton('Distances as percentages (%)')
+        unit_radio = QtWidgets.QRadioButton("Distances from 0.0 to 1.0")
+        percent_radio = QtWidgets.QRadioButton("Distances as percentages (%)")
 
         percentile = RadioButtonGroup()
         percentile.add(unit_radio, False)
@@ -146,16 +153,16 @@ class DistanceMetricSelector(Card):
         layout.setColumnMinimumWidth(1, 16)
         layout.setColumnStretch(1, 0)
 
-        precision_label = QtWidgets.QLabel('Decimal precision:')
-        missing_label = QtWidgets.QLabel('Not-Available symbol:')
+        precision_label = QtWidgets.QLabel("Decimal precision:")
+        missing_label = QtWidgets.QLabel("Not-Available symbol:")
 
         layout.addWidget(precision_label, 0, 2)
         layout.addWidget(missing_label, 1, 2)
 
         layout.setColumnMinimumWidth(3, 16)
 
-        precision = GLineEdit('4')
-        missing = GLineEdit('NA')
+        precision = GLineEdit("4")
+        missing = GLineEdit("NA")
 
         self.controls.percentile = percentile
         self.controls.precision = precision
@@ -181,7 +188,6 @@ class DistanceMetricSelector(Card):
 
 
 class View(ScrollTaskView):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.draw()
@@ -189,13 +195,14 @@ class View(ScrollTaskView):
     def draw(self):
         self.cards = AttrDict()
         self.cards.title = TitleCard(
-            'Versus Reference',
-            'For each sequence in the input dataset, find the closest match in the reference database.',
-            self)
+            "Versus Reference",
+            "For each sequence in the input dataset, find the closest match in the reference database.",
+            self,
+        )
         self.cards.dummy_results = DummyResultsCard(self)
         self.cards.progress = ProgressCard(self)
-        self.cards.input_data = SequenceSelector('Input data', self)
-        self.cards.input_reference = SequenceSelector('Reference', self)
+        self.cards.input_data = SequenceSelector("Input data", self)
+        self.cards.input_reference = SequenceSelector("Reference", self)
         self.cards.alignment_mode = CrossAlignmentModeSelector(self)
         self.cards.distance_metrics = DistanceMetricSelector(self)
 
@@ -218,53 +225,141 @@ class View(ScrollTaskView):
         self.binder.bind(object.properties.busy, self.cards.title.setBusy)
         self.binder.bind(object.properties.busy, self.cards.progress.setEnabled)
         self.binder.bind(object.properties.busy, self.cards.progress.setVisible)
-        self.binder.bind(object.subtask_data.properties.busy, self.cards.input_data.set_busy)
-        self.binder.bind(object.subtask_reference.properties.busy, self.cards.input_reference.set_busy)
+        self.binder.bind(
+            object.subtask_data.properties.busy, self.cards.input_data.set_busy
+        )
+        self.binder.bind(
+            object.subtask_reference.properties.busy,
+            self.cards.input_reference.set_busy,
+        )
 
-        self._bind_input_selector(self.cards.input_data, object.input_data, object.subtask_data)
-        self._bind_input_selector(self.cards.input_reference, object.input_reference, object.subtask_reference)
+        self._bind_input_selector(
+            self.cards.input_data, object.input_data, object.subtask_data
+        )
+        self._bind_input_selector(
+            self.cards.input_reference, object.input_reference, object.subtask_reference
+        )
 
-        self.binder.bind(self.cards.alignment_mode.controls.mode.valueChanged, object.properties.alignment_mode)
-        self.binder.bind(object.properties.alignment_mode, self.cards.alignment_mode.controls.mode.setValue)
-        self.binder.bind(self.cards.alignment_mode.controls.write_pairs.toggled, object.properties.alignment_write_pairs)
-        self.binder.bind(object.properties.alignment_write_pairs, self.cards.alignment_mode.controls.write_pairs.setChecked)
-        self.binder.bind(self.cards.alignment_mode.resetScores, object.pairwise_scores.reset)
+        self.binder.bind(
+            self.cards.alignment_mode.controls.mode.valueChanged,
+            object.properties.alignment_mode,
+        )
+        self.binder.bind(
+            object.properties.alignment_mode,
+            self.cards.alignment_mode.controls.mode.setValue,
+        )
+        self.binder.bind(
+            self.cards.alignment_mode.controls.write_pairs.toggled,
+            object.properties.alignment_write_pairs,
+        )
+        self.binder.bind(
+            object.properties.alignment_write_pairs,
+            self.cards.alignment_mode.controls.write_pairs.setChecked,
+        )
+        self.binder.bind(
+            self.cards.alignment_mode.resetScores, object.pairwise_scores.reset
+        )
         for score in PairwiseScore:
             self.binder.bind(
-                self.cards.alignment_mode.controls.score_fields[score.key].textEditedSafe,
+                self.cards.alignment_mode.controls.score_fields[
+                    score.key
+                ].textEditedSafe,
                 object.pairwise_scores.properties[score.key],
-                lambda x: type_convert(x, int, None))
+                lambda x: type_convert(x, int, None),
+            )
             self.binder.bind(
                 object.pairwise_scores.properties[score.key],
                 self.cards.alignment_mode.controls.score_fields[score.key].setText,
-                lambda x: str(x) if x is not None else '')
+                lambda x: str(x) if x is not None else "",
+            )
 
         for key in (metric.key for metric in DistanceMetric):
-            self.binder.bind(self.cards.distance_metrics.controls.metrics[key].toggled, object.distance_metrics.properties[key])
-            self.binder.bind(object.distance_metrics.properties[key], self.cards.distance_metrics.controls.metrics[key].setChecked)
+            self.binder.bind(
+                self.cards.distance_metrics.controls.metrics[key].toggled,
+                object.distance_metrics.properties[key],
+            )
+            self.binder.bind(
+                object.distance_metrics.properties[key],
+                self.cards.distance_metrics.controls.metrics[key].setChecked,
+            )
 
-        self.binder.bind(self.cards.distance_metrics.controls.bbc_k.textEditedSafe, object.distance_metrics.properties.bbc_k, lambda x: type_convert(x, int, None))
-        self.binder.bind(object.distance_metrics.properties.bbc_k, self.cards.distance_metrics.controls.bbc_k.setText, lambda x: str(x) if x is not None else '')
-        self.binder.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k.setEnabled)
-        self.binder.bind(object.distance_metrics.properties.bbc, self.cards.distance_metrics.controls.bbc_k_label.setEnabled)
+        self.binder.bind(
+            self.cards.distance_metrics.controls.bbc_k.textEditedSafe,
+            object.distance_metrics.properties.bbc_k,
+            lambda x: type_convert(x, int, None),
+        )
+        self.binder.bind(
+            object.distance_metrics.properties.bbc_k,
+            self.cards.distance_metrics.controls.bbc_k.setText,
+            lambda x: str(x) if x is not None else "",
+        )
+        self.binder.bind(
+            object.distance_metrics.properties.bbc,
+            self.cards.distance_metrics.controls.bbc_k.setEnabled,
+        )
+        self.binder.bind(
+            object.distance_metrics.properties.bbc,
+            self.cards.distance_metrics.controls.bbc_k_label.setEnabled,
+        )
 
-        self.binder.bind(self.cards.distance_metrics.controls.write_linear.toggled, object.properties.distance_linear)
-        self.binder.bind(object.properties.distance_linear, self.cards.distance_metrics.controls.write_linear.setChecked)
-        self.binder.bind(self.cards.distance_metrics.controls.write_matricial.toggled, object.properties.distance_matricial)
-        self.binder.bind(object.properties.distance_matricial, self.cards.distance_metrics.controls.write_matricial.setChecked)
+        self.binder.bind(
+            self.cards.distance_metrics.controls.write_linear.toggled,
+            object.properties.distance_linear,
+        )
+        self.binder.bind(
+            object.properties.distance_linear,
+            self.cards.distance_metrics.controls.write_linear.setChecked,
+        )
+        self.binder.bind(
+            self.cards.distance_metrics.controls.write_matricial.toggled,
+            object.properties.distance_matricial,
+        )
+        self.binder.bind(
+            object.properties.distance_matricial,
+            self.cards.distance_metrics.controls.write_matricial.setChecked,
+        )
 
-        self.binder.bind(self.cards.distance_metrics.controls.percentile.valueChanged, object.properties.distance_percentile)
-        self.binder.bind(object.properties.distance_percentile, self.cards.distance_metrics.controls.percentile.setValue)
+        self.binder.bind(
+            self.cards.distance_metrics.controls.percentile.valueChanged,
+            object.properties.distance_percentile,
+        )
+        self.binder.bind(
+            object.properties.distance_percentile,
+            self.cards.distance_metrics.controls.percentile.setValue,
+        )
 
-        self.binder.bind(self.cards.distance_metrics.controls.precision.textEditedSafe, object.properties.distance_precision, lambda x: type_convert(x, int, None))
-        self.binder.bind(object.properties.distance_precision, self.cards.distance_metrics.controls.precision.setText, lambda x: str(x) if x is not None else '')
-        self.binder.bind(self.cards.distance_metrics.controls.missing.textEditedSafe, object.properties.distance_missing)
-        self.binder.bind(object.properties.distance_missing, self.cards.distance_metrics.controls.missing.setText)
+        self.binder.bind(
+            self.cards.distance_metrics.controls.precision.textEditedSafe,
+            object.properties.distance_precision,
+            lambda x: type_convert(x, int, None),
+        )
+        self.binder.bind(
+            object.properties.distance_precision,
+            self.cards.distance_metrics.controls.precision.setText,
+            lambda x: str(x) if x is not None else "",
+        )
+        self.binder.bind(
+            self.cards.distance_metrics.controls.missing.textEditedSafe,
+            object.properties.distance_missing,
+        )
+        self.binder.bind(
+            object.properties.distance_missing,
+            self.cards.distance_metrics.controls.missing.setText,
+        )
 
-        self.binder.bind(object.properties.alignment_mode, self.cards.distance_metrics.setAlignmentMode)
+        self.binder.bind(
+            object.properties.alignment_mode,
+            self.cards.distance_metrics.setAlignmentMode,
+        )
 
-        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setPath)
-        self.binder.bind(object.properties.dummy_results, self.cards.dummy_results.setVisible, lambda x: x is not None)
+        self.binder.bind(
+            object.properties.dummy_results, self.cards.dummy_results.setPath
+        )
+        self.binder.bind(
+            object.properties.dummy_results,
+            self.cards.dummy_results.setVisible,
+            lambda x: x is not None,
+        )
 
         self.binder.bind(object.properties.editable, self.setEditable)
 
@@ -283,6 +378,6 @@ class View(ScrollTaskView):
         self.cards.progress.setEnabled(True)
 
     def save(self):
-        path = self.getExistingDirectory('Save All')
+        path = self.getExistingDirectory("Save All")
         if path:
             self.object.save(path)

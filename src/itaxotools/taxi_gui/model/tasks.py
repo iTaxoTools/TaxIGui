@@ -27,14 +27,20 @@ from typing import Callable, List
 from itaxotools.common.bindings import Binder, Property, PropertyRef
 
 from ..threading import (
-    DataQuery, ReportDone, ReportExit, ReportFail, ReportProgress, ReportStop,
-    Worker)
+    DataQuery,
+    ReportDone,
+    ReportExit,
+    ReportFail,
+    ReportProgress,
+    ReportStop,
+    Worker,
+)
 from ..types import Notification
 from .common import Object
 
 
 class TaskModel(Object):
-    task_name = 'Task'
+    task_name = "Task"
 
     notification = QtCore.Signal(Notification)
     progression = QtCore.Signal(ReportProgress)
@@ -57,16 +63,26 @@ class TaskModel(Object):
         super().__init__(name or self._get_next_name())
         self.binder = Binder()
 
-        self.temporary_directory = TemporaryDirectory(prefix=f'{self.task_name}_')
+        self.temporary_directory = TemporaryDirectory(prefix=f"{self.task_name}_")
         self.temporary_path = Path(self.temporary_directory.name)
 
         self.worker = Worker(name=self.name, eager=True, log_path=self.temporary_path)
 
-        self.binder.bind(self.worker.done, self.onDone, condition=self._matches_report_id)
-        self.binder.bind(self.worker.fail, self.onFail, condition=self._matches_report_id)
-        self.binder.bind(self.worker.error, self.onError, condition=self._matches_report_id)
-        self.binder.bind(self.worker.stop, self.onStop, condition=self._matches_report_id)
-        self.binder.bind(self.worker.query, self.query.emit, condition=self._matches_report_id)
+        self.binder.bind(
+            self.worker.done, self.onDone, condition=self._matches_report_id
+        )
+        self.binder.bind(
+            self.worker.fail, self.onFail, condition=self._matches_report_id
+        )
+        self.binder.bind(
+            self.worker.error, self.onError, condition=self._matches_report_id
+        )
+        self.binder.bind(
+            self.worker.stop, self.onStop, condition=self._matches_report_id
+        )
+        self.binder.bind(
+            self.worker.query, self.query.emit, condition=self._matches_report_id
+        )
         self.binder.bind(self.worker.progress, self.progression.emit)
 
         for property in [
@@ -79,7 +95,7 @@ class TaskModel(Object):
             property.notify.connect(self.checkStopable)
 
     def __repr__(self):
-        return f'{self.task_name}({repr(self.name)})'
+        return f"{self.task_name}({repr(self.name)})"
 
     @classmethod
     def _get_next_name(cls):
@@ -87,31 +103,37 @@ class TaskModel(Object):
         return cls.task_name
 
     def _matches_report_id(self, report) -> bool:
-        if not hasattr(report, 'id'):
+        if not hasattr(report, "id"):
             return False
         return report.id == id(self)
 
     def onFail(self, report: ReportFail):
-        self.notification.emit(Notification.Fail(str(report.exception), report.traceback))
+        self.notification.emit(
+            Notification.Fail(str(report.exception), report.traceback)
+        )
         self.busy = False
 
     def onError(self, report: ReportExit):
-        self.notification.emit(Notification.Fail(f'Process failed with exit code: {report.exit_code}'))
+        self.notification.emit(
+            Notification.Fail(f"Process failed with exit code: {report.exit_code}")
+        )
         self.busy = False
 
     def onStop(self, report: ReportStop):
-        self.notification.emit(Notification.Warn('Cancelled by user.'))
+        self.notification.emit(Notification.Warn("Cancelled by user."))
         self.busy = False
 
     def onDone(self, report: ReportDone):
         """Overload this to handle results"""
-        self.notification.emit(Notification.Info(f'{self.name} completed successfully!'))
+        self.notification.emit(
+            Notification.Info(f"{self.name} completed successfully!")
+        )
         self.busy = False
         self.done = True
 
     def start(self):
         """Slot for starting the task"""
-        self.progression.emit(ReportProgress('Preparing for execution...'))
+        self.progression.emit(ReportProgress("Preparing for execution..."))
         self.busy = True
 
     def stop(self):
@@ -161,7 +183,7 @@ class TaskModel(Object):
 
 
 class SubtaskModel(Object):
-    task_name = 'Subtask'
+    task_name = "Subtask"
 
     notification = QtCore.Signal(Notification)
     progression = QtCore.Signal(ReportProgress)
@@ -178,11 +200,21 @@ class SubtaskModel(Object):
         self.temporary_path = parent.temporary_path
         self.worker = parent.worker
 
-        self.binder.bind(self.worker.done, self.onDone, condition=self._matches_report_id)
-        self.binder.bind(self.worker.fail, self.onFail, condition=self._matches_report_id)
-        self.binder.bind(self.worker.error, self.onError, condition=self._matches_report_id)
-        self.binder.bind(self.worker.stop, self.onStop, condition=self._matches_report_id)
-        self.binder.bind(self.worker.query, self.query.emit, condition=self._matches_report_id)
+        self.binder.bind(
+            self.worker.done, self.onDone, condition=self._matches_report_id
+        )
+        self.binder.bind(
+            self.worker.fail, self.onFail, condition=self._matches_report_id
+        )
+        self.binder.bind(
+            self.worker.error, self.onError, condition=self._matches_report_id
+        )
+        self.binder.bind(
+            self.worker.stop, self.onStop, condition=self._matches_report_id
+        )
+        self.binder.bind(
+            self.worker.query, self.query.emit, condition=self._matches_report_id
+        )
         self.binder.bind(self.worker.progress, self.progression.emit)
 
         self.binder.bind(self.notification, parent.notification)
@@ -193,27 +225,31 @@ class SubtaskModel(Object):
             self.binder.bind(self.properties.busy, parent.properties.busy_subtask)
 
     def __repr__(self):
-        return f'{self.task_name}({repr(self.name)})'
+        return f"{self.task_name}({repr(self.name)})"
 
     @classmethod
     def _get_next_name(cls):
-        return f'{cls.task_name} #{next(cls.counters[cls.task_name])}'
+        return f"{cls.task_name} #{next(cls.counters[cls.task_name])}"
 
     def _matches_report_id(self, report) -> bool:
-        if not hasattr(report, 'id'):
+        if not hasattr(report, "id"):
             return False
         return report.id == id(self)
 
     def onFail(self, report: ReportFail):
-        self.notification.emit(Notification.Fail(str(report.exception), report.traceback))
+        self.notification.emit(
+            Notification.Fail(str(report.exception), report.traceback)
+        )
         self.busy = False
 
     def onError(self, report: ReportExit):
-        self.notification.emit(Notification.Fail(f'Process failed with exit code: {report.exit_code}'))
+        self.notification.emit(
+            Notification.Fail(f"Process failed with exit code: {report.exit_code}")
+        )
         self.busy = False
 
     def onStop(self, report: ReportStop):
-        self.notification.emit(Notification.Warn('Cancelled by user.'))
+        self.notification.emit(Notification.Warn("Cancelled by user."))
         self.busy = False
 
     def onDone(self, report: ReportDone):
@@ -223,7 +259,7 @@ class SubtaskModel(Object):
 
     def start(self, task: Callable, *args, **kwargs):
         """Slot for starting the task"""
-        self.progression.emit(ReportProgress('Preparing for execution...'))
+        self.progression.emit(ReportProgress("Preparing for execution..."))
         self.busy = True
         self.exec(task, *args, **kwargs)
 

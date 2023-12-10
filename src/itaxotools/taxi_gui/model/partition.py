@@ -27,7 +27,7 @@ from itaxotools.common.utility import AttrDict, DecoratorDict
 from ..types import ColumnFilter, FileInfo
 from .common import Object, Property
 
-FileInfoType = TypeVar('FileInfoType', bound=FileInfo)
+FileInfoType = TypeVar("FileInfoType", bound=FileInfo)
 
 models = DecoratorDict[FileInfo, Object]()
 
@@ -39,11 +39,11 @@ class PartitionModel(Object, Generic[FileInfoType]):
     def __init__(
         self,
         info: FileInfo,
-        preference: Literal['species', 'genera'] = None,
+        preference: Literal["species", "genera"] = None,
     ):
         super().__init__()
         self.info = info
-        self.name = f'Partition from {info.path.name}'
+        self.name = f"Partition from {info.path.name}"
 
     def __repr__(self):
         return f'{".".join(self._get_name_chain())}({repr(self.name)})'
@@ -53,44 +53,44 @@ class PartitionModel(Object, Generic[FileInfoType]):
 
     def as_dict(self):
         return AttrDict(
-            {p.key: p.value for p in self.properties} |
-            dict(partition_name=self.partition_name))
+            {p.key: p.value for p in self.properties}
+            | dict(partition_name=self.partition_name)
+        )
 
     @classmethod
     def from_file_info(
         cls,
         info: FileInfoType,
-        preference: Literal['species', 'genera'] = None,
+        preference: Literal["species", "genera"] = None,
     ) -> PartitionModel[FileInfoType]:
-
-        if not type(info) in models:
-            raise Exception(f'No suitable {cls.__name__} for info: {info}')
+        if type(info) not in models:
+            raise Exception(f"No suitable {cls.__name__} for info: {info}")
         return models[type(info)](info, preference)
 
     @property
     def partition_name(self):
-        return 'unknown'
+        return "unknown"
 
 
 @models(FileInfo.Fasta)
 class Fasta(PartitionModel):
     subset_filter = Property(ColumnFilter, ColumnFilter.All)
-    subset_separator = Property(str, '|')
+    subset_separator = Property(str, "|")
 
     def __init__(
         self,
         info: FileInfo.Fasta,
-        preference: Literal['species', 'genera'] = None,
+        preference: Literal["species", "genera"] = None,
     ):
         super().__init__(info)
         assert info.has_subsets
         self.subset_separator = info.subset_separator
-        if preference == 'genera':
+        if preference == "genera":
             self.subset_filter = ColumnFilter.First
 
     @property
     def partition_name(self):
-        return 'from fasta'
+        return "from fasta"
 
 
 @models(FileInfo.Tabfile)
@@ -103,13 +103,13 @@ class Tabfile(PartitionModel):
     def __init__(
         self,
         info: FileInfo.Tabfile,
-        preference: Literal['species', 'genera'] = None,
+        preference: Literal["species", "genera"] = None,
     ):
         super().__init__(info)
 
         subset = {
-            'species': info.header_species,
-            'genera': info.header_genus,
+            "species": info.header_species,
+            "genera": info.header_genus,
             None: info.header_organism,
         }[preference]
         self.individual_column = self._header_get(info.headers, info.header_individuals)
@@ -117,7 +117,7 @@ class Tabfile(PartitionModel):
 
         if self.subset_column < 0:
             self.subset_column = self._header_get(info.headers, info.header_organism)
-            if self.subset_column >= 0 and preference == 'genera':
+            if self.subset_column >= 0 and preference == "genera":
                 self.subset_filter = ColumnFilter.First
 
         self.properties.subset_column.notify.connect(self.updated)
@@ -155,7 +155,7 @@ class Spart(PartitionModel):
     def __init__(
         self,
         info: FileInfo.Spart,
-        preference: Literal['species', 'genera'] = None,
+        preference: Literal["species", "genera"] = None,
     ):
         super().__init__(info)
         assert len(info.spartitions) > 0

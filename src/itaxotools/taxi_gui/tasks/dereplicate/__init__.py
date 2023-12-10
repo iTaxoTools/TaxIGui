@@ -1,3 +1,2 @@
-
-title = 'Dereplicate'
-description = 'Detect similar sequences within a dataset'
+title = "Dereplicate"
+description = "Detect similar sequences within a dataset"

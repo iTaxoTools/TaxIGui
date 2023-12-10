@@ -34,14 +34,14 @@ class PropertyEnum(Enum):
         self.type = object
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}.{self._name_}>'
+        return f"<{self.__class__.__name__}.{self._name_}>"
 
 
 class ColumnFilter(Enum):
-    All = ('*', 'All contents')
-    First = ('1', 'First word')
+    All = ("*", "All contents")
+    First = ("1", "First word")
 
     def __init__(self, abr, text):
         self.abr = abr
         self.text = text
-        self.label = f'{text} ({abr})'
+        self.label = f"{text} ({abr})"

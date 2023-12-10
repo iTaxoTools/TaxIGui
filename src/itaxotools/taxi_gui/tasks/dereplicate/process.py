@@ -34,20 +34,17 @@ class DereplicateResults:
 
 def initialize():
     import itaxotools
-    itaxotools.progress_handler('Initializing...')
+
+    itaxotools.progress_handler("Initializing...")
     from itaxotools.taxi2.tasks.dereplicate import Dereplicate  # noqa
 
 
 def execute(
-
     work_dir: Path,
-
     input_sequences: AttrDict,
-
     alignment_mode: AlignmentMode,
     alignment_write_pairs: bool,
     alignment_pairwise_scores: dict,
-
     distance_metric: DistanceMetric,
     distance_metric_bbc_k: int,
     distance_linear: bool,
@@ -55,17 +52,12 @@ def execute(
     distance_percentile: bool,
     distance_precision: int,
     distance_missing: str,
-
     similarity_threshold: float,
     length_threshold: int,
-
-    **kwargs
-
+    **kwargs,
 ) -> tuple[Path, float]:
-
     from itaxotools.taxi2.align import Scores
-    from itaxotools.taxi2.distances import \
-        DistanceMetric as BackendDistanceMetric
+    from itaxotools.taxi2.distances import DistanceMetric as BackendDistanceMetric
     from itaxotools.taxi2.tasks.dereplicate import Dereplicate
 
     task = Dereplicate()
@@ -84,7 +76,10 @@ def execute(
 
     metrics_tr = {
         DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
-        DistanceMetric.UncorrectedWithGaps: (BackendDistanceMetric.UncorrectedWithGaps, []),
+        DistanceMetric.UncorrectedWithGaps: (
+            BackendDistanceMetric.UncorrectedWithGaps,
+            [],
+        ),
         DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
         DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
         DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
@@ -96,8 +91,8 @@ def execute(
     task.params.distances.write_linear = distance_linear
     task.params.distances.write_matricial = distance_matricial
 
-    task.params.format.float = f'{{:.{distance_precision}f}}'
-    task.params.format.percentage = f'{{:.{distance_precision}f}}%'
+    task.params.format.float = f"{{:.{distance_precision}f}}"
+    task.params.format.percentage = f"{{:.{distance_precision}f}}%"
     task.params.format.missing = distance_missing
     task.params.format.percentage_multiply = distance_percentile
 

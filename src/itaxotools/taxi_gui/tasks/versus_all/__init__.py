@@ -1,3 +1,2 @@
-
-title = 'Versus All'
-description = 'Analyze subset distances within a dataset'
+title = "Versus All"
+description = "Analyze subset distances within a dataset"

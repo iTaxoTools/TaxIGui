@@ -27,7 +27,7 @@ from itaxotools.common.widgets import VectorIcon
 
 from . import skin
 
-ResourceType = TypeVar('ResourceType')
+ResourceType = TypeVar("ResourceType")
 
 
 class LazyResource(Generic[ResourceType]):
@@ -43,7 +43,7 @@ class LazyResource(Generic[ResourceType]):
 
 class LazyResourceCollection(Generic[ResourceType]):
     def __init__(self, **kwargs: dict[str, Callable[[], ResourceType]]):
-        super().__setattr__('attrs', kwargs)
+        super().__setattr__("attrs", kwargs)
 
     def __dir__(self):
         return super().__dir__() + self.attrs
@@ -61,24 +61,16 @@ def _get_common(path):
 
 
 pixmaps = LazyResourceCollection(
-    logo_project = lambda: QtGui.QPixmap(
-        _get_common('logos/itaxotools-logo-64px.png')),
+    logo_project=lambda: QtGui.QPixmap(_get_common("logos/itaxotools-logo-64px.png")),
 )
 
 
 icons = LazyResourceCollection(
-    arrow = lambda: VectorIcon(
-        _get_common('icons/svg/arrow-right.svg'), skin.colormap),
-    open = lambda: VectorIcon(
-        _get_common('icons/svg/open.svg'), skin.colormap),
-    save = lambda: VectorIcon(
-        _get_common('icons/svg/save.svg'), skin.colormap),
-    run = lambda: VectorIcon(
-        _get_common('icons/svg/run.svg'), skin.colormap),
-    stop = lambda: VectorIcon(
-        _get_common('icons/svg/stop.svg'), skin.colormap),
-    clear = lambda: VectorIcon(
-        _get_common('icons/svg/clear.svg'), skin.colormap),
-    home = lambda: VectorIcon(
-        _get_common('icons/svg/home.svg'), skin.colormap),
+    arrow=lambda: VectorIcon(_get_common("icons/svg/arrow-right.svg"), skin.colormap),
+    open=lambda: VectorIcon(_get_common("icons/svg/open.svg"), skin.colormap),
+    save=lambda: VectorIcon(_get_common("icons/svg/save.svg"), skin.colormap),
+    run=lambda: VectorIcon(_get_common("icons/svg/run.svg"), skin.colormap),
+    stop=lambda: VectorIcon(_get_common("icons/svg/stop.svg"), skin.colormap),
+    clear=lambda: VectorIcon(_get_common("icons/svg/clear.svg"), skin.colormap),
+    home=lambda: VectorIcon(_get_common("icons/svg/home.svg"), skin.colormap),
 )

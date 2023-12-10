@@ -20,18 +20,16 @@ from PySide6 import QtGui
 
 from itaxotools.common.resources import get_local
 from itaxotools.common.widgets import VectorPixmap
-
 from itaxotools.taxi_gui.app import skin
 from itaxotools.taxi_gui.app.resources import LazyResourceCollection
 
 icons = LazyResourceCollection(
-    taxi2 = lambda: QtGui.QIcon(
-        get_local(__package__, 'logos/taxi2.ico')),
+    taxi2=lambda: QtGui.QIcon(get_local(__package__, "logos/taxi2.ico")),
 )
 
 
 pixmaps = LazyResourceCollection(
-    taxi2 = lambda: VectorPixmap(
-        get_local(__package__, 'logos/taxi2.svg'),
-        colormap=skin.colormap_icon)
+    taxi2=lambda: VectorPixmap(
+        get_local(__package__, "logos/taxi2.svg"), colormap=skin.colormap_icon
+    )
 )

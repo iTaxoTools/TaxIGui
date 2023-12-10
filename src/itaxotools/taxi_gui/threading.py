@@ -26,12 +26,21 @@ from itaxotools.common.utility import override
 
 from .io import PipeWrite, StreamGroup
 from .loop import (
-    Command, DataQuery, ReportDone, ReportExit, ReportFail, ReportProgress,
-    ReportQuit, ReportStop, loop)
+    Command,
+    DataQuery,
+    ReportDone,
+    ReportExit,
+    ReportFail,
+    ReportProgress,
+    ReportQuit,
+    ReportStop,
+    loop,
+)
 
 
 class Worker(QtCore.QThread):
     """Execute functions on a child process, get notified with results"""
+
     done = QtCore.Signal(ReportDone)
     fail = QtCore.Signal(ReportFail)
     error = QtCore.Signal(ReportExit)
@@ -39,7 +48,7 @@ class Worker(QtCore.QThread):
     progress = QtCore.Signal(ReportProgress)
     query = QtCore.Signal(DataQuery)
 
-    def __init__(self, name='Worker', eager=True, log_path=None):
+    def __init__(self, name="Worker", eager=True, log_path=None):
         """Immediately starts thread execution"""
         super().__init__()
         self.name = name
@@ -70,7 +79,7 @@ class Worker(QtCore.QThread):
         Internal. This is executed on the new thread after start() is called.
         Once a child process is ready, enter an event loop.
         """
-        with self.open_log('all.log'):
+        with self.open_log("all.log"):
             if self.eager:
                 self.process_start()
             while not self.quitting:
@@ -79,7 +88,7 @@ class Worker(QtCore.QThread):
                     break
                 if self.process is None:
                     self.process_start()
-                with self.open_log(f'{str(task.id)}.log'):
+                with self.open_log(f"{str(task.id)}.log"):
                     self.commands.send(task)
                     report = self.loop(task)
                     self.handle_report(report)
@@ -124,7 +133,6 @@ class Worker(QtCore.QThread):
             self.streamErr.write(out.text)
 
     def handle_exit(self, task, waitList):
-
         self.consume_connections(waitList)
         exitcode = self.process.exitcode
         resetting = self.resetting
@@ -168,11 +176,11 @@ class Worker(QtCore.QThread):
             self.streamErr.flush()
             self.fail.emit(report)
         if isinstance(report, ReportStop):
-            self.streamErr.write('\nCancelled process by user request.\n')
+            self.streamErr.write("\nCancelled process by user request.\n")
             self.streamErr.flush()
             self.stop.emit(report)
         elif isinstance(report, ReportExit):
-            self.streamErr.write(f'Process failed with exit code: {report.exit_code}')
+            self.streamErr.write(f"Process failed with exit code: {report.exit_code}")
             self.streamErr.flush()
             if report.id != 0:
                 self.error.emit(report)
@@ -183,7 +191,7 @@ class Worker(QtCore.QThread):
         if not path:
             yield
             return
-        with open(path / filename, 'a') as file:
+        with open(path / filename, "a") as file:
             self.streamOut.add(file)
             self.streamErr.add(file)
             yield
@@ -199,8 +207,11 @@ class Worker(QtCore.QThread):
         self.reports, reports = mp.Pipe(duplex=False)
         self.queries, queries = mp.Pipe(duplex=True)
         self.process = mp.Process(
-            target=loop, daemon=True, name=self.name,
-            args=(commands, results, reports, queries, pipe_out))
+            target=loop,
+            daemon=True,
+            name=self.name,
+            args=(commands, results, reports, queries, pipe_out),
+        )
         self.process.start()
 
     def exec(self, id, function, *args, **kwargs):

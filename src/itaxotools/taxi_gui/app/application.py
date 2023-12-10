@@ -42,7 +42,7 @@ class Application(QtWidgets.QApplication):
     def set_pixmap(self, pixmap: LazyResource[QtGui.QPixmap]):
         config.pixmap = pixmap
 
-    def set_dashboard(self, dashboard: Literal['legacy', 'constrained']):
+    def set_dashboard(self, dashboard: Literal["legacy", "constrained"]):
         config.dashboard = dashboard
 
     def set_show_open(self, open: bool):
@@ -55,13 +55,13 @@ class Application(QtWidgets.QApplication):
         config.tasks = tasks
 
     def set_config(self, config: ModuleType):
-        self.set_title(getattr(config, 'title', 'Application'))
-        self.set_icon(getattr(config, 'icon', LazyResource(None)))
-        self.set_pixmap(getattr(config, 'pixmap', LazyResource(None)))
-        self.set_dashboard(getattr(config, 'dashboard', 'legacy'))
-        self.set_show_open(getattr(config, 'show_open', False))
-        self.set_show_save(getattr(config, 'show_save', False))
-        self.set_tasks(getattr(config, 'tasks', []))
+        self.set_title(getattr(config, "title", "Application"))
+        self.set_icon(getattr(config, "icon", LazyResource(None)))
+        self.set_pixmap(getattr(config, "pixmap", LazyResource(None)))
+        self.set_dashboard(getattr(config, "dashboard", "legacy"))
+        self.set_show_open(getattr(config, "show_open", False))
+        self.set_show_save(getattr(config, "show_save", False))
+        self.set_tasks(getattr(config, "tasks", []))
 
     def set_skin(self, skin: ModuleType):
         skin.apply(self)

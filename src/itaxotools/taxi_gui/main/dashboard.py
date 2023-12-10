@@ -19,7 +19,6 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import override
-
 from itaxotools.taxi_gui.view.widgets import DisplayFrame
 
 from .. import app
@@ -31,7 +30,6 @@ class DashItem(QtWidgets.QAbstractButton):
 
 
 class DashItemLegacy(DashItem):
-
     def __init__(self, text, subtext, pixmap, slot, parent=None):
         super().__init__(parent)
         self.setText(text)
@@ -40,8 +38,8 @@ class DashItemLegacy(DashItem):
         self.clicked.connect(slot)
         self.setMouseTracking(True)
         self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
+        )
         self._mouseOver = False
         self.pad_x = 4
         self.pad_y = 4
@@ -58,10 +56,7 @@ class DashItemLegacy(DashItem):
         if isinstance(event, QtGui.QEnterEvent):
             self._mouseOver = True
             self.update()
-        elif (
-            isinstance(event, QtCore.QEvent) and
-            event.type() == QtCore.QEvent.Leave
-        ):
+        elif isinstance(event, QtCore.QEvent) and event.type() == QtCore.QEvent.Leave:
             self._mouseOver = False
             self.update()
         return super().event(event)
@@ -94,7 +89,9 @@ class DashItemLegacy(DashItem):
         pix_rect = QtCore.QRect(rect)
         pix_rect.setWidth(pix_rect.height())
         pix_rect.moveLeft(self.pad_text / 2)
-        pix_rect.adjust(self.pad_pixmap, self.pad_pixmap, -self.pad_pixmap, -self.pad_pixmap)
+        pix_rect.adjust(
+            self.pad_pixmap, self.pad_pixmap, -self.pad_pixmap, -self.pad_pixmap
+        )
         painter.drawPixmap(pix_rect, self.pixmap)
         rect.adjust(pix_rect.width() + self.pad_text, 0, 0, 0)
 
@@ -125,7 +122,6 @@ class DashItemLegacy(DashItem):
 
 
 class DashItemConstrained(DashItem):
-
     def __init__(self, text, subtext, pixmap, slot, parent=None):
         super().__init__(parent)
         self.setText(text)
@@ -135,7 +131,8 @@ class DashItemConstrained(DashItem):
         self.setMouseTracking(True)
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
-            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+        )
         self._mouseOver = False
         self.pad_x = 4
         self.pad_y = 4
@@ -165,10 +162,7 @@ class DashItemConstrained(DashItem):
         if isinstance(event, QtGui.QEnterEvent):
             self._mouseOver = True
             self.update()
-        elif (
-            isinstance(event, QtCore.QEvent) and
-            event.type() == QtCore.QEvent.Leave
-        ):
+        elif isinstance(event, QtCore.QEvent) and event.type() == QtCore.QEvent.Leave:
             self._mouseOver = False
             self.update()
         return super().event(event)
@@ -219,7 +213,9 @@ class DashItemConstrained(DashItem):
         pix_rect = QtCore.QRect(rect)
         pix_rect.setWidth(pix_rect.height())
         pix_rect.moveLeft(self.pad_text / 4)
-        pix_rect.adjust(self.pad_pixmap, self.pad_pixmap, -self.pad_pixmap, -self.pad_pixmap)
+        pix_rect.adjust(
+            self.pad_pixmap, self.pad_pixmap, -self.pad_pixmap, -self.pad_pixmap
+        )
         painter.drawPixmap(pix_rect, self.pixmap)
         rect.adjust(pix_rect.width() + self.pad_text, 0, 0, 0)
 
@@ -252,13 +248,12 @@ class DashItemConstrained(DashItem):
 
 
 class Dashboard(QtWidgets.QFrame):
-
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setStyleSheet("Dashboard {background: Palette(dark);}")
         self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
+        )
 
     def addTaskItem(self, task: app.Task):
         raise NotImplementedError()
@@ -271,7 +266,6 @@ class Dashboard(QtWidgets.QFrame):
 
 
 class DashboardLegacy(Dashboard):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._task_count = 0
@@ -289,11 +283,12 @@ class DashboardLegacy(Dashboard):
     def addTaskItem(self, task):
         row, column = divmod(self._task_count, 2)
         item = DashItemLegacy(
-            text = task.title,
-            subtext = task.description,
-            pixmap = task.pixmap.resource,
-            slot = lambda: self.addTaskIfNew(task.model),
-            parent = self)
+            text=task.title,
+            subtext=task.description,
+            pixmap=task.pixmap.resource,
+            slot=lambda: self.addTaskIfNew(task.model),
+            parent=self,
+        )
         self.layout().addWidget(item, row, column)
         self._task_count += 1
 
@@ -308,7 +303,6 @@ class DashboardLegacy(Dashboard):
 
 
 class DashboardConstrained(Dashboard):
-
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
@@ -324,7 +318,8 @@ class DashboardConstrained(Dashboard):
         task_widget = QtWidgets.QFrame()
         task_widget.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
-            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+        )
         task_widget.setLayout(stretch_layout)
 
         frame = DisplayFrame(stretch=5, parent=self)
@@ -338,11 +333,12 @@ class DashboardConstrained(Dashboard):
 
     def addTaskItem(self, task):
         item = DashItemConstrained(
-            text = task.title,
-            subtext = task.description,
-            pixmap = task.pixmap.resource,
-            slot = lambda: self.addTaskIfNew(task.model),
-            parent = self)
+            text=task.title,
+            subtext=task.description,
+            pixmap=task.pixmap.resource,
+            slot=lambda: self.addTaskIfNew(task.model),
+            parent=self,
+        )
         self.task_layout.addWidget(item, 7)
 
     def addTaskIfNew(self, type: TaskModel):

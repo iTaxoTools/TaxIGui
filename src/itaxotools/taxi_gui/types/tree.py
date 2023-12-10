@@ -18,11 +18,12 @@
 
 from typing import Generic, TypeVar
 
-Type = TypeVar('Type')
+Type = TypeVar("Type")
 
 
 class TreeItem(Generic[Type]):
     """Provides a hierarchical structure for Objects"""
+
     def __init__(self, object: Type, parent=None):
         self.children = list()
         self.parent = parent

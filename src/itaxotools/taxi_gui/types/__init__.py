@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
+# ruff: noqa: F403
+
 from .common import *
 from .files import *
 from .notifications import *

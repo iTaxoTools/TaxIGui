@@ -25,13 +25,13 @@ def type_convert(value, type, default):
 
 
 def human_readable_size(size):
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if size < 1000.0 or unit == 'GB':
+    for unit in ["B", "KB", "MB", "GB"]:
+        if size < 1000.0 or unit == "GB":
             break
         size /= 1000.0
-    if unit == 'B':
-        return f'{int(size)} {unit}'
-    return f'{size:.2f} {unit}'
+    if unit == "B":
+        return f"{int(size)} {unit}"
+    return f"{size:.2f} {unit}"
 
 
 def human_readable_seconds(seconds):
@@ -41,7 +41,7 @@ def human_readable_seconds(seconds):
     segments = [
         f'{int(h)} hour{"s" if h >= 2 else ""}' if h else None,
         f'{int(m)} minute{"s" if m >= 2 else ""}' if m else None,
-        f'{s:.2f} seconds' if s else None,
+        f"{s:.2f} seconds" if s else None,
     ]
     segments = (x for x in segments if x)
-    return ', '.join(segments)
+    return ", ".join(segments)

@@ -21,7 +21,6 @@ from PySide6 import QtWidgets
 from pathlib import Path
 
 from itaxotools.common.bindings import Binder
-
 from itaxotools.taxi_gui.view.widgets import DisplayFrame
 
 from .. import app
@@ -31,7 +30,6 @@ from .widgets import ScrollArea
 
 
 class ObjectView(QtWidgets.QFrame):
-
     def __init__(self, parent):
         super().__init__(parent)
         self.setStyleSheet("""ObjectView{background: Palette(Dark);}""")
@@ -62,51 +60,48 @@ class ObjectView(QtWidgets.QFrame):
         msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
         self.window().msgShow(msgBox)
 
-    def getOpenPath(self, caption='Open File', dir='', filter=''):
+    def getOpenPath(self, caption="Open File", dir="", filter=""):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self.window(), f'{app.config.title} - {caption}',
-            dir=dir, filter=filter)
+            self.window(), f"{app.config.title} - {caption}", dir=dir, filter=filter
+        )
         if not filename:
             return None
         return Path(filename)
 
-    def getSavePath(self, caption='Save File', dir='', filter=''):
+    def getSavePath(self, caption="Save File", dir="", filter=""):
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self.window(), f'{app.config.title} - {caption}',
-            dir=dir, filter=filter)
+            self.window(), f"{app.config.title} - {caption}", dir=dir, filter=filter
+        )
         if not filename:
             return None
         return Path(filename)
 
-    def getExistingDirectory(self, caption='Open Folder', dir='', filter=''):
+    def getExistingDirectory(self, caption="Open Folder", dir="", filter=""):
         filename = QtWidgets.QFileDialog.getExistingDirectory(
-            self.window(), f'{app.config.title} - {caption}',
-            dir=dir, filter=filter)
+            self.window(), f"{app.config.title} - {caption}", dir=dir, filter=filter
+        )
         if not filename:
             return None
         return Path(filename)
 
-    def getConfirmation(self, title='Confirmation', text='Are you sure?'):
+    def getConfirmation(self, title="Confirmation", text="Are you sure?"):
         msgBox = QtWidgets.QMessageBox(self)
-        msgBox.setWindowTitle(f'{app.config.title} - {title}')
+        msgBox.setWindowTitle(f"{app.config.title} - {title}")
         msgBox.setIcon(QtWidgets.QMessageBox.Question)
         msgBox.setText(text)
-        msgBox.setStandardButtons(
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         msgBox.setDefaultButton(QtWidgets.QMessageBox.No)
         confirm = self.window().msgShow(msgBox)
         return confirm == QtWidgets.QMessageBox.Yes
 
 
 class TaskView(ObjectView):
-
     def start(self):
         self.object.start()
 
     def stop(self):
         if self.getConfirmation(
-            'Stop diagnosis',
-            'Are you sure you want to stop the ongoing diagnosis?'
+            "Stop diagnosis", "Are you sure you want to stop the ongoing diagnosis?"
         ):
             self.object.stop()
 
@@ -117,20 +112,19 @@ class TaskView(ObjectView):
 
     def save(self):
         path = self.getExistingDirectory(
-            'Save All', str(self.object.suggested_directory))
+            "Save All", str(self.object.suggested_directory)
+        )
         if path:
             self.object.save(path)
 
     def clear(self):
         if self.getConfirmation(
-            'Clear results',
-            'Are you sure you want to clear all results and try again?'
+            "Clear results", "Are you sure you want to clear all results and try again?"
         ):
             self.object.clear()
 
 
 class ScrollTaskView(TaskView):
-
     def __init__(self, parent=None, max_width=920):
         super().__init__(parent)
         self.max_width = max_width
@@ -143,7 +137,7 @@ class ScrollTaskView(TaskView):
 
         self.frame = DisplayFrame(stretch=999, center_vertical=False)
         self.inner_frame = DisplayFrame(stretch=99, center_vertical=False)
-        self.inner_frame.setStyleSheet('DisplayFrame {background: Palette(mid);}')
+        self.inner_frame.setStyleSheet("DisplayFrame {background: Palette(mid);}")
         self.inner_frame.setMaximumWidth(self.max_width)
         self.inner_frame.setContentsMargins(4, 8, 4, 8)
         self.area.setWidget(self.frame)

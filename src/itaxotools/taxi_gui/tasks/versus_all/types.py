@@ -20,6 +20,6 @@ from itaxotools.taxi_gui.types import Entry, PropertyEnum
 
 
 class StatisticsGroup(PropertyEnum):
-    All = Entry('For all sequences', 'for_all', True)
-    Species = Entry('Per species', 'per_species', True)
-    Genus = Entry('Per genus', 'per_genus', True)
+    All = Entry("For all sequences", "for_all", True)
+    Species = Entry("Per species", "per_species", True)
+    Genus = Entry("Per genus", "per_genus", True)

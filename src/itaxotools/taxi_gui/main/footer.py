@@ -20,11 +20,11 @@ from PySide6 import QtWidgets
 
 
 class Footer(QtWidgets.QLabel):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setFixedHeight(24)
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QLabel {
                 color: palette(Shadow);
                 background: palette(Window);
@@ -37,4 +37,5 @@ class Footer(QtWidgets.QLabel):
                 background: palette(Window);
                 border: 1px solid palette(Mid);
                 }
-            """)
+            """
+        )

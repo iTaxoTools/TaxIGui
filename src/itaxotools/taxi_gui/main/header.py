@@ -45,11 +45,11 @@ class ToolBar(QtWidgets.QToolBar):
         super().__init__(*args, **kwargs)
         self.setIconSize(QtCore.QSize(32, 32))
         self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
-        self.setToolButtonStyle(
-            QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.setStyleSheet("""
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
+        )
+        self.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.setStyleSheet(
+            """
             QToolBar {
                 spacing: 2px;
                 }
@@ -98,26 +98,28 @@ class ToolBar(QtWidgets.QToolBar):
             QToolButton::menu-indicator:pressed {
                 border-bottom: 0px;
                 }
-            """)
+            """
+        )
 
 
 class Header(QtWidgets.QFrame):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.draw()
 
     def draw(self):
         self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Maximum)
-        self.setStyleSheet("""
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Maximum
+        )
+        self.setStyleSheet(
+            """
             Header {
                 background: palette(Light);
                 border-top: 1px solid palette(Mid);
                 border-bottom: 1px solid palette(Dark);
                 }
-            """)
+            """
+        )
         self.toolLogo = ToolLogo(app.config.pixmap.resource, self)
         self.projectLogo = ProjectLogo(self)
         self.toolBar = ToolBar(self)

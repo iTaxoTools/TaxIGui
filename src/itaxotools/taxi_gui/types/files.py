@@ -18,4 +18,4 @@
 
 from itaxotools.taxi2.file_types import FileFormat, FileInfo
 
-__all__ = ['FileFormat', 'FileInfo']
+__all__ = ["FileFormat", "FileInfo"]

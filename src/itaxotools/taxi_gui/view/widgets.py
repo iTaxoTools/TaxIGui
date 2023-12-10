@@ -30,7 +30,6 @@ class DarkWidget(QtWidgets.QWidget):
 
 
 class ScrollArea(QtWidgets.QScrollArea):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
@@ -69,7 +68,6 @@ class GLineEdit(QtWidgets.QLineEdit):
 
 
 class GSpinBox(QtWidgets.QSpinBox):
-
     valueChangedSafe = QtCore.Signal(int)
 
     def __init__(self, *args, **kwargs):
@@ -99,7 +97,7 @@ class LongLabel(QtWidgets.QLabel):
         self.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
         self.setWordWrap(True)
 
-        action = QtGui.QAction('&Copy', self)
+        action = QtGui.QAction("&Copy", self)
         action.triggered.connect(self.copy)
         self.addAction(action)
 
@@ -107,7 +105,7 @@ class LongLabel(QtWidgets.QLabel):
         action.setSeparator(True)
         self.addAction(action)
 
-        action = QtGui.QAction('Select &All', self)
+        action = QtGui.QAction("Select &All", self)
         action.triggered.connect(self.select)
         self.addAction(action)
 
@@ -158,11 +156,13 @@ class RichRadioButton(NoWheelRadioButton):
     def __init__(self, text, desc, parent=None):
         super().__init__(text, parent)
         self.desc = desc
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             RichRadioButton {
                 letter-spacing: 1px;
                 font-weight: bold;
-            }""")
+            }"""
+        )
         font = self.font()
         font.setBold(False)
         font.setLetterSpacing(QtGui.QFont.PercentageSpacing, 0)
@@ -254,7 +254,7 @@ class SpinningCircle(QtWidgets.QWidget):
 
         period_ns = int(self.period * 10**9)
         ns = time_ns() % period_ns
-        degrees = - 360 * ns / period_ns
+        degrees = -360 * ns / period_ns
         painter.setPen(QtGui.QPen(bold, self.width, QtCore.Qt.SolidLine))
         painter.drawArc(rect, degrees * 16, self.span * 16)
 
@@ -266,8 +266,8 @@ class CategoryButton(QtWidgets.QAbstractButton):
         super().__init__(parent)
         self.setCursor(QtCore.Qt.PointingHandCursor)
         self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Maximum,
-            QtWidgets.QSizePolicy.Policy.Preferred)
+            QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Preferred
+        )
         self.setMouseTracking(True)
         self.setCheckable(True)
         self.setText(text)
@@ -308,15 +308,13 @@ class CategoryButton(QtWidgets.QAbstractButton):
         if self.grayed:
             painter.setPen(QtGui.QPen(mild, 1, QtCore.Qt.SolidLine))
 
-        up_triangle = QtGui.QPolygon([
-            QtCore.QPoint(-6, 3),
-            QtCore.QPoint(6, 3),
-            QtCore.QPoint(0, -3)])
+        up_triangle = QtGui.QPolygon(
+            [QtCore.QPoint(-6, 3), QtCore.QPoint(6, 3), QtCore.QPoint(0, -3)]
+        )
 
-        down_triangle = QtGui.QPolygon([
-            QtCore.QPoint(-6, -3),
-            QtCore.QPoint(6, -3),
-            QtCore.QPoint(0, 3)])
+        down_triangle = QtGui.QPolygon(
+            [QtCore.QPoint(-6, -3), QtCore.QPoint(6, -3), QtCore.QPoint(0, 3)]
+        )
 
         if self.isChecked():
             triangle = up_triangle
@@ -325,7 +323,9 @@ class CategoryButton(QtWidgets.QAbstractButton):
 
         rect = QtCore.QRect(QtCore.QPoint(0, 0), self._fontSize())
 
-        painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.text())
+        painter.drawText(
+            rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.text()
+        )
 
         if self.hovered:
             painter.save()
@@ -355,16 +355,14 @@ class MinimumStackedWidget(QtWidgets.QStackedWidget):
 
 class DisplayFrame(QtWidgets.QFrame):
     def __init__(
-        self, stretch=9,
-        center_vertical=True,
-        center_horizontal=True,
-        *args, **kwargs
+        self, stretch=9, center_vertical=True, center_horizontal=True, *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.setStyleSheet("DisplayFrame {background: Palette(dark);}")
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
-            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+        )
 
         layout = QtWidgets.QGridLayout()
         layout.setSpacing(6)

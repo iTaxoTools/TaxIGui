@@ -19,11 +19,11 @@
 from .resources import icons, pixmaps
 from .tasks import decontaminate, dereplicate, versus_all, versus_reference
 
-title = 'TaxI2.1'
+title = "TaxI2.1"
 icon = icons.taxi2
 pixmap = pixmaps.taxi2
 
-dashboard = 'legacy'
+dashboard = "legacy"
 show_open = False
 show_save = False
 

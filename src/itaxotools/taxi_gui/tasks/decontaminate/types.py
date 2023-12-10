@@ -20,8 +20,8 @@ from enum import Enum
 
 
 class DecontaminateMode(Enum):
-    DECONT = 'Single Reference'
-    DECONT2 = 'Double Reference'
+    DECONT = "Single Reference"
+    DECONT2 = "Double Reference"
 
     def __str__(self):
         return self.value

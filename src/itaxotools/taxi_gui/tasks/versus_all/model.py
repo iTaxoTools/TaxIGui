@@ -21,15 +21,13 @@ from pathlib import Path
 from shutil import copytree
 
 from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
-
 from itaxotools.taxi_gui.model.partition import PartitionModel
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
 from itaxotools.taxi_gui.types import FileFormat, Notification
 from itaxotools.taxi_gui.utility import human_readable_seconds
 
-from ..common.model import (
-    FileInfoSubtaskModel, ImportedInputModel, ItemProxyModel)
+from ..common.model import FileInfoSubtaskModel, ImportedInputModel, ItemProxyModel
 from ..common.types import AlignmentMode, DistanceMetric, PairwiseScore
 from . import process
 from .types import StatisticsGroup
@@ -39,16 +37,10 @@ class PairwiseScores(EnumObject):
     enum = PairwiseScore
 
     def as_dict(self):
-        return {
-            score.key: self.properties[score.key].value
-            for score in self.enum
-        }
+        return {score.key: self.properties[score.key].value for score in self.enum}
 
     def is_valid(self):
-        return not any(
-            self.properties[score.key].value is None
-            for score in self.enum
-        )
+        return not any(self.properties[score.key].value is None for score in self.enum)
 
 
 class DistanceMetrics(EnumObject):
@@ -57,10 +49,7 @@ class DistanceMetrics(EnumObject):
     bbc_k = Property(int | None, 10)
 
     def as_list(self):
-        return [
-            field for field in self.enum
-            if self.properties[field.key].value
-        ]
+        return [field for field in self.enum if self.properties[field.key].value]
 
 
 class StatisticsGroups(EnumObject):
@@ -68,14 +57,18 @@ class StatisticsGroups(EnumObject):
 
 
 class Model(TaskModel):
-    task_name = 'Versus All'
+    task_name = "Versus All"
 
     perform_species = Property(bool, False)
     perform_genera = Property(bool, False)
 
     input_sequences = Property(ImportedInputModel, ImportedInputModel(SequenceModel))
-    input_species = Property(ImportedInputModel, ImportedInputModel(PartitionModel, 'species'))
-    input_genera = Property(ImportedInputModel, ImportedInputModel(PartitionModel, 'genera'))
+    input_species = Property(
+        ImportedInputModel, ImportedInputModel(PartitionModel, "species")
+    )
+    input_genera = Property(
+        ImportedInputModel, ImportedInputModel(PartitionModel, "genera")
+    )
 
     alignment_mode = Property(AlignmentMode, AlignmentMode.PairwiseAlignment)
     alignment_write_pairs = Property(bool, True)
@@ -85,8 +78,8 @@ class Model(TaskModel):
 
     distance_percentile = Property(bool, False)
     distance_precision = Property(int | None, 4)
-    distance_missing = Property(str, 'NA')
-    distance_stats_template = Property(str, '{mean} ({min}-{max})')
+    distance_missing = Property(str, "NA")
+    distance_stats_template = Property(str, "{mean} ({min}-{max})")
 
     pairwise_scores = Property(PairwiseScores, Instance)
     distance_metrics = Property(DistanceMetrics, Instance)
@@ -115,7 +108,9 @@ class Model(TaskModel):
         self.binder.bind(self.input_species.notification, self.notification)
         self.binder.bind(self.input_genera.notification, self.notification)
 
-        self.binder.bind(self.input_sequences.properties.index, self.propagate_input_index)
+        self.binder.bind(
+            self.input_sequences.properties.index, self.propagate_input_index
+        )
 
         for handle in [
             self.properties.busy_subtask,
@@ -167,18 +162,14 @@ class Model(TaskModel):
         self.exec(
             process.execute,
             work_dir=work_dir,
-
             perform_species=self.perform_species,
             perform_genera=self.perform_genera,
-
             input_sequences=self.input_sequences.as_dict(),
             input_species=self.input_species.as_dict(),
             input_genera=self.input_genera.as_dict(),
-
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
-            alignment_pairwise_scores = self.pairwise_scores.as_dict(),
-
+            alignment_pairwise_scores=self.pairwise_scores.as_dict(),
             distance_metrics=self.distance_metrics.as_list(),
             distance_metrics_bbc_k=self.distance_metrics.bbc_k,
             distance_linear=self.distance_linear,
@@ -187,11 +178,9 @@ class Model(TaskModel):
             distance_precision=self.distance_precision,
             distance_missing=self.distance_missing,
             distance_stats_template=self.distance_stats_template,
-
             statistics_all=self.statistics_groups.for_all,
             statistics_species=self.statistics_groups.per_species,
             statistics_genus=self.statistics_groups.per_genus,
-
             plot_histograms=self.plot_histograms,
             plot_binwidth=self.plot_binwidth or self.properties.plot_binwidth.default,
         )
@@ -226,7 +215,11 @@ class Model(TaskModel):
 
     def onDone(self, report):
         time_taken = human_readable_seconds(report.result.seconds_taken)
-        self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
+        self.notification.emit(
+            Notification.Info(
+                f"{self.name} completed successfully!\nTime taken: {time_taken}."
+            )
+        )
         self.dummy_results = report.result.output_directory
         self.dummy_time = report.result.seconds_taken
         self.busy = False
@@ -248,4 +241,4 @@ class Model(TaskModel):
 
     def save(self, destination: Path):
         copytree(self.dummy_results, destination, dirs_exist_ok=True)
-        self.notification.emit(Notification.Info('Saved files successfully!'))
+        self.notification.emit(Notification.Info("Saved files successfully!"))

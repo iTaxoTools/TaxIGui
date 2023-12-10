@@ -24,7 +24,10 @@ from pathlib import Path
 from itaxotools.common.utility import AttrDict
 
 from ..common.process import (
-    partition_from_model, progress_handler, sequences_from_model)
+    partition_from_model,
+    progress_handler,
+    sequences_from_model,
+)
 from ..common.types import AlignmentMode, DistanceMetric
 
 
@@ -35,25 +38,21 @@ class VersusAllResults:
 
 def initialize():
     import itaxotools
-    itaxotools.progress_handler('Initializing...')
+
+    itaxotools.progress_handler("Initializing...")
     from itaxotools.taxi2.tasks.versus_all import VersusAll  # noqa
 
 
 def execute(
-
     work_dir: Path,
-
     perform_species: bool,
     perform_genera: bool,
-
     input_sequences: AttrDict,
     input_species: AttrDict,
     input_genera: AttrDict,
-
     alignment_mode: AlignmentMode,
     alignment_write_pairs: bool,
     alignment_pairwise_scores: dict,
-
     distance_metrics: list[DistanceMetric],
     distance_metrics_bbc_k: int,
     distance_linear: bool,
@@ -62,21 +61,15 @@ def execute(
     distance_precision: int,
     distance_missing: str,
     distance_stats_template: str,
-
     statistics_all: bool,
     statistics_species: bool,
     statistics_genus: bool,
-
     plot_histograms: bool,
     plot_binwidth: float,
-
-    **kwargs
-
+    **kwargs,
 ) -> tuple[Path, float]:
-
     from itaxotools.taxi2.align import Scores
-    from itaxotools.taxi2.distances import \
-        DistanceMetric as BackendDistanceMetric
+    from itaxotools.taxi2.distances import DistanceMetric as BackendDistanceMetric
     from itaxotools.taxi2.tasks.versus_all import VersusAll
 
     task = VersusAll()
@@ -113,26 +106,30 @@ def execute(
             DistanceMetric.BBC,
         ],
     }[alignment_mode]
-    distance_metrics = (metric for metric in distance_metrics if metric in metrics_filter)
+    distance_metrics = (
+        metric for metric in distance_metrics if metric in metrics_filter
+    )
 
     metrics_tr = {
         DistanceMetric.Uncorrected: (BackendDistanceMetric.Uncorrected, []),
-        DistanceMetric.UncorrectedWithGaps: (BackendDistanceMetric.UncorrectedWithGaps, []),
+        DistanceMetric.UncorrectedWithGaps: (
+            BackendDistanceMetric.UncorrectedWithGaps,
+            [],
+        ),
         DistanceMetric.JukesCantor: (BackendDistanceMetric.JukesCantor, []),
         DistanceMetric.Kimura2Parameter: (BackendDistanceMetric.Kimura2P, []),
         DistanceMetric.NCD: (BackendDistanceMetric.NCD, []),
         DistanceMetric.BBC: (BackendDistanceMetric.BBC, [distance_metrics_bbc_k]),
     }
     metrics = [
-        metrics_tr[metric][0](*metrics_tr[metric][1])
-        for metric in distance_metrics
+        metrics_tr[metric][0](*metrics_tr[metric][1]) for metric in distance_metrics
     ]
     task.params.distances.metrics = metrics
     task.params.distances.write_linear = distance_linear
     task.params.distances.write_matricial = distance_matricial
 
-    task.params.format.float = f'{{:.{distance_precision}f}}'
-    task.params.format.percentage = f'{{:.{distance_precision}f}}'
+    task.params.format.float = f"{{:.{distance_precision}f}}"
+    task.params.format.percentage = f"{{:.{distance_precision}f}}"
     task.params.format.missing = distance_missing
     task.params.format.stats_template = distance_stats_template
     task.params.format.percentage_multiply = distance_percentile
@@ -143,7 +140,7 @@ def execute(
 
     task.params.plot.histograms = plot_histograms
     task.params.plot.binwidth = plot_binwidth
-    task.params.plot.formats = ['pdf', 'svg', 'png']
+    task.params.plot.formats = ["pdf", "svg", "png"]
 
     results = task.start()
 

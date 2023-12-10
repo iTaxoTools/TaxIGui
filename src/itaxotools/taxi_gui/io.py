@@ -102,7 +102,7 @@ class WriterIO(io.TextIOBase):
         self.func(text)
 
     def writeline(self, line):
-        self.write(line + '\n')
+        self.write(line + "\n")
 
     def writelines(self, lines):
         for line in lines:
@@ -141,7 +141,7 @@ class PipeWriterIO(io.TextIOBase):
 
     def writelines(self, lines):
         for line in lines:
-            self.connection.send(line + '\n')
+            self.connection.send(line + "\n")
 
     def flush(self):
         pass

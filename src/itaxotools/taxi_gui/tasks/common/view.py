@@ -22,15 +22,18 @@ from pathlib import Path
 
 from itaxotools.common.bindings import Binder
 from itaxotools.common.utility import AttrDict
-
 from itaxotools.taxi_gui import app
 from itaxotools.taxi_gui.types import ColumnFilter, FileFormat
 from itaxotools.taxi_gui.utility import human_readable_size
 from itaxotools.taxi_gui.view.animations import VerticalRollAnimation
 from itaxotools.taxi_gui.view.cards import Card
 from itaxotools.taxi_gui.view.widgets import (
-    GLineEdit, MinimumStackedWidget, NoWheelComboBox, RadioButtonGroup,
-    RichRadioButton)
+    GLineEdit,
+    MinimumStackedWidget,
+    NoWheelComboBox,
+    RadioButtonGroup,
+    RichRadioButton,
+)
 
 from .types import AlignmentMode, PairwiseScore
 
@@ -71,14 +74,14 @@ class DummyResultsCard(Card):
         self.setVisible(False)
         self.path = Path()
 
-        title = QtWidgets.QLabel('Results: ')
+        title = QtWidgets.QLabel("Results: ")
         title.setStyleSheet("""font-size: 16px;""")
         title.setMinimumWidth(120)
 
         path = QtWidgets.QLineEdit()
         path.setReadOnly(True)
 
-        browse = QtWidgets.QPushButton('Browse')
+        browse = QtWidgets.QPushButton("Browse")
         browse.clicked.connect(self._handle_browse)
 
         layout = QtWidgets.QHBoxLayout()
@@ -123,7 +126,9 @@ class ColumnFilterDelegate(QtWidgets.QStyledItemDelegate):
 
         self.initStyleOption(option, index)
         option.text = index.data(ColumnFilterCombobox.LabelRole)
-        QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, painter)
+        QtWidgets.QApplication.style().drawControl(
+            QtWidgets.QStyle.CE_ItemViewItem, option, painter
+        )
 
     def sizeHint(self, option, index):
         height = self.parent().sizeHint().height()
@@ -174,7 +179,7 @@ class InputSelector(Card):
         self.draw_config()
 
     def draw_main(self, text):
-        label = QtWidgets.QLabel(text + ':')
+        label = QtWidgets.QLabel(text + ":")
         label.setStyleSheet("""font-size: 16px;""")
         label.setMinimumWidth(140)
 
@@ -182,14 +187,14 @@ class InputSelector(Card):
         combo.currentIndexChanged.connect(self._handle_index_changed)
 
         wait = NoWheelComboBox()
-        wait.addItem('Scanning file, please wait...')
+        wait.addItem("Scanning file, please wait...")
         wait.setEnabled(False)
         wait.setVisible(False)
 
-        browse = QtWidgets.QPushButton('Import')
+        browse = QtWidgets.QPushButton("Import")
         browse.clicked.connect(self._handle_browse)
 
-        loading = QtWidgets.QPushButton('Loading')
+        loading = QtWidgets.QPushButton("Loading")
         loading.setEnabled(False)
         loading.setVisible(False)
 
@@ -234,7 +239,8 @@ class InputSelector(Card):
 
     def _handle_browse(self, *args):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self.window(), f'{app.config.title} - Import Sequence File')
+            self.window(), f"{app.config.title} - Import Sequence File"
+        )
         if not filename:
             return
         self.addInputFile.emit(Path(filename))
@@ -265,8 +271,8 @@ class SequenceSelector(InputSelector):
         layout.setSpacing(8)
         column = 0
 
-        type_label = QtWidgets.QLabel('File format:')
-        size_label = QtWidgets.QLabel('File size:')
+        type_label = QtWidgets.QLabel("File format:")
+        size_label = QtWidgets.QLabel("File size:")
 
         layout.addWidget(type_label, 0, column)
         layout.addWidget(size_label, 1, column)
@@ -275,8 +281,8 @@ class SequenceSelector(InputSelector):
         layout.setColumnMinimumWidth(column, 8)
         column += 1
 
-        type_label_value = QtWidgets.QLabel('Tabfile')
-        size_label_value = QtWidgets.QLabel('42 MB')
+        type_label_value = QtWidgets.QLabel("Tabfile")
+        size_label_value = QtWidgets.QLabel("42 MB")
 
         layout.addWidget(type_label_value, 0, column)
         layout.addWidget(size_label_value, 1, column)
@@ -285,8 +291,8 @@ class SequenceSelector(InputSelector):
         layout.setColumnMinimumWidth(column, 32)
         column += 1
 
-        index_label = QtWidgets.QLabel('Indices:')
-        sequence_label = QtWidgets.QLabel('Sequences:')
+        index_label = QtWidgets.QLabel("Indices:")
+        sequence_label = QtWidgets.QLabel("Sequences:")
 
         layout.addWidget(index_label, 0, column)
         layout.addWidget(sequence_label, 1, column)
@@ -306,7 +312,7 @@ class SequenceSelector(InputSelector):
         layout.setColumnMinimumWidth(column, 16)
         column += 1
 
-        view = QtWidgets.QPushButton('View')
+        view = QtWidgets.QPushButton("View")
         view.setVisible(False)
 
         layout.addWidget(view, 0, column)
@@ -324,15 +330,15 @@ class SequenceSelector(InputSelector):
         self.controls.config.addWidget(widget)
 
     def draw_config_fasta(self):
-        type_label = QtWidgets.QLabel('File format:')
-        size_label = QtWidgets.QLabel('File size:')
+        type_label = QtWidgets.QLabel("File format:")
+        size_label = QtWidgets.QLabel("File size:")
 
-        type_label_value = QtWidgets.QLabel('Fasta')
-        size_label_value = QtWidgets.QLabel('42 MB')
+        type_label_value = QtWidgets.QLabel("Fasta")
+        size_label_value = QtWidgets.QLabel("42 MB")
 
         parse_organism = QtWidgets.QCheckBox('Parse identifiers as "individual|taxon"')
 
-        view = QtWidgets.QPushButton('View')
+        view = QtWidgets.QPushButton("View")
         view.setVisible(False)
 
         layout = QtWidgets.QHBoxLayout()
@@ -369,20 +375,51 @@ class SequenceSelector(InputSelector):
 
     def _bind_tabfile(self, object):
         self._populate_headers(object.info.headers)
-        self.binder.bind(object.properties.index_column, self.controls.tabfile.index_combo.setCurrentIndex)
-        self.binder.bind(self.controls.tabfile.index_combo.currentIndexChanged, object.properties.index_column)
-        self.binder.bind(object.properties.sequence_column, self.controls.tabfile.sequence_combo.setCurrentIndex)
-        self.binder.bind(self.controls.tabfile.sequence_combo.currentIndexChanged, object.properties.sequence_column)
-        self.binder.bind(object.properties.info, self.controls.tabfile.file_size.setText, lambda info: human_readable_size(info.size))
+        self.binder.bind(
+            object.properties.index_column,
+            self.controls.tabfile.index_combo.setCurrentIndex,
+        )
+        self.binder.bind(
+            self.controls.tabfile.index_combo.currentIndexChanged,
+            object.properties.index_column,
+        )
+        self.binder.bind(
+            object.properties.sequence_column,
+            self.controls.tabfile.sequence_combo.setCurrentIndex,
+        )
+        self.binder.bind(
+            self.controls.tabfile.sequence_combo.currentIndexChanged,
+            object.properties.sequence_column,
+        )
+        self.binder.bind(
+            object.properties.info,
+            self.controls.tabfile.file_size.setText,
+            lambda info: human_readable_size(info.size),
+        )
         self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
         self.controls.config.setVisible(True)
 
     def _bind_fasta(self, object):
-        self.binder.bind(object.properties.has_subsets, self.controls.fasta.parse_organism.setEnabled)
-        self.binder.bind(object.properties.parse_subset, self.controls.fasta.parse_organism.setChecked)
-        self.binder.bind(self.controls.fasta.parse_organism.toggled, object.properties.parse_subset)
-        self.binder.bind(object.properties.subset_separator, self.controls.fasta.parse_organism.setText, lambda x: f'Parse identifiers as "individual{x or "/"}organism"')
-        self.binder.bind(object.properties.info, self.controls.fasta.file_size.setText, lambda info: human_readable_size(info.size))
+        self.binder.bind(
+            object.properties.has_subsets, self.controls.fasta.parse_organism.setEnabled
+        )
+        self.binder.bind(
+            object.properties.parse_subset,
+            self.controls.fasta.parse_organism.setChecked,
+        )
+        self.binder.bind(
+            self.controls.fasta.parse_organism.toggled, object.properties.parse_subset
+        )
+        self.binder.bind(
+            object.properties.subset_separator,
+            self.controls.fasta.parse_organism.setText,
+            lambda x: f'Parse identifiers as "individual{x or "/"}organism"',
+        )
+        self.binder.bind(
+            object.properties.info,
+            self.controls.fasta.file_size.setText,
+            lambda info: human_readable_size(info.size),
+        )
         self.controls.config.setCurrentWidget(self.controls.fasta.widget)
         self.controls.config.setVisible(True)
 
@@ -399,8 +436,8 @@ class SequenceSelector(InputSelector):
 
 class PartitionSelector(InputSelector):
     def __init__(self, text, subset_text=None, individual_text=None, parent=None):
-        self._subset_text = subset_text or 'Subsets'
-        self._individual_text = individual_text or 'Individuals'
+        self._subset_text = subset_text or "Subsets"
+        self._individual_text = individual_text or "Individuals"
         super().__init__(text, parent)
 
     def draw_config(self):
@@ -416,8 +453,8 @@ class PartitionSelector(InputSelector):
         layout.setSpacing(8)
         column = 0
 
-        type_label = QtWidgets.QLabel('File format:')
-        size_label = QtWidgets.QLabel('File size:')
+        type_label = QtWidgets.QLabel("File format:")
+        size_label = QtWidgets.QLabel("File size:")
 
         layout.addWidget(type_label, 0, column)
         layout.addWidget(size_label, 1, column)
@@ -426,8 +463,8 @@ class PartitionSelector(InputSelector):
         layout.setColumnMinimumWidth(column, 8)
         column += 1
 
-        type_label_value = QtWidgets.QLabel('Tabfile')
-        size_label_value = QtWidgets.QLabel('42 MB')
+        type_label_value = QtWidgets.QLabel("Tabfile")
+        size_label_value = QtWidgets.QLabel("42 MB")
 
         layout.addWidget(type_label_value, 0, column)
         layout.addWidget(size_label_value, 1, column)
@@ -436,8 +473,8 @@ class PartitionSelector(InputSelector):
         layout.setColumnMinimumWidth(column, 32)
         column += 1
 
-        subset_label = QtWidgets.QLabel(f'{self._subset_text}:')
-        individual_label = QtWidgets.QLabel(f'{self._individual_text}:')
+        subset_label = QtWidgets.QLabel(f"{self._subset_text}:")
+        individual_label = QtWidgets.QLabel(f"{self._individual_text}:")
 
         layout.addWidget(subset_label, 0, column)
         layout.addWidget(individual_label, 1, column)
@@ -466,7 +503,7 @@ class PartitionSelector(InputSelector):
         layout.setColumnMinimumWidth(column, 16)
         column += 1
 
-        view = QtWidgets.QPushButton('View')
+        view = QtWidgets.QPushButton("View")
         view.setVisible(False)
 
         layout.addWidget(view, 0, column)
@@ -486,15 +523,15 @@ class PartitionSelector(InputSelector):
         self.controls.config.addWidget(widget)
 
     def draw_config_fasta(self):
-        type_label = QtWidgets.QLabel('File format:')
-        size_label = QtWidgets.QLabel('File size:')
+        type_label = QtWidgets.QLabel("File format:")
+        size_label = QtWidgets.QLabel("File size:")
 
-        type_label_value = QtWidgets.QLabel('Fasta')
-        size_label_value = QtWidgets.QLabel('42 MB')
+        type_label_value = QtWidgets.QLabel("Fasta")
+        size_label_value = QtWidgets.QLabel("42 MB")
 
-        filter_first = QtWidgets.QCheckBox('Only keep first word')
+        filter_first = QtWidgets.QCheckBox("Only keep first word")
 
-        view = QtWidgets.QPushButton('View')
+        view = QtWidgets.QPushButton("View")
         view.setVisible(False)
 
         layout = QtWidgets.QHBoxLayout()
@@ -520,16 +557,16 @@ class PartitionSelector(InputSelector):
         self.controls.config.addWidget(widget)
 
     def draw_config_spart(self):
-        type_label = QtWidgets.QLabel('File format:')
-        size_label = QtWidgets.QLabel('File size:')
+        type_label = QtWidgets.QLabel("File format:")
+        size_label = QtWidgets.QLabel("File size:")
 
-        type_label_value = QtWidgets.QLabel('Spart-???')
-        size_label_value = QtWidgets.QLabel('42 MB')
+        type_label_value = QtWidgets.QLabel("Spart-???")
+        size_label_value = QtWidgets.QLabel("42 MB")
 
-        spartition_label = QtWidgets.QLabel('Spartition:')
+        spartition_label = QtWidgets.QLabel("Spartition:")
         spartition = NoWheelComboBox()
 
-        view = QtWidgets.QPushButton('View')
+        view = QtWidgets.QPushButton("View")
         view.setVisible(False)
 
         layout = QtWidgets.QHBoxLayout()
@@ -569,36 +606,92 @@ class PartitionSelector(InputSelector):
     def _bind_tabfile(self, object):
         self._populate_headers(object.info.headers)
 
-        self.binder.bind(object.properties.subset_column, self.controls.tabfile.subset_combo.setCurrentIndex)
-        self.binder.bind(self.controls.tabfile.subset_combo.currentIndexChanged, object.properties.subset_column)
-        self.binder.bind(object.properties.individual_column, self.controls.tabfile.individual_combo.setCurrentIndex)
-        self.binder.bind(self.controls.tabfile.individual_combo.currentIndexChanged, object.properties.individual_column)
+        self.binder.bind(
+            object.properties.subset_column,
+            self.controls.tabfile.subset_combo.setCurrentIndex,
+        )
+        self.binder.bind(
+            self.controls.tabfile.subset_combo.currentIndexChanged,
+            object.properties.subset_column,
+        )
+        self.binder.bind(
+            object.properties.individual_column,
+            self.controls.tabfile.individual_combo.setCurrentIndex,
+        )
+        self.binder.bind(
+            self.controls.tabfile.individual_combo.currentIndexChanged,
+            object.properties.individual_column,
+        )
 
-        self.binder.bind(object.properties.subset_filter, self.controls.tabfile.subset_filter.setValue)
-        self.binder.bind(self.controls.tabfile.subset_filter.valueChanged, object.properties.subset_filter)
-        self.binder.bind(object.properties.individual_filter, self.controls.tabfile.individual_filter.setValue)
-        self.binder.bind(self.controls.tabfile.individual_filter.valueChanged, object.properties.individual_filter)
+        self.binder.bind(
+            object.properties.subset_filter,
+            self.controls.tabfile.subset_filter.setValue,
+        )
+        self.binder.bind(
+            self.controls.tabfile.subset_filter.valueChanged,
+            object.properties.subset_filter,
+        )
+        self.binder.bind(
+            object.properties.individual_filter,
+            self.controls.tabfile.individual_filter.setValue,
+        )
+        self.binder.bind(
+            self.controls.tabfile.individual_filter.valueChanged,
+            object.properties.individual_filter,
+        )
 
-        self.binder.bind(object.properties.info, self.controls.tabfile.file_size.setText, lambda info: human_readable_size(info.size))
+        self.binder.bind(
+            object.properties.info,
+            self.controls.tabfile.file_size.setText,
+            lambda info: human_readable_size(info.size),
+        )
         self.controls.config.setCurrentWidget(self.controls.tabfile.widget)
         self.controls.config.setVisible(True)
 
     def _bind_fasta(self, object):
-        self.binder.bind(object.properties.subset_filter, self.controls.fasta.filter_first.setChecked, lambda x: x == ColumnFilter.First)
-        self.binder.bind(self.controls.fasta.filter_first.toggled, object.properties.subset_filter, lambda x: ColumnFilter.First if x else ColumnFilter.All)
+        self.binder.bind(
+            object.properties.subset_filter,
+            self.controls.fasta.filter_first.setChecked,
+            lambda x: x == ColumnFilter.First,
+        )
+        self.binder.bind(
+            self.controls.fasta.filter_first.toggled,
+            object.properties.subset_filter,
+            lambda x: ColumnFilter.First if x else ColumnFilter.All,
+        )
 
-        self.binder.bind(object.properties.info, self.controls.fasta.file_size.setText, lambda info: human_readable_size(info.size))
+        self.binder.bind(
+            object.properties.info,
+            self.controls.fasta.file_size.setText,
+            lambda info: human_readable_size(info.size),
+        )
         self.controls.config.setCurrentWidget(self.controls.fasta.widget)
         self.controls.config.setVisible(True)
 
     def _bind_spart(self, object):
         self._populate_spartitions(object.info.spartitions)
 
-        self.binder.bind(object.properties.is_xml, self.controls.spart.file_type.setText, lambda x: 'Spart-XML' if x else 'Spart')
-        self.binder.bind(self.controls.spart.spartition.currentIndexChanged, object.properties.spartition, lambda x: self.controls.spart.spartition.itemData(x))
-        self.binder.bind(object.properties.spartition, self.controls.spart.spartition.setCurrentIndex, lambda x: self.controls.spart.spartition.findText(x))
+        self.binder.bind(
+            object.properties.is_xml,
+            self.controls.spart.file_type.setText,
+            lambda x: "Spart-XML" if x else "Spart",
+        )
+        self.binder.bind(
+            self.controls.spart.spartition.currentIndexChanged,
+            object.properties.spartition,
+            lambda x: self.controls.spart.spartition.itemData(x),
+        )
+        self.binder.bind(
+            object.properties.spartition,
+            self.controls.spart.spartition.setCurrentIndex,
+            lambda x: self.controls.spart.spartition.findText(x),
+        )
 
-        self.binder.bind(object.properties.info, self.controls.spart.file_size.setText, lambda info: human_readable_size(info.size))
+        self.binder.bind(
+            object.properties.info,
+            self.controls.spart.file_size.setText,
+            lambda info: human_readable_size(info.size),
+        )
         self.controls.config.setCurrentWidget(self.controls.spart.widget)
         self.controls.config.setVisible(True)
 
@@ -628,11 +721,12 @@ class AlignmentModeSelector(Card):
         self.draw_pairwise_config()
 
     def draw_main(self):
-        label = QtWidgets.QLabel('Sequence alignment')
+        label = QtWidgets.QLabel("Sequence alignment")
         label.setStyleSheet("""font-size: 16px;""")
 
         description = QtWidgets.QLabel(
-            'You may optionally align sequences before calculating distances.')
+            "You may optionally align sequences before calculating distances."
+        )
         description.setWordWrap(True)
 
         layout = QtWidgets.QVBoxLayout()
@@ -647,7 +741,7 @@ class AlignmentModeSelector(Card):
         radios = QtWidgets.QVBoxLayout()
         radios.setSpacing(8)
         for mode in self.modes:
-            button = RichRadioButton(f'{mode.label}:', mode.description, self)
+            button = RichRadioButton(f"{mode.label}:", mode.description, self)
             radios.addWidget(button)
             group.add(button, mode)
         layout.addLayout(radios)
@@ -656,14 +750,14 @@ class AlignmentModeSelector(Card):
         self.addLayout(layout)
 
     def draw_pairwise_config(self):
-        write_pairs = QtWidgets.QCheckBox('Write file with all aligned sequence pairs')
+        write_pairs = QtWidgets.QCheckBox("Write file with all aligned sequence pairs")
         self.controls.write_pairs = write_pairs
 
         self.controls.score_fields = dict()
         scores = QtWidgets.QGridLayout()
         validator = QtGui.QIntValidator()
         for i, score in enumerate(PairwiseScore):
-            label = QtWidgets.QLabel(f'{score.label}:')
+            label = QtWidgets.QLabel(f"{score.label}:")
             field = GLineEdit()
             field.setValidator(validator)
             field.scoreKey = score.key
@@ -681,8 +775,10 @@ class AlignmentModeSelector(Card):
         scores.setSpacing(8)
 
         layout = QtWidgets.QVBoxLayout()
-        label = QtWidgets.QLabel('You may configure the pairwise comparison scores below:')
-        reset = QtWidgets.QPushButton('Reset to default scores')
+        label = QtWidgets.QLabel(
+            "You may configure the pairwise comparison scores below:"
+        )
+        reset = QtWidgets.QPushButton("Reset to default scores")
         reset.clicked.connect(self.resetScores)
         layout.addWidget(write_pairs)
         layout.addWidget(label)
@@ -706,7 +802,9 @@ class AlignmentModeSelector(Card):
                 self.toggled.emit(button.alignmentMode)
 
     def handleModeChanged(self, mode):
-        self.controls.pairwise_config.roll.setAnimatedVisible(mode == AlignmentMode.PairwiseAlignment)
+        self.controls.pairwise_config.roll.setAnimatedVisible(
+            mode == AlignmentMode.PairwiseAlignment
+        )
 
 
 class CrossAlignmentModeSelector(AlignmentModeSelector):

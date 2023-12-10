@@ -21,7 +21,6 @@ from pathlib import Path
 from shutil import copytree
 
 from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
-
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
 from itaxotools.taxi_gui.types import Notification
@@ -36,20 +35,14 @@ class PairwiseScores(EnumObject):
     enum = PairwiseScore
 
     def as_dict(self):
-        return {
-            score.key: self.properties[score.key].value
-            for score in self.enum
-        }
+        return {score.key: self.properties[score.key].value for score in self.enum}
 
     def is_valid(self):
-        return not any(
-            self.properties[score.key].value is None
-            for score in self.enum
-        )
+        return not any(self.properties[score.key].value is None for score in self.enum)
 
 
 class Model(TaskModel):
-    task_name = 'Dereplicate'
+    task_name = "Dereplicate"
 
     input_sequences = Property(ImportedInputModel, ImportedInputModel(SequenceModel))
 
@@ -66,7 +59,7 @@ class Model(TaskModel):
 
     distance_percentile = Property(bool, False)
     distance_precision = Property(int | None, 4)
-    distance_missing = Property(str, 'NA')
+    distance_missing = Property(str, "NA")
 
     similarity_threshold = Property(float | None, 0.03)
     length_threshold = Property(int, 0)
@@ -136,13 +129,10 @@ class Model(TaskModel):
         self.exec(
             process.execute,
             work_dir=work_dir,
-
             input_sequences=self.input_sequences.as_dict(),
-
             alignment_mode=self.alignment_mode,
             alignment_write_pairs=self.alignment_write_pairs,
-            alignment_pairwise_scores = self.pairwise_scores.as_dict(),
-
+            alignment_pairwise_scores=self.pairwise_scores.as_dict(),
             distance_metric=self.distance_metric,
             distance_metric_bbc_k=self.distance_metric_bbc_k,
             distance_linear=self.distance_linear,
@@ -150,14 +140,17 @@ class Model(TaskModel):
             distance_percentile=self.distance_percentile,
             distance_precision=self.distance_precision,
             distance_missing=self.distance_missing,
-
             similarity_threshold=self.similarity_threshold,
             length_threshold=self.length_threshold,
         )
 
     def onDone(self, report):
         time_taken = human_readable_seconds(report.result.seconds_taken)
-        self.notification.emit(Notification.Info(f'{self.name} completed successfully!\nTime taken: {time_taken}.'))
+        self.notification.emit(
+            Notification.Info(
+                f"{self.name} completed successfully!\nTime taken: {time_taken}."
+            )
+        )
         self.dummy_results = report.result.output_directory
         self.dummy_time = report.result.seconds_taken
         self.busy_main = False
@@ -189,4 +182,4 @@ class Model(TaskModel):
 
     def save(self, destination: Path):
         copytree(self.dummy_results, destination, dirs_exist_ok=True)
-        self.notification.emit(Notification.Info('Saved files successfully!'))
+        self.notification.emit(Notification.Info("Saved files successfully!"))

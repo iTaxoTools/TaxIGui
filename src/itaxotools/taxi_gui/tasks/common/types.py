@@ -22,9 +22,18 @@ from itaxotools.taxi_gui.types import Entry, PropertyEnum
 
 
 class AlignmentMode(Enum):
-    NoAlignment = 'Already aligned', 'the sequences will be compared without further alignment'
-    PairwiseAlignment = 'Pairwise alignment', 'align each pair of sequences just before calculating distances'
-    AlignmentFree = 'Alignment-free', 'calculate pairwise distances using alignment-free metrics'
+    NoAlignment = (
+        "Already aligned",
+        "the sequences will be compared without further alignment",
+    )
+    PairwiseAlignment = (
+        "Pairwise alignment",
+        "align each pair of sequences just before calculating distances",
+    )
+    AlignmentFree = (
+        "Alignment-free",
+        "calculate pairwise distances using alignment-free metrics",
+    )
 
     def __init__(self, label, description):
         self.label = label
@@ -32,18 +41,18 @@ class AlignmentMode(Enum):
 
 
 class PairwiseScore(PropertyEnum):
-    Match = Entry('Match', 'match_score', 1)
-    Mismatch = Entry('Mismatch', 'mismatch_score', -1)
-    InternalOpenGap = Entry('Open inner gap', 'internal_open_gap_score', -8)
-    InternalExtendGap = Entry('Extend inner gap', 'internal_extend_gap_score', -1)
-    EndOpenGap = Entry('Open outer gap', 'end_open_gap_score', -1)
-    EndExtendGap = Entry('Extend outer gap', 'end_extend_gap_score', -1)
+    Match = Entry("Match", "match_score", 1)
+    Mismatch = Entry("Mismatch", "mismatch_score", -1)
+    InternalOpenGap = Entry("Open inner gap", "internal_open_gap_score", -8)
+    InternalExtendGap = Entry("Extend inner gap", "internal_extend_gap_score", -1)
+    EndOpenGap = Entry("Open outer gap", "end_open_gap_score", -1)
+    EndExtendGap = Entry("Extend outer gap", "end_extend_gap_score", -1)
 
 
 class DistanceMetric(PropertyEnum):
-    Uncorrected = Entry('Uncorrected (p-distance)', 'p', True)
-    UncorrectedWithGaps = Entry('Uncorrected with gaps', 'pg', True)
-    JukesCantor = Entry('Jukes Cantor (jc)', 'jc', True)
-    Kimura2Parameter = Entry('Kimura 2-Parameter (k2p)', 'k2p', True)
-    NCD = Entry('Normalized Compression Distance (NCD)', 'ncd', True)
-    BBC = Entry('Base-Base Correlation (BBC)', 'bbc', False)
+    Uncorrected = Entry("Uncorrected (p-distance)", "p", True)
+    UncorrectedWithGaps = Entry("Uncorrected with gaps", "pg", True)
+    JukesCantor = Entry("Jukes Cantor (jc)", "jc", True)
+    Kimura2Parameter = Entry("Kimura 2-Parameter (k2p)", "k2p", True)
+    NCD = Entry("Normalized Compression Distance (NCD)", "ncd", True)
+    BBC = Entry("Base-Base Correlation (BBC)", "bbc", False)
