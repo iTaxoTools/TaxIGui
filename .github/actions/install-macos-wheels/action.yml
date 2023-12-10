@@ -1,0 +1,14 @@
+name: Install macOS specific wheels
+description: |
+  PyInstaller requires universal2 binaries for all dependencies,
+  but pip defaults to installing architecture-specific wheels.
+
+runs:
+  using: composite
+  steps:
+    - name: Install macOS specific wheels
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        pip install pyyaml
+        python tools/wheels/install.py tools/wheels/macos.yml

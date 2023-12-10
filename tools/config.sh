@@ -8,8 +8,8 @@ APP_NAME="Taxi2.2"
 APP_IDENTIFIER="org.itaxotools.taxi2.gui"
 APP_SCRIPT="run.py"
 APP_ENTITLEMENTS="data/entitlements.plist"
-APP_ICON_ICO="data/taxi2.ico"
 APP_ICON_ICNS="data/taxi2.icns"
+APP_ICON_ICO="data/taxi2.ico"
 
 # expand and export
 export CODESIGN_IDENTITY=$CODESIGN_IDENTITY

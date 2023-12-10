@@ -1,6 +1,6 @@
-name: Build a Windows executable
+name: Build a macOS bundle
 description: |
-  Create a single .exe self-extracting binary
+  Create a zip archive with the bundle.
   Tags must be pre-fetched and package must be installed.
 
 runs:
@@ -13,5 +13,5 @@ runs:
         VERSION=$(python -m setuptools_scm)
         VERSION=${VERSION%%+*}
         PLAT=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')
-        ARCH=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')
-        sh ./tools/make-executable.sh $VERSION $PLAT $ARCH unsigned
+        ARCH=universal2
+        sh ./tools/make-bundle.sh $VERSION $PLAT $ARCH unsigned
