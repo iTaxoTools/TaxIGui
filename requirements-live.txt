@@ -1,0 +1,4 @@
+git+https://github.com/iTaxoTools/itt-common.git
+git+https://github.com/iTaxoTools/SpartParser.git
+git+https://github.com/iTaxoTools/calculate_distances.git
+git+https://github.com/iTaxoTools/TaxI2.git
