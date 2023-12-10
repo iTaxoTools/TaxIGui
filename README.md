@@ -1,4 +1,15 @@
-# TaxiGui
+# TaxIGui
+
+[![PyPI - Version](https://img.shields.io/pypi/v/itaxotools-taxi-gui)](
+    https://pypi.org/project/itaxotools-taxi-gui)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/itaxotools-taxi-gui)](
+    https://pypi.org/project/itaxotools-taxi-gui)
+[![PyPI - License](https://img.shields.io/pypi/l/itaxotools-taxi-gui)](
+    https://pypi.org/project/itaxotools-taxi-gui)
+[![GitHub - Tests](https://img.shields.io/github/actions/workflow/status/iTaxoTools/TaxIGui/test.yml?label=tests)](
+    https://github.com/iTaxoTools/TaxIGui/actions/workflows/test.yml)
+[![GitHub - Windows](https://img.shields.io/github/actions/workflow/status/iTaxoTools/TaxIGui/windows.yml?logo=windows&logoColor=white&label=windows)](
+    https://github.com/iTaxoTools/TaxIGui/actions/workflows/windows.yml)
 
 Calculation and analysis of pairwise sequence distances:
 
@@ -11,34 +22,29 @@ This is a Qt GUI for [TaxI2](https://github.com/iTaxoTools/TaxI2).
 
 ![Screenshot](images/screenshot.png)
 
-## Windows and macOS Executables
+## Executables
+
+[![Windows](https://img.shields.io/badge/Windows-blue.svg?style=for-the-badge&logo=windows)](
+    https://github.com/iTaxoTools/TaxIGui/releases/latest)
+[![MacOS](https://img.shields.io/badge/macOS-gray.svg?style=for-the-badge&logo=apple)](
+    https://github.com/iTaxoTools/TaxIGui/releases/latest)
+
 Download and run the standalone executables without installing Python.</br>
 [See the latest release here.](https://github.com/iTaxoTools/TaxIGui/releases/latest)
 
+## Installation
 
-## Installing from source
-Clone and install the latest version (requires Python 3.10.2 or later):
-```
-git clone https://github.com/iTaxoTools/TaxIGui.git
-cd TaxIGui
-pip install . -f packages.html
-```
+TaxIGui is available on PyPI. You can install it through `pip`:
 
-If you are also building Taxi2 from source, you will need [Rust](https://www.rust-lang.org/tools/install).
+```
+pip install itaxotools-taxi-gui
+```
 
 ## Usage
+
 To launch the GUI, please use:
 ```
 taxi-gui
 ```
 
 Then select one of the available modes and follow the instructions on the screen.
-
-
-## Packaging
-
-It is recommended to use PyInstaller from within a virtual environment:
-```
-pip install ".[dev]" -f packages.html
-pyinstaller scripts/taxi2.spec
-```
