@@ -27,8 +27,8 @@ from .resources import LazyResource
 
 
 class Application(QtWidgets.QApplication):
-    def __init__(self):
-        super().__init__([])
+    def __init__(self, argv):
+        super().__init__(argv)
 
     def exec(self):
         exit(super().exec())
