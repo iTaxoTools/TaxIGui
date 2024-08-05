@@ -350,3 +350,57 @@ class DashboardConstrained(Dashboard):
     def addSeparator(self):
         self.task_layout.addSpacing(16)
         self.task_layout.addStretch(1)
+
+
+class DashboardGrid(Dashboard):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        task_layout = QtWidgets.QGridLayout()
+        task_layout.setContentsMargins(6, 6, 6, 6)
+        task_layout.setSpacing(12)
+
+        task_widget = QtWidgets.QFrame()
+        task_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+        )
+        task_widget.setLayout(task_layout)
+
+        frame = DisplayFrame(stretch=5, parent=self)
+        frame.setWidget(task_widget)
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(frame, 1)
+        self.setLayout(layout)
+
+        self.task_layout = task_layout
+        self.task_layout.setColumnStretch(0, 2)
+        self.task_layout.setColumnStretch(999, 2)
+        self.task_layout.setRowStretch(0, 2)
+        self.task_layout.setRowStretch(999, 2)
+        self.current_row = 0
+        self.current_col = 0
+
+    def addTaskItem(self, task):
+        item = DashItemConstrained(
+            text=task.title,
+            subtext=task.description,
+            pixmap=task.pixmap.resource,
+            slot=lambda: self.addTaskIfNew(task.model),
+            parent=self,
+        )
+        self.task_layout.addWidget(item, self.current_row, self.current_col)
+        self.task_layout.setRowStretch(self.current_row, 21)
+        self.task_layout.setColumnStretch(self.current_col, 84)
+        self.current_col += 1
+
+    def addTaskIfNew(self, type: TaskModel):
+        index = app.model.items.find_task(type)
+        if index is None:
+            index = app.model.items.add_task(type())
+        app.model.items.focus(index)
+
+    def addSeparator(self):
+        self.current_row += 1
+        self.current_col = 0
