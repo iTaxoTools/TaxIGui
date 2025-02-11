@@ -253,8 +253,8 @@ class DashItemConstrainedSmall(DashItemConstrained):
 
         self.pad_x = 2
         self.pad_y = 2
-        self.pad_text = 14
-        self.pad_pixmap = 12
+        self.pad_text = 10
+        self.pad_pixmap = 8
         self.bookmark_width = 2
 
         self._text_font = self.font()
