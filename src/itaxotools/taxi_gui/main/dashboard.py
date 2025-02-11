@@ -19,7 +19,7 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from itaxotools.common.utility import override
-from itaxotools.taxi_gui.view.widgets import DisplayFrame
+from itaxotools.taxi_gui.view.widgets import DisplayFrame, ScrollArea
 
 from .. import app
 from ..model.tasks import TaskModel
@@ -247,6 +247,53 @@ class DashItemConstrained(DashItem):
         painter.restore()
 
 
+class DashItemConstrainedSmall(DashItemConstrained):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.pad_x = 2
+        self.pad_y = 2
+        self.pad_text = 14
+        self.pad_pixmap = 12
+        self.bookmark_width = 2
+
+        self._text_font = self.font()
+        self._text_font.setPixelSize(18)
+        self._text_font.setBold(True)
+        self._text_font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 1)
+
+        self._subtext_font = self.font()
+        self._subtext_font.setPixelSize(16)
+        self._subtext_font.setBold(False)
+
+        self._size_hint = self._refresh_size_hint()
+        self.setMaximumHeight(80)
+        self.setMaximumWidth(720)
+
+
+class DashItemCaption(QtWidgets.QLabel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.setStyleSheet(
+            """
+            DashItemCaption {
+                color: Palette(Light);
+                background: Palette(Text);
+                padding-top: 4px;
+                padding-bottom: 6px;
+                padding-left: 6px;
+                padding-right: 4px;
+        }"""
+        )
+
+        font = self.font()
+        font.setPixelSize(16)
+        font.setBold(True)
+        font.setLetterSpacing(QtGui.QFont.AbsoluteSpacing, 1)
+        self.setFont(font)
+
+
 class Dashboard(QtWidgets.QFrame):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -394,6 +441,78 @@ class DashboardGrid(Dashboard):
         self.task_layout.setRowStretch(self.current_row, 21)
         self.task_layout.setColumnStretch(self.current_col, 84)
         self.current_col += 1
+
+    def addTaskIfNew(self, type: TaskModel):
+        index = app.model.items.find_task(type)
+        if index is None:
+            index = app.model.items.add_task(type())
+        app.model.items.focus(index)
+
+    def addSeparator(self):
+        self.current_row += 1
+        self.current_col = 0
+
+
+class DashboardGroups(Dashboard):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.area = ScrollArea()
+
+        task_layout = QtWidgets.QGridLayout()
+        task_layout.setContentsMargins(6, 12, 6, 18)
+        task_layout.setSpacing(12)
+
+        task_widget = QtWidgets.QFrame()
+        task_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+        )
+        task_widget.setLayout(task_layout)
+
+        frame = DisplayFrame(stretch=5, parent=self)
+        frame.setWidget(task_widget)
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(frame, 1)
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+
+        self.task_layout = task_layout
+        self.task_layout.setColumnStretch(0, 2)
+        self.task_layout.setColumnStretch(999, 2)
+        self.task_layout.setRowStretch(0, 2)
+        self.task_layout.setRowStretch(999, 2)
+        self.current_row = 0
+        self.current_col = 0
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.area, 1)
+        self.setLayout(layout)
+        self.area.setWidget(widget)
+
+    def addTaskItem(self, task):
+        item = DashItemConstrainedSmall(
+            text=task.title,
+            subtext=task.description,
+            pixmap=task.pixmap.resource,
+            slot=lambda: self.addTaskIfNew(task.model),
+            parent=self,
+        )
+        self.task_layout.addWidget(item, self.current_row, self.current_col)
+        self.task_layout.setRowStretch(self.current_row, 21)
+        self.task_layout.setColumnStretch(self.current_col, 84)
+        self.current_col += 1
+
+    def addCaptionItem(self, task: str, columns: int = 1):
+        if self.current_row:
+            self.task_layout.setRowMinimumHeight(self.current_row, 16)
+            self.current_row += 1
+        item = DashItemCaption("\u203A " + task)
+        self.task_layout.addWidget(item, self.current_row, 0, 1, columns)
+        self.current_row += 1
+        self.current_col = 0
 
     def addTaskIfNew(self, type: TaskModel):
         index = app.model.items.find_task(type)

@@ -119,10 +119,15 @@ class Main(ToolDialog):
     def addTasks(self, tasks: list[ModuleType | list[ModuleType]]):
         for task in tasks:
             if isinstance(task, list):
-                for subtask in task:
-                    subtask = app.Task.from_module(subtask)
-                    self.addTask(subtask)
-                self.widgets.body.dashboard.addSeparator()
+                if not task:
+                    self.addSeparator()
+                elif isinstance(task[0], str):
+                    self.addCaption(task[0], *task[1:])
+                else:
+                    for subtask in task:
+                        subtask = app.Task.from_module(subtask)
+                        self.addTask(subtask)
+                    self.addSeparator()
             else:
                 task = app.Task.from_module(task)
                 self.addTask(task)
@@ -133,6 +138,12 @@ class Main(ToolDialog):
     def addTask(self, task):
         self.widgets.body.addView(task.model, task.view)
         self.widgets.body.dashboard.addTaskItem(task)
+
+    def addSeparator(self):
+        self.widgets.body.dashboard.addSeparator()
+
+    def addCaption(self, task: str, *args):
+        self.widgets.body.dashboard.addCaptionItem(task, *args)
 
     def handleHome(self):
         self.widgets.body.showDashboard()

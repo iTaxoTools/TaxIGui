@@ -24,7 +24,12 @@ from .. import app
 from ..model.common import TreeItem
 from ..model.tasks import TaskModel
 from ..view.tasks import TaskView
-from .dashboard import DashboardConstrained, DashboardGrid, DashboardLegacy
+from .dashboard import (
+    DashboardConstrained,
+    DashboardGrid,
+    DashboardGroups,
+    DashboardLegacy,
+)
 
 
 class Body(QtWidgets.QStackedWidget):
@@ -43,6 +48,8 @@ class Body(QtWidgets.QStackedWidget):
                 dashboard_class = DashboardConstrained
             case "grid":
                 dashboard_class = DashboardGrid
+            case "groups":
+                dashboard_class = DashboardGroups
             case _:
                 raise ValueError(
                     f"Invalid dashboard config: {repr(app.config.dashboard)}"
