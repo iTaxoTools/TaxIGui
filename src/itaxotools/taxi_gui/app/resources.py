@@ -51,6 +51,8 @@ class LazyResourceCollection(Generic[ResourceType]):
     def __getattr__(self, attr) -> LazyResource[ResourceType]:
         if attr in self.attrs:
             return LazyResource(self.attrs[attr])
+        else:
+            raise ValueError(f"Resource not found in collection: {repr(attr)}")
 
     def __setattr__(self, attr, value: Callable[[], ResourceType]):
         self.attrs[attr] = value
