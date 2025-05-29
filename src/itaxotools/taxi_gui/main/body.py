@@ -85,8 +85,23 @@ class Body(QtWidgets.QStackedWidget):
     def bindTask(self, task: TaskModel, view: TaskView):
         self.binder.unbind_all()
 
+        self.binder.bind(
+            task.menu_open.properties.actions, self.actions.open.setActions
+        )
+        self.binder.bind(
+            task.menu_save.properties.actions, self.actions.save.setActions
+        )
+        self.binder.bind(
+            task.menu_export.properties.actions, self.actions.export.setActions
+        )
+
+        self.actions.open.setVisible(task.show_open)
+        self.actions.save.setVisible(task.show_save)
+        self.actions.export.setVisible(task.show_export)
+
         self.binder.bind(task.properties.can_open, self.actions.open.setEnabled)
         self.binder.bind(task.properties.can_save, self.actions.save.setEnabled)
+        self.binder.bind(task.properties.can_export, self.actions.export.setEnabled)
         self.binder.bind(task.properties.can_start, self.actions.start.setVisible)
         self.binder.bind(task.properties.can_stop, self.actions.stop.setVisible)
         self.binder.bind(task.properties.done, self.actions.clear.setVisible)
@@ -101,12 +116,18 @@ class Body(QtWidgets.QStackedWidget):
             lambda busy: not busy and task.can_open,
         )
         self.binder.bind(task.properties.done, self.actions.save.setEnabled)
+        self.binder.bind(task.properties.done, self.actions.export.setEnabled)
 
         self.binder.bind(self.actions.start.triggered, view.start)
         self.binder.bind(self.actions.stop.triggered, view.stop)
         self.binder.bind(self.actions.open.triggered, view.open)
         self.binder.bind(self.actions.save.triggered, view.save)
+        self.binder.bind(self.actions.export.triggered, view.export)
         self.binder.bind(self.actions.clear.triggered, view.clear)
+
+        self.binder.bind(self.actions.open.triggered_child, view.open)
+        self.binder.bind(self.actions.save.triggered_child, view.save)
+        self.binder.bind(self.actions.export.triggered_child, view.export)
 
     def removeActiveItem(self):
         app.model.items.remove_index(self.activeIndex)
@@ -114,9 +135,16 @@ class Body(QtWidgets.QStackedWidget):
     def showDashboard(self):
         self.setCurrentWidget(self.dashboard)
         self.binder.unbind_all()
+        self.actions.open.clearActions()
+        self.actions.save.clearActions()
+        self.actions.export.clearActions()
+        self.actions.open.setVisible(app.config.show_open)
+        self.actions.save.setVisible(app.config.show_save)
+        self.actions.export.setVisible(app.config.show_export)
         self.actions.stop.setVisible(False)
         self.actions.clear.setVisible(False)
         self.actions.start.setVisible(True)
         self.actions.start.setEnabled(False)
-        self.actions.save.setEnabled(False)
         self.actions.open.setEnabled(False)
+        self.actions.save.setEnabled(False)
+        self.actions.export.setEnabled(False)

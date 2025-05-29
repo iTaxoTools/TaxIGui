@@ -87,10 +87,10 @@ class ToolBar(QtWidgets.QToolBar):
                 }
             QToolButton::menu-indicator {
                 image: none;
-                width: 30px;
+                width: 20px;
                 border-bottom: 1px solid palette(Mid);
-                subcontrol-origin: padding;
-                subcontrol-position: bottom;
+                subcontrol-position: left bottom;
+                margin-left: 16px;
                 }
             QToolButton::menu-indicator:disabled {
                 border-bottom: 1px solid palette(Midlight);

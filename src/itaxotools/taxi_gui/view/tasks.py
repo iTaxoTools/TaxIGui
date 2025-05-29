@@ -117,6 +117,11 @@ class TaskView(ObjectView):
         if path:
             self.object.save(path)
 
+    def export(self, key=None):
+        path = self.getSavePath("Export", str(self.object.suggested_directory))
+        if path:
+            self.object.export(path, key)
+
     def clear(self):
         if self.getConfirmation(
             "Clear results", "Are you sure you want to clear all results and try again?"

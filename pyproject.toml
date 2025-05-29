@@ -40,7 +40,7 @@ dev = [
     "matplotlib",
 ]
 
-[project.gui-scripts]
+[project.scripts]
 taxi-gui = "itaxotools.taxi_gui:run"
 
 [project.urls]

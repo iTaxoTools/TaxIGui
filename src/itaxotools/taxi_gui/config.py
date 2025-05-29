@@ -25,7 +25,8 @@ pixmap = pixmaps.taxi2
 
 dashboard = "legacy"
 show_open = False
-show_save = False
+show_save = True
+show_export = False
 
 tasks = [
     versus_all,

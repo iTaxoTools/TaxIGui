@@ -71,6 +71,7 @@ icons = LazyResourceCollection(
     arrow=lambda: VectorIcon(_get_common("icons/svg/arrow-right.svg"), skin.colormap),
     open=lambda: VectorIcon(_get_common("icons/svg/open.svg"), skin.colormap),
     save=lambda: VectorIcon(_get_common("icons/svg/save.svg"), skin.colormap),
+    export=lambda: VectorIcon(_get_common("icons/svg/export.svg"), skin.colormap),
     run=lambda: VectorIcon(_get_common("icons/svg/run.svg"), skin.colormap),
     stop=lambda: VectorIcon(_get_common("icons/svg/stop.svg"), skin.colormap),
     clear=lambda: VectorIcon(_get_common("icons/svg/clear.svg"), skin.colormap),

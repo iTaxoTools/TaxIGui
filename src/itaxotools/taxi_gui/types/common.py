@@ -26,6 +26,12 @@ class Entry(NamedTuple):
     default: int
 
 
+class ChildAction(NamedTuple):
+    key: str
+    label: str
+    tip: str
+
+
 class PropertyEnum(Enum):
     def __init__(self, label, key, default):
         self.label = label

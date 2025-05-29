@@ -18,18 +18,100 @@
 
 """Main dialog window"""
 
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from types import ModuleType
 
-from itaxotools.common.utility import AttrDict
+from itaxotools.common.utility import AttrDict, override
 from itaxotools.common.widgets import ToolDialog
 
 from .. import app
+from ..types import ChildAction
 from .body import Body
 from .footer import Footer
 from .header import Header
 from .sidebar import SideBar
+
+
+class ParentAction(QtGui.QAction):
+    triggered_child = QtCore.Signal(str)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._button = None
+        self._action = None
+        self._children: dict[QtGui.QAction, str] = {}
+        self._menu = QtWidgets.QMenu()
+        self._menu.setMinimumWidth(160)
+        self._menu.setStyleSheet(
+            """
+            QMenu {
+                border: 1px solid palette(Mid);
+                background-color: palette(Light);
+            }
+
+            QMenu::item {
+                padding: 4px 8px;
+                padding-left: 16px;
+                color: Palette(Text);
+            }
+
+            QMenu::item:selected {
+                background-color: Palette(Highlight);
+                color: Palette(Light);
+            }
+
+            QMenu::icon {
+                width: 0px;
+            }
+        """
+        )
+
+    def setActions(self, actions: list[ChildAction]):
+        self._menu.clear()
+        for child in actions:
+            action = QtGui.QAction(child.label, self)
+            action.setStatusTip(child.tip)
+            action.triggered.connect(self._handle_child_trigger)
+            self._menu.addAction(action)
+            self._children[action] = child.key
+
+    def clearActions(self):
+        self._children.clear()
+        self._menu.clear()
+
+    def generateToolButton(self):
+        self._button = QtWidgets.QToolButton()
+        self._button.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        self._button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self._button.setDefaultAction(self)
+        self._button.setMenu(self._menu)
+        self._action = QtWidgets.QWidgetAction(self)
+        self._action.setDefaultWidget(self._button)
+        self._action.setVisible(False)
+        return self._button, self._action
+
+    def _handle_child_trigger(self):
+        key = self._children[self.sender()]
+        self.triggered_child.emit(key)
+
+    @override
+    def setEnabled(self, value: bool):
+        super().setEnabled(value)
+        if self._action:
+            self._action.setEnabled(value)
+
+    @override
+    def setVisible(self, value: bool):
+        if not self._action:
+            super().setVisible(value)
+            return
+        if self._children:
+            super().setVisible(False)
+            self._action.setVisible(value)
+        else:
+            super().setVisible(value)
+            self._action.setVisible(False)
 
 
 class Main(ToolDialog):
@@ -60,36 +142,43 @@ class Main(ToolDialog):
         action.setVisible(len(app.config.tasks) > 1)
         self.actions.home = action
 
-        action = QtGui.QAction("&Open", self)
+        action = ParentAction("&Open", self)
         action.setIcon(app.resources.icons.open.resource)
         action.setShortcut(QtGui.QKeySequence.Open)
         action.setStatusTip("Open an existing file")
         action.setVisible(app.config.show_open)
         self.actions.open = action
 
-        action = QtGui.QAction("&Save", self)
+        action = ParentAction("&Save", self)
         action.setIcon(app.resources.icons.save.resource)
         action.setShortcut(QtGui.QKeySequence.Save)
         action.setStatusTip("Save results")
         action.setVisible(app.config.show_save)
         self.actions.save = action
 
+        action = ParentAction("&Export", self)
+        action.setIcon(app.resources.icons.export.resource)
+        action.setShortcut("Ctrl+E")
+        action.setStatusTip("Export results")
+        action.setVisible(app.config.show_export)
+        self.actions.export = action
+
         action = QtGui.QAction("&Run", self)
         action.setIcon(app.resources.icons.run.resource)
         action.setShortcut("Ctrl+R")
-        action.setStatusTip("Run MolD")
+        action.setStatusTip("Run analysis")
         self.actions.start = action
 
         action = QtGui.QAction("S&top", self)
         action.setIcon(app.resources.icons.stop.resource)
         action.setShortcut(QtGui.QKeySequence.Cancel)
-        action.setStatusTip("Stop MolD")
+        action.setStatusTip("Stop analysis")
         self.actions.stop = action
 
-        action = QtGui.QAction("Cl&ear", self)
+        action = QtGui.QAction("C&lear", self)
         action.setIcon(app.resources.icons.clear.resource)
-        action.setShortcut("Ctrl+E")
-        action.setStatusTip("Stop MolD")
+        action.setShortcut("Ctrl+L")
+        action.setStatusTip("Clear results")
         self.actions.clear = action
 
     def draw(self):
@@ -103,7 +192,8 @@ class Main(ToolDialog):
         self.widgets.sidebar.setVisible(False)
 
         for action in self.actions:
-            self.widgets.header.toolBar.addAction(action)
+            self.addToolBarAction(action)
+
         self.widgets.sidebar.selected.connect(self.widgets.body.showItem)
 
         layout = QtWidgets.QGridLayout()
@@ -115,6 +205,12 @@ class Main(ToolDialog):
         layout.setColumnStretch(1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+    def addToolBarAction(self, action: QtGui.QAction):
+        self.widgets.header.toolBar.addAction(action)
+        if isinstance(action, ParentAction):
+            _, widget_action = action.generateToolButton()
+            self.widgets.header.toolBar.addAction(widget_action)
 
     def addTasks(self, tasks: list[ModuleType | list[ModuleType]]):
         for task in tasks:

@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 from shutil import copytree
 
-from itaxotools.common.bindings import Binder, EnumObject, Instance, Property
+from itaxotools.common.bindings import EnumObject, Instance, Property
 from itaxotools.taxi_gui.model.sequence import SequenceModel
 from itaxotools.taxi_gui.model.tasks import SubtaskModel, TaskModel
 from itaxotools.taxi_gui.types import Notification
@@ -75,7 +75,6 @@ class Model(TaskModel):
 
     def __init__(self, name=None):
         super().__init__(name)
-        self.binder = Binder()
 
         self.subtask_init = SubtaskModel(self, bind_busy=False)
         self.subtask_data = FileInfoSubtaskModel(self)

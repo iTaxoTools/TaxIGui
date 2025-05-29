@@ -51,6 +51,9 @@ class Application(QtWidgets.QApplication):
     def set_show_save(self, save: bool):
         config.show_save = save
 
+    def set_show_export(self, export: bool):
+        config.show_export = export
+
     def set_tasks(self, tasks: list[ModuleType]):
         config.tasks = tasks
 
@@ -61,6 +64,7 @@ class Application(QtWidgets.QApplication):
         self.set_dashboard(getattr(config, "dashboard", "legacy"))
         self.set_show_open(getattr(config, "show_open", False))
         self.set_show_save(getattr(config, "show_save", False))
+        self.set_show_export(getattr(config, "show_export", False))
         self.set_tasks(getattr(config, "tasks", []))
 
     def set_skin(self, skin: ModuleType):

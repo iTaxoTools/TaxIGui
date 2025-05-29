@@ -24,7 +24,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Callable, List
 
-from itaxotools.common.bindings import Binder, Property, PropertyRef
+from itaxotools.common.bindings import Binder, Instance, Property, PropertyRef
+from itaxotools.taxi_gui import app
 
 from ..threading import (
     DataQuery,
@@ -35,8 +36,25 @@ from ..threading import (
     ReportStop,
     Worker,
 )
-from ..types import Notification
+from ..types import ChildAction, Notification
 from .common import Object
+
+
+class ActionMenu(Object):
+    actions = Property(list[ChildAction], [])
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.actions: list[ChildAction] = []
+
+    def add(self, key: str, label: str, tip: str):
+        action = ChildAction(key, label, tip)
+        self.actions.append(action)
+        self.properties.actions.update()
+
+    def clear(self):
+        self.actions.clear()
+        self.properties.actions.update()
 
 
 class TaskModel(Object):
@@ -46,10 +64,19 @@ class TaskModel(Object):
     progression = QtCore.Signal(ReportProgress)
     query = QtCore.Signal(DataQuery)
 
+    show_open = Property(bool, False)
+    show_save = Property(bool, False)
+    show_export = Property(bool, False)
+
     can_open = Property(bool, False)
     can_save = Property(bool, True)
+    can_export = Property(bool, False)
     can_start = Property(bool, True)
     can_stop = Property(bool, False)
+
+    menu_open = Property(ActionMenu, Instance)
+    menu_save = Property(ActionMenu, Instance)
+    menu_export = Property(ActionMenu, Instance)
 
     ready = Property(bool, True)
     busy = Property(bool, False)
@@ -57,11 +84,17 @@ class TaskModel(Object):
     done = Property(bool, False)
     editable = Property(bool, True)
 
+    suggested_directory = Property(Path, Path())
+
     counters = defaultdict(lambda: itertools.count(1, 1))
 
     def __init__(self, name=None):
         super().__init__(name or self._get_next_name())
         self.binder = Binder()
+
+        self.show_open = app.config.show_open
+        self.show_save = app.config.show_save
+        self.show_export = app.config.show_export
 
         self.temporary_directory = TemporaryDirectory(prefix=f"{self.task_name}_")
         self.temporary_path = Path(self.temporary_directory.name)
@@ -142,11 +175,14 @@ class TaskModel(Object):
             return
         self.worker.reset()
 
-    def open(self):
+    def open(self, path: Path, key=None):
         """Slot for opening files"""
 
-    def save(self):
+    def save(self, path: Path, key=None):
         """Slot for saving results"""
+
+    def export(self, path: Path, key=None):
+        """Slot for exporting results"""
 
     def clear(self):
         """Slot for discarding results"""
