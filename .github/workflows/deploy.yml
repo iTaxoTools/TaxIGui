@@ -25,7 +25,7 @@ jobs:
       - name: Build distributions
         run: pipx run build
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_DISTRIBUTIONS }}
           path: dist/*
@@ -60,7 +60,7 @@ jobs:
       - name: Make executable
         uses: ./.github/actions/make-executable
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_EXECUTABLE }}
           path: dist/*.exe
@@ -68,7 +68,7 @@ jobs:
 
   macos:
     name: Build macOS bundle
-    runs-on: macos-11
+    runs-on: macos-13
 
     steps:
       - name: Checkout
@@ -98,7 +98,7 @@ jobs:
       - name: Build bundle
         uses: ./.github/actions/make-bundle
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_BUNDLE }}
           path: dist/*.zip
@@ -121,7 +121,7 @@ jobs:
 
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_DISTRIBUTIONS }}
           path: dist
@@ -147,7 +147,7 @@ jobs:
 
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_DISTRIBUTIONS }}
           path: dist
@@ -173,19 +173,19 @@ jobs:
 
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_DISTRIBUTIONS }}
           path: dist
 
       - name: Download Windows executable
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_EXECUTABLE }}
           path: dist
 
       - name: Download macOS bundle
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_BUNDLE }}
           path: dist
