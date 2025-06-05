@@ -60,7 +60,7 @@ class ObjectView(QtWidgets.QFrame):
         msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
         self.window().msgShow(msgBox)
 
-    def getOpenPath(self, caption="Open File", dir="", filter=""):
+    def getOpenPath(self, caption="Open file", dir="", filter=""):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
             self.window(), f"{app.config.title} - {caption}", dir=dir, filter=filter
         )
@@ -68,7 +68,7 @@ class ObjectView(QtWidgets.QFrame):
             return None
         return Path(filename)
 
-    def getSavePath(self, caption="Save File", dir="", filter=""):
+    def getSavePath(self, caption="Save file", dir="", filter=""):
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
             self.window(), f"{app.config.title} - {caption}", dir=dir, filter=filter
         )
@@ -76,7 +76,7 @@ class ObjectView(QtWidgets.QFrame):
             return None
         return Path(filename)
 
-    def getExistingDirectory(self, caption="Open Folder", dir=""):
+    def getExistingDirectory(self, caption="Open folder", dir=""):
         filename = QtWidgets.QFileDialog.getExistingDirectory(
             self.window(), f"{app.config.title} - {caption}", dir=dir
         )
