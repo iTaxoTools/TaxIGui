@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
     "itaxotools-common",
     "itaxotools-taxi2",
-    "pyside6",
+    "pyside6<6.9.0",
 ]
 
 [project.optional-dependencies]
