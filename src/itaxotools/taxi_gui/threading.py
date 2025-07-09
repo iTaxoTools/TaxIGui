@@ -86,7 +86,7 @@ class Worker(QtCore.QThread):
                 task = self.queue.get()
                 if task is None:
                     break
-                if self.process is None:
+                if self.process is None or not self.process.is_alive():
                     self.process_start()
                 with self.open_log(f"{str(task.id)}.log"):
                     self.commands.send(task)
