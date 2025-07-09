@@ -249,3 +249,8 @@ class Main(ToolDialog):
         if app.model.main.dirty_data:
             return super().reject()
         return True
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        if event.button() == QtCore.Qt.BackButton:
+            self.actions.home.trigger()
