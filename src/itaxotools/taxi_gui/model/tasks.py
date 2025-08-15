@@ -88,7 +88,7 @@ class TaskModel(Object):
 
     counters = defaultdict(lambda: itertools.count(1, 1))
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, daemon=True):
         super().__init__(name or self._get_next_name())
         self.binder = Binder()
 
@@ -99,7 +99,12 @@ class TaskModel(Object):
         self.temporary_directory = TemporaryDirectory(prefix=f"{self.task_name}_")
         self.temporary_path = Path(self.temporary_directory.name)
 
-        self.worker = Worker(name=self.name, eager=True, log_path=self.temporary_path)
+        self.worker = Worker(
+            name=self.name,
+            eager=True,
+            daemon=daemon,
+            log_path=self.temporary_path,
+        )
 
         self.binder.bind(
             self.worker.done, self.onDone, condition=self._matches_report_id

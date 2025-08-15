@@ -48,11 +48,12 @@ class Worker(QtCore.QThread):
     progress = QtCore.Signal(ReportProgress)
     query = QtCore.Signal(DataQuery)
 
-    def __init__(self, name="Worker", eager=True, log_path=None):
+    def __init__(self, name="Worker", eager=True, daemon=True, log_path=None):
         """Immediately starts thread execution"""
         super().__init__()
         self.name = name
         self.eager = eager
+        self.daemon = daemon
         self.log_path = log_path
 
         self.queue = mp.Queue()
@@ -208,7 +209,7 @@ class Worker(QtCore.QThread):
         self.queries, queries = mp.Pipe(duplex=True)
         self.process = mp.Process(
             target=loop,
-            daemon=True,
+            daemon=self.daemon,
             name=self.name,
             args=(commands, results, reports, queries, pipe_out),
         )
