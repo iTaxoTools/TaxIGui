@@ -47,6 +47,7 @@ class Worker(QtCore.QThread):
     stop = QtCore.Signal(ReportStop)
     progress = QtCore.Signal(ReportProgress)
     query = QtCore.Signal(DataQuery)
+    process_started = QtCore.Signal()
 
     def __init__(self, name="Worker", eager=True, daemon=True, log_path=None):
         """Immediately starts thread execution"""
@@ -214,6 +215,7 @@ class Worker(QtCore.QThread):
             args=(commands, results, reports, queries, pipe_out),
         )
         self.process.start()
+        self.process_started.emit()
 
     def exec(self, id, function, *args, **kwargs):
         """Execute given function on a child process"""

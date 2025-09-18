@@ -240,6 +240,9 @@ class SubtaskModel(Object):
 
         self.temporary_path = parent.temporary_path
         self.worker = parent.worker
+        self._autostart_task = None
+        self._autostart_args = None
+        self._autostart_kwargs = None
 
         self.binder.bind(
             self.worker.done, self.onDone, condition=self._matches_report_id
@@ -257,6 +260,8 @@ class SubtaskModel(Object):
             self.worker.query, self.query.emit, condition=self._matches_report_id
         )
         self.binder.bind(self.worker.progress, self.progression.emit)
+
+        self.binder.bind(self.worker.process_started, self._on_process_started)
 
         self.binder.bind(self.notification, parent.notification)
         self.binder.bind(self.progression, parent.progression)
@@ -276,6 +281,12 @@ class SubtaskModel(Object):
         if not hasattr(report, "id"):
             return False
         return report.id == id(self)
+
+    def _on_process_started(self):
+        if self._autostart_task:
+            self.start(
+                self._autostart_task, *self._autostart_args, **self._autostart_kwargs
+            )
 
     def onFail(self, report: ReportFail):
         self.notification.emit(
@@ -303,6 +314,12 @@ class SubtaskModel(Object):
         self.progression.emit(ReportProgress("Preparing for execution..."))
         self.busy = True
         self.exec(task, *args, **kwargs)
+
+    def autostart(self, task: Callable, *args, **kwargs):
+        """Slot for setting a task to autostart with the worker"""
+        self._autostart_task = task
+        self._autostart_args = args
+        self._autostart_kwargs = kwargs
 
     def stop(self):
         """Slot for interrupting the task"""
