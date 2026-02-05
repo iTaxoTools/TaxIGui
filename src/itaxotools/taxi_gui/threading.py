@@ -193,7 +193,7 @@ class Worker(QtCore.QThread):
         if not path:
             yield
             return
-        with open(path / filename, "a") as file:
+        with open(path / filename, "a", encoding="utf-8") as file:
             self.streamOut.add(file)
             self.streamErr.add(file)
             yield
