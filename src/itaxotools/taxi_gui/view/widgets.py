@@ -185,12 +185,54 @@ class RichRadioButton(NoWheelRadioButton):
 
         painter.end()
 
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        x = event.localPos().x()
+    def hitButton(self, pos):
         w = self.sizeHint().width()
-        if x < w:
-            self.setChecked(True)
+        return pos.x() < w
+
+    def sizeHint(self):
+        metrics = QtGui.QFontMetrics(self.small_font)
+        extra = metrics.horizontalAdvance(self.desc)
+        size = super().sizeHint()
+        size += QtCore.QSize(extra, 0)
+        return size
+
+
+class RichCheckBox(QtWidgets.QCheckBox):
+    def __init__(self, text, desc, parent=None):
+        super().__init__(text, parent)
+        self.desc = desc
+        self.setStyleSheet(
+            """
+            RichCheckBox {
+                letter-spacing: 1px;
+                font-weight: bold;
+            }"""
+        )
+        font = self.font()
+        font.setBold(False)
+        font.setLetterSpacing(QtGui.QFont.PercentageSpacing, 0)
+        self.small_font = font
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        painter.setFont(self.small_font)
+        width = self.size().width()
+        height = self.size().height()
+        sofar = super().sizeHint().width()
+
+        rect = QtCore.QRect(sofar, 0, width - sofar, height)
+        flags = QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
+        painter.drawText(rect, flags, self.desc)
+
+        painter.end()
+
+    def hitButton(self, pos):
+        w = self.sizeHint().width()
+        return pos.x() < w
 
     def sizeHint(self):
         metrics = QtGui.QFontMetrics(self.small_font)
