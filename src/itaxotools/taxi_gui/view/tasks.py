@@ -101,7 +101,7 @@ class TaskView(ObjectView):
 
     def stop(self):
         if self.getConfirmation(
-            "Stop diagnosis", "Are you sure you want to stop the ongoing diagnosis?"
+            "Stop task", "Are you sure you want to stop the ongoing process?"
         ):
             self.object.stop()
 
