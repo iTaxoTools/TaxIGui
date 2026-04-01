@@ -15,6 +15,7 @@ __pycache__/
 .cache
 .ruff_cache
 .pytest_cache
+.claude
 
 Pipfile
 Pipfile.lock

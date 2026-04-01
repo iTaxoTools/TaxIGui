@@ -154,7 +154,7 @@ class ImportedInputModel(Object):
     updated = QtCore.Signal()
 
     model = Property(QtCore.QAbstractItemModel, None)
-    index = Property(QtCore.QModelIndex, None)
+    index = Property(QtCore.QModelIndex, QtCore.QModelIndex())
     object = Property(DataFileProtocol, None)
     format = Property(FileFormat, None)
 

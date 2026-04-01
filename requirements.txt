@@ -34,9 +34,9 @@ Pygments==2.20.0
 pyinstaller==6.19.0
 pyinstaller-hooks-contrib==2026.4
 pyparsing==3.3.2
-PySide6==6.8.3
-PySide6_Addons==6.8.3
-PySide6_Essentials==6.8.3
+PySide6==6.11.0
+PySide6_Addons==6.11.0
+PySide6_Essentials==6.11.0
 pytest==9.0.2
 pytest-qt==4.5.0
 pytest-xvfb==3.1.1
@@ -49,7 +49,7 @@ ruff==0.15.8
 seaborn==0.13.2
 setuptools==82.0.1
 setuptools-scm==10.0.5
-shiboken6==6.8.3
+shiboken6==6.11.0
 six==1.17.0
 typing_extensions==4.15.0
 tzdata==2025.3
