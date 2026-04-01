@@ -13,16 +13,16 @@ jobs:
 
   build-bundle:
     name: Build macOS bundle
-    runs-on: macos-13
+    runs-on: macos-14
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
 
@@ -38,7 +38,7 @@ jobs:
       - name: Make bundle
         uses: ./.github/actions/make-bundle
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARTIFACT_BUNDLE }}
           path: dist/*.zip

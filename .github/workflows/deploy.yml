@@ -18,14 +18,14 @@ jobs:
     name: Build distributions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Build distributions
         run: pipx run build
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARTIFACT_DISTRIBUTIONS }}
           path: dist/*
@@ -37,12 +37,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
 
@@ -60,7 +60,7 @@ jobs:
       - name: Make executable
         uses: ./.github/actions/make-executable
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARTIFACT_EXECUTABLE }}
           path: dist/*.exe
@@ -68,16 +68,16 @@ jobs:
 
   macos:
     name: Build macOS bundle
-    runs-on: macos-13
+    runs-on: macos-14
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
 
@@ -98,7 +98,7 @@ jobs:
       - name: Build bundle
         uses: ./.github/actions/make-bundle
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARTIFACT_BUNDLE }}
           path: dist/*.zip
