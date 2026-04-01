@@ -242,5 +242,10 @@ class Worker(QtCore.QThread):
 
         super().quit()
         self.wait()
+        if self.process is not None:
+            if self.process.is_alive():
+                self.process.terminate()
+            self.process.join()
+            self.process = None
         self.streamOut.close()
         self.streamErr.close()
