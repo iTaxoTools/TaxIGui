@@ -14,23 +14,27 @@ def test_main(qapp):
 
 def test_decontaminate(qapp):
     task = app.Task.from_module(decontaminate)
-    # task.model()
     task.view()
+    model = task.model()
+    model.close()
 
 
 def test_dereplicate(qapp):
     task = app.Task.from_module(dereplicate)
-    # task.model()
     task.view()
+    model = task.model()
+    model.close()
 
 
 def test_versus_all(qapp):
     task = app.Task.from_module(versus_all)
-    # task.model()
     task.view()
+    model = task.model()
+    model.close()
 
 
 def test_versus_reference(qapp):
     task = app.Task.from_module(versus_reference)
-    # task.model()
     task.view()
+    model = task.model()
+    model.close()

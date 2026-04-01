@@ -180,6 +180,10 @@ class TaskModel(Object):
             return
         self.worker.reset()
 
+    def close(self):
+        """Release the worker thread and associated resources"""
+        self.worker.quit()
+
     def open(self, path: Path, key=None):
         """Slot for opening files"""
 
